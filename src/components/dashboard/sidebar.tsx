@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -16,7 +17,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  LogOut,
 } from "lucide-react";
+
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Command Center", href: "/dashboard" },
@@ -31,8 +35,21 @@ const navItems = [
 const bottomItems = [{ icon: Settings, label: "Settings", href: "/settings" }];
 
 export function Sidebar() {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <aside
@@ -142,14 +159,26 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex-1 overflow-hidden">
               <p className="truncate text-sm font-medium text-foreground">
-                Alex Morgan
+                {user?.user_metadata?.full_name || user?.email || "Signed in"}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
-                Pro Plan
-              </p>
+              <p className="truncate text-xs text-muted-foreground">Clinq workspace</p>
             </div>
           )}
         </div>
+        {!collapsed ? (
+          <button
+            type="button"
+            onClick={async () => {
+              const supabase = createSupabaseBrowserClient();
+              await supabase.auth.signOut();
+              router.push("/login");
+            }}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-clinq-glass-border px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-clinq-glass hover:text-foreground"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sign out
+          </button>
+        ) : null}
       </div>
     </aside>
   );

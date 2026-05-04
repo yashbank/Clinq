@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import { toast } from "sonner";
 import {
   Sparkles,
   Wand2,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useProposalStudio } from "@/context/proposal-studio";
 
 type WritingSection = "greeting" | "hook" | "experience" | "approach" | "closing";
 
@@ -78,6 +80,7 @@ const followUpTemplates = [
 ];
 
 export function AIWritingPanel() {
+  const { mapModeToApi, tone } = useProposalStudio();
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [activeSection, setActiveSection] = useState<WritingSection>("greeting");
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
@@ -117,16 +120,42 @@ export function AIWritingPanel() {
     }, 1500);
   };
 
-  const handleGenerateAll = () => {
+  const handleGenerateAll = async () => {
+    const jobDescription = sections.map((s) => `${s.label}:\n${s.content}`).join("\n\n").trim();
+    if (jobDescription.length < 20) {
+      toast.error("Add RFP text across sections (or paste into Opening) before generating.");
+      return;
+    }
+
     setIsGeneratingAll(true);
-    sections.forEach((section, index) => {
-      setTimeout(() => {
-        handleGenerateSection(section.id);
-        if (index === sections.length - 1) {
-          setTimeout(() => setIsGeneratingAll(false), 1500);
-        }
-      }, index * 800);
-    });
+    try {
+      const res = await fetch("/api/ai/proposal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobDescription,
+          mode: mapModeToApi(),
+          tone,
+        }),
+      });
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? "Generation failed");
+      }
+      if (!data.text) {
+        throw new Error("Empty response");
+      }
+      setSections((prev) => {
+        const [, ...rest] = prev;
+        return [{ ...prev[0], content: data.text as string, isGenerating: false }, ...rest.map((s) => ({ ...s, isGenerating: false }))];
+      });
+      setActiveSection("greeting");
+      toast.success("Proposal generated with GPT-4o mini");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not generate");
+    } finally {
+      setIsGeneratingAll(false);
+    }
   };
 
   const handleCopyAll = () => {

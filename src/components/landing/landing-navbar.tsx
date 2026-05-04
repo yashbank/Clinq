@@ -24,10 +24,10 @@ export function LandingNavbar() {
         </nav>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard">Open app</Link>
+            <Link href="/login">Sign in</Link>
           </Button>
           <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-primary-foreground" asChild>
-            <Link href="/dashboard">Start free</Link>
+            <Link href="/signup">Start free</Link>
           </Button>
         </div>
       </div>

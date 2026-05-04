@@ -1,50 +1,31 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useState } from "react";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
-import { LeadIntelligenceHeader } from "@/components/leads/lead-intelligence-header";
-import { AdvancedLeadsTable } from "@/components/leads/advanced-leads-table";
-import { LeadProfilePanel } from "@/components/leads/lead-profile-panel";
-import { AIOpportunityInsights } from "@/components/leads/ai-opportunity-insights";
-import { CompetitorAnalysis } from "@/components/leads/competitor-analysis";
+import LeadsPageClient from "@/app/leads/leads-page-client";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default function LeadIntelligencePage() {
-  const [selectedLead, setSelectedLead] = useState<string | null>(null);
+import type { LeadRow } from "@/types/database";
 
-  return (
-    <div className="gradient-mesh flex h-screen overflow-hidden">
-      <Sidebar />
+export default async function LeadsPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <LeadIntelligenceHeader />
+  const { data, error } = await supabase
+    .from("leads")
+    .select("*")
+    .order("updated_at", { ascending: false });
 
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="mx-auto max-w-7xl space-y-6">
-              {/* AI Insights Row */}
-              <div className="grid gap-6 lg:grid-cols-3">
-                <AIOpportunityInsights />
-                <CompetitorAnalysis />
-              </div>
-
-              {/* Advanced Leads Table */}
-              <AdvancedLeadsTable
-                selectedLead={selectedLead}
-                onSelectLead={setSelectedLead}
-              />
-            </div>
-          </main>
-        </div>
-
-        {/* Lead Profile Side Panel */}
-        <LeadProfilePanel
-          leadId={selectedLead}
-          onClose={() => setSelectedLead(null)}
-        />
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-muted-foreground">
+        Could not load leads ({error.message}). Apply the SQL migration in Supabase if you have not yet.
       </div>
+    );
+  }
 
-      <FloatingAIOrb />
-    </div>
-  );
+  return <LeadsPageClient initialRows={(data ?? []) as LeadRow[]} />;
 }

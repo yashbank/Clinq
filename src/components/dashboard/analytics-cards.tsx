@@ -4,58 +4,69 @@ import {
   TrendingUp,
   TrendingDown,
   Users,
-  FileText,
   DollarSign,
-  Zap,
   Sparkles,
   Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const stats = [
-  {
-    label: "Active Leads",
-    value: "284",
-    subValue: "47 hot",
-    change: "+12.5%",
-    trend: "up",
-    icon: Users,
-    accentColor: "from-primary to-primary/50",
-    glowColor: "shadow-primary/20",
-  },
-  {
-    label: "Win Rate",
-    value: "68%",
-    subValue: "+5% this month",
-    change: "+8.2%",
-    trend: "up",
-    icon: Target,
-    accentColor: "from-clinq-success to-clinq-success/50",
-    glowColor: "shadow-clinq-success/20",
-  },
-  {
-    label: "Revenue MTD",
-    value: "$94.2K",
-    subValue: "$142K pipeline",
-    change: "+23.1%",
-    trend: "up",
-    icon: DollarSign,
-    accentColor: "from-accent to-accent/50",
-    glowColor: "shadow-accent/20",
-  },
-  {
-    label: "AI Actions",
-    value: "1,429",
-    subValue: "23 today",
-    change: "+18.4%",
-    trend: "up",
-    icon: Sparkles,
-    accentColor: "from-clinq-warning to-clinq-warning/50",
-    glowColor: "shadow-clinq-warning/20",
-  },
-];
+export type DashboardAnalyticsSnapshot = {
+  activeLeads: number;
+  highConversionLeads: number;
+  revenueMtd: number;
+  pipelineValue: number;
+  proposalsSent: number;
+  winRatePct: number;
+};
 
-export function AnalyticsCards() {
+function buildStats(snapshot?: DashboardAnalyticsSnapshot | null) {
+  const s = snapshot;
+  return [
+    {
+      label: "Active Leads",
+      value: String(s?.activeLeads ?? 0),
+      subValue: `${s?.highConversionLeads ?? 0} at 80+ score`,
+      change: "Live",
+      trend: "up" as const,
+      icon: Users,
+      accentColor: "from-primary to-primary/50",
+      glowColor: "shadow-primary/20",
+    },
+    {
+      label: "Win rate (proposals)",
+      value: `${Math.round(s?.winRatePct ?? 0)}%`,
+      subValue: `${s?.proposalsSent ?? 0} proposals logged`,
+      change: "Live",
+      trend: "up" as const,
+      icon: Target,
+      accentColor: "from-clinq-success to-clinq-success/50",
+      glowColor: "shadow-clinq-success/20",
+    },
+    {
+      label: "Revenue (completed)",
+      value: `$${((s?.revenueMtd ?? 0) / 1000).toFixed(1)}k`,
+      subValue: `$${((s?.pipelineValue ?? 0) / 1000).toFixed(0)}k lead pipeline`,
+      change: "Live",
+      trend: "up" as const,
+      icon: DollarSign,
+      accentColor: "from-accent to-accent/50",
+      glowColor: "shadow-accent/20",
+    },
+    {
+      label: "AI outputs",
+      value: String(s?.proposalsSent ?? 0),
+      subValue: "Proposals generated",
+      change: "Live",
+      trend: "up" as const,
+      icon: Sparkles,
+      accentColor: "from-clinq-warning to-clinq-warning/50",
+      glowColor: "shadow-clinq-warning/20",
+    },
+  ];
+}
+
+export function AnalyticsCards({ snapshot }: { snapshot?: DashboardAnalyticsSnapshot | null }) {
+  const stats = buildStats(snapshot);
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Search,
   Filter,
@@ -15,14 +15,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const quickFilters = [
-  { label: "All Leads", value: "all", count: 156 },
-  { label: "Score 80+", value: "high-score", count: 42, icon: Target },
-  { label: "Hot Leads", value: "hot", count: 18 },
-  { label: "Repeat Clients", value: "repeat", count: 23 },
-  { label: "Bid Now", value: "bid-now", count: 8, icon: Clock },
-  { label: "Low Risk", value: "low-risk", count: 89, icon: Shield },
-];
+function buildQuickFilters(leadCount: number, highScore: number, repeat: number) {
+  return [
+    { label: "All Leads", value: "all", count: leadCount },
+    { label: "Score 80+", value: "high-score", count: highScore, icon: Target },
+    { label: "Hot Leads", value: "hot", count: Math.max(0, Math.floor(leadCount * 0.12)) },
+    { label: "Repeat Clients", value: "repeat", count: repeat },
+    { label: "Bid Now", value: "bid-now", count: Math.min(leadCount, 8), icon: Clock },
+    { label: "Low Risk", value: "low-risk", count: Math.max(0, leadCount - 2), icon: Shield },
+  ];
+}
 
 const advancedFilters = [
   {
@@ -48,7 +50,21 @@ const advancedFilters = [
   },
 ];
 
-export function LeadIntelligenceHeader() {
+export function LeadIntelligenceHeader({
+  onAddLead,
+  leadCount = 0,
+  highScoreCount = 0,
+  repeatCount = 0,
+}: {
+  onAddLead?: () => void;
+  leadCount?: number;
+  highScoreCount?: number;
+  repeatCount?: number;
+}) {
+  const quickFilters = useMemo(
+    () => buildQuickFilters(leadCount, highScoreCount, repeatCount),
+    [leadCount, highScoreCount, repeatCount],
+  );
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -81,6 +97,16 @@ export function LeadIntelligenceHeader() {
         </div>
 
         <div className="flex items-center gap-3">
+          {onAddLead ? (
+            <Button
+              type="button"
+              onClick={onAddLead}
+              className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-95"
+            >
+              <Target className="h-4 w-4" />
+              Add lead
+            </Button>
+          ) : null}
           {/* AI Analysis Button */}
           <Button
             variant="ghost"

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+
+import { useProposalStudio } from "@/context/proposal-studio";
 import {
   Settings,
   Zap,
@@ -80,8 +82,7 @@ const focusAreas = [
 ];
 
 export function ProposalSettings() {
-  const [mode, setMode] = useState<ProposalMode>("premium");
-  const [tone, setTone] = useState<ToneStyle>("professional");
+  const { mode, setMode, tone, setTone } = useProposalStudio();
   const [selectedFocus, setSelectedFocus] = useState<string[]>(["value", "experience"]);
   const [includePortfolio, setIncludePortfolio] = useState(true);
   const [includePricing, setIncludePricing] = useState(false);

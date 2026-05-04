@@ -25,249 +25,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-
-interface Lead {
-  id: string;
-  name: string;
-  company: string;
-  email: string;
-  phone: string;
-  avatar: string;
-  value: number;
-  aiScore: number;
-  conversionScore: number;
-  status: "hot" | "warm" | "new" | "cold";
-  scamRisk: "low" | "medium" | "high";
-  lastContact: string;
-  aiInsight: string;
-  bestTimeToBid: string;
-  bidUrgency: "now" | "today" | "tomorrow" | "this-week" | "later";
-  isRepeatClient: boolean;
-  projectsCompleted: number;
-  totalRevenue: number;
-  responseRate: number;
-  avgResponseTime: string;
-  industry: string;
-  proposalStatus: "none" | "draft" | "sent" | "viewed" | "accepted" | "rejected";
-  competitorCount: number;
-  winProbability: number;
-}
-
-const leads: Lead[] = [
-  {
-    id: "1",
-    name: "Sarah Chen",
-    company: "TechFlow Inc",
-    email: "sarah@techflow.io",
-    phone: "+1 (555) 123-4567",
-    avatar: "SC",
-    value: 24500,
-    aiScore: 94,
-    conversionScore: 91,
-    status: "hot",
-    scamRisk: "low",
-    lastContact: "2h ago",
-    aiInsight: "Decision maker engaged, budget confirmed. High urgency signal detected.",
-    bestTimeToBid: "Now",
-    bidUrgency: "now",
-    isRepeatClient: true,
-    projectsCompleted: 4,
-    totalRevenue: 87500,
-    responseRate: 96,
-    avgResponseTime: "1.5h",
-    industry: "SaaS",
-    proposalStatus: "sent",
-    competitorCount: 2,
-    winProbability: 78,
-  },
-  {
-    id: "2",
-    name: "Michael Roberts",
-    company: "Quantum Labs",
-    email: "m.roberts@quantumlabs.com",
-    phone: "+1 (555) 234-5678",
-    avatar: "MR",
-    value: 42000,
-    aiScore: 88,
-    conversionScore: 82,
-    status: "hot",
-    scamRisk: "low",
-    lastContact: "4h ago",
-    aiInsight: "Technical requirements align perfectly with your expertise.",
-    bestTimeToBid: "Today 2 PM",
-    bidUrgency: "today",
-    isRepeatClient: false,
-    projectsCompleted: 0,
-    totalRevenue: 0,
-    responseRate: 84,
-    avgResponseTime: "3h",
-    industry: "Biotech",
-    proposalStatus: "draft",
-    competitorCount: 4,
-    winProbability: 65,
-  },
-  {
-    id: "3",
-    name: "Emma Williams",
-    company: "NovaStar Media",
-    email: "emma@novastar.co",
-    phone: "+1 (555) 345-6789",
-    avatar: "EW",
-    value: 38000,
-    aiScore: 85,
-    conversionScore: 76,
-    status: "warm",
-    scamRisk: "low",
-    lastContact: "1d ago",
-    aiInsight: "Previous project success creates strong referral potential.",
-    bestTimeToBid: "Tomorrow 10 AM",
-    bidUrgency: "tomorrow",
-    isRepeatClient: true,
-    projectsCompleted: 6,
-    totalRevenue: 142000,
-    responseRate: 92,
-    avgResponseTime: "2h",
-    industry: "Media",
-    proposalStatus: "viewed",
-    competitorCount: 1,
-    winProbability: 82,
-  },
-  {
-    id: "4",
-    name: "David Kim",
-    company: "Apex Ventures",
-    email: "dkim@apexvc.com",
-    phone: "+1 (555) 456-7890",
-    avatar: "DK",
-    value: 65000,
-    aiScore: 82,
-    conversionScore: 68,
-    status: "warm",
-    scamRisk: "medium",
-    lastContact: "2d ago",
-    aiInsight: "Enterprise client, longer sales cycle expected. Multiple stakeholders.",
-    bestTimeToBid: "Wed 3 PM",
-    bidUrgency: "this-week",
-    isRepeatClient: false,
-    projectsCompleted: 0,
-    totalRevenue: 0,
-    responseRate: 72,
-    avgResponseTime: "8h",
-    industry: "Finance",
-    proposalStatus: "none",
-    competitorCount: 6,
-    winProbability: 45,
-  },
-  {
-    id: "5",
-    name: "Lisa Anderson",
-    company: "CloudBridge Solutions",
-    email: "l.anderson@cloudbridge.io",
-    phone: "+1 (555) 567-8901",
-    avatar: "LA",
-    value: 18500,
-    aiScore: 76,
-    conversionScore: 71,
-    status: "new",
-    scamRisk: "low",
-    lastContact: "3d ago",
-    aiInsight: "First-time client with clear project scope. Low competition.",
-    bestTimeToBid: "This week",
-    bidUrgency: "this-week",
-    isRepeatClient: false,
-    projectsCompleted: 0,
-    totalRevenue: 0,
-    responseRate: 78,
-    avgResponseTime: "5h",
-    industry: "Cloud",
-    proposalStatus: "draft",
-    competitorCount: 2,
-    winProbability: 58,
-  },
-  {
-    id: "6",
-    name: "James Morrison",
-    company: "Stellar Dynamics",
-    email: "j.morrison@stellar.io",
-    phone: "+1 (555) 678-9012",
-    avatar: "JM",
-    value: 31000,
-    aiScore: 72,
-    conversionScore: 64,
-    status: "warm",
-    scamRisk: "high",
-    lastContact: "5d ago",
-    aiInsight: "Unusual payment terms requested. Verify client authenticity.",
-    bestTimeToBid: "Next week",
-    bidUrgency: "later",
-    isRepeatClient: false,
-    projectsCompleted: 0,
-    totalRevenue: 0,
-    responseRate: 45,
-    avgResponseTime: "24h",
-    industry: "Aerospace",
-    proposalStatus: "none",
-    competitorCount: 3,
-    winProbability: 32,
-  },
-  {
-    id: "7",
-    name: "Rachel Green",
-    company: "Innovate Digital",
-    email: "rachel@innovatedigital.com",
-    phone: "+1 (555) 789-0123",
-    avatar: "RG",
-    value: 52000,
-    aiScore: 91,
-    conversionScore: 88,
-    status: "hot",
-    scamRisk: "low",
-    lastContact: "6h ago",
-    aiInsight: "Urgent timeline, premium budget. Perfect match for your services.",
-    bestTimeToBid: "Now",
-    bidUrgency: "now",
-    isRepeatClient: true,
-    projectsCompleted: 2,
-    totalRevenue: 48000,
-    responseRate: 98,
-    avgResponseTime: "45m",
-    industry: "E-commerce",
-    proposalStatus: "accepted",
-    competitorCount: 0,
-    winProbability: 95,
-  },
-  {
-    id: "8",
-    name: "Thomas Wright",
-    company: "NextGen Corp",
-    email: "t.wright@nextgen.co",
-    phone: "+1 (555) 890-1234",
-    avatar: "TW",
-    value: 28000,
-    aiScore: 68,
-    conversionScore: 55,
-    status: "cold",
-    scamRisk: "medium",
-    lastContact: "2w ago",
-    aiInsight: "Re-engagement recommended. Previous interest not followed up.",
-    bestTimeToBid: "After outreach",
-    bidUrgency: "later",
-    isRepeatClient: false,
-    projectsCompleted: 0,
-    totalRevenue: 0,
-    responseRate: 38,
-    avgResponseTime: "48h",
-    industry: "Manufacturing",
-    proposalStatus: "rejected",
-    competitorCount: 5,
-    winProbability: 18,
-  },
-];
+import type { Lead } from "@/types/leads-ui";
 
 type SortField = "aiScore" | "value" | "conversionScore" | "winProbability";
 type SortDirection = "asc" | "desc";
 
 interface AdvancedLeadsTableProps {
+  leads: Lead[];
   selectedLead: string | null;
   onSelectLead: (id: string | null) => void;
 }
@@ -482,6 +246,7 @@ function BidUrgencyBadge({ urgency, time }: { urgency: Lead["bidUrgency"]; time:
 }
 
 export function AdvancedLeadsTable({
+  leads,
   selectedLead,
   onSelectLead,
 }: AdvancedLeadsTableProps) {
@@ -552,15 +317,23 @@ export function AdvancedLeadsTable({
           <div>
             <h3 className="font-semibold text-foreground">AI-Scored Leads</h3>
             <p className="text-xs text-muted-foreground">
-              Click any row for detailed intelligence
+              80+ scores are high-conversion — click a row for details
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
           <span>
-            Showing <span className="font-medium text-foreground">{leads.length}</span>{" "}
-            high-value leads
+            Showing <span className="font-medium text-foreground">{leads.length}</span> leads
+            {leads.filter((l) => l.aiScore >= 80).length > 0 && (
+              <>
+                {" "}
+                ·{" "}
+                <span className="font-medium text-clinq-success">
+                  {leads.filter((l) => l.aiScore >= 80).length} high-conversion (80+)
+                </span>
+              </>
+            )}
           </span>
         </div>
       </div>
@@ -622,6 +395,13 @@ export function AdvancedLeadsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-clinq-glass-border/50">
+            {sortedLeads.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="px-5 py-16 text-center text-sm text-muted-foreground">
+                  No leads yet. Use “Add lead” in the header to create your first scored opportunity.
+                </td>
+              </tr>
+            ) : null}
             {sortedLeads.map((lead) => (
               <tr
                 key={lead.id}
@@ -633,7 +413,9 @@ export function AdvancedLeadsTable({
                   selectedLead === lead.id
                     ? "bg-primary/5"
                     : "hover:bg-clinq-glass/40",
-                  lead.bidUrgency === "now" && "border-l-2 border-l-clinq-success"
+                  lead.bidUrgency === "now" && "border-l-2 border-l-clinq-success",
+                  lead.aiScore >= 80 && getScoreBg(lead.aiScore),
+                  lead.aiScore >= 80 && "ring-1 ring-inset ring-clinq-success/25"
                 )}
               >
                 {/* Lead Info */}

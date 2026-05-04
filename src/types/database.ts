@@ -1,0 +1,64 @@
+export type PipelineStage =
+  | "saved"
+  | "applied"
+  | "replied"
+  | "interview"
+  | "active"
+  | "completed";
+
+export type LeadRow = {
+  id: string;
+  user_id: string;
+  client_name: string;
+  platform: string | null;
+  project_description: string | null;
+  budget: number | null;
+  score: number;
+  stage: PipelineStage;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  repeat_hire: boolean;
+  competition_level: number;
+  project_quality: number;
+  client_history: string | null;
+  proposal_match_notes: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProjectRow = {
+  id: string;
+  user_id: string;
+  lead_id: string | null;
+  name: string;
+  description: string | null;
+  status: string;
+  earnings: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProposalRow = {
+  id: string;
+  user_id: string;
+  lead_id: string | null;
+  title: string | null;
+  body: string;
+  mode: "short" | "long";
+  tone: string;
+  model: string;
+  created_at: string;
+};
+
+export type ActivityRow = {
+  id: string;
+  user_id: string;
+  lead_id: string | null;
+  type: string;
+  description: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};

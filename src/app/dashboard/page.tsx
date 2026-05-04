@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
@@ -7,46 +9,47 @@ import { PipelinePreview } from "@/components/dashboard/pipeline-preview";
 import { ProposalWidget } from "@/components/dashboard/proposal-widget";
 import { AIInsightsSidebar } from "@/components/dashboard/ai-insights-sidebar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
+import { getDashboardAnalyticsSnapshot } from "@/lib/dashboard-stats";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const snapshot = await getDashboardAnalyticsSnapshot();
+
   return (
     <div className="gradient-mesh flex h-screen overflow-hidden">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Dashboard Content */}
         <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Top Navbar */}
           <TopNavbar />
 
-          {/* Scrollable Content */}
           <main className="flex-1 overflow-y-auto p-6">
             <div className="mx-auto max-w-6xl space-y-6">
-              {/* Analytics Cards */}
-              <AnalyticsCards />
+              <AnalyticsCards snapshot={snapshot ?? undefined} />
 
-              {/* Futuristic Analytics Charts */}
               <FuturisticAnalytics />
 
-              {/* Pipeline & Proposals Row */}
               <div className="grid gap-6 lg:grid-cols-2">
                 <PipelinePreview />
                 <ProposalWidget />
               </div>
 
-              {/* Lead Intelligence Table */}
               <LeadsTable />
             </div>
           </main>
         </div>
 
-        {/* AI Insights Sidebar */}
         <AIInsightsSidebar />
       </div>
 
-      {/* Floating AI Orb */}
       <FloatingAIOrb />
     </div>
   );
