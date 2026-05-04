@@ -52,7 +52,7 @@ export function Sidebar() {
     "min-w-0 max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity,margin] duration-300 ease-out group-hover/sidebar:max-w-[220px] group-hover/sidebar:opacity-100 group-hover/sidebar:mr-0 group-data-[expanded=true]/sidebar:max-w-[220px] group-data-[expanded=true]/sidebar:opacity-100";
 
   const linkBase =
-    "group/nav flex w-full items-center gap-0 rounded-lg py-2 text-[13px] font-medium leading-snug transition-colors duration-150 group-hover/sidebar:gap-3 group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:gap-3 group-data-[expanded=true]/sidebar:px-2.5";
+    "group/nav flex w-full items-center gap-0 rounded-lg py-2 text-[13px] font-medium leading-snug transition-colors duration-150 active:scale-[0.98] group-hover/sidebar:gap-3 group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:gap-3 group-data-[expanded=true]/sidebar:px-2.5";
 
   const renderLink = (item: (typeof DASHBOARD_MAIN_NAV)[number]) => {
     const isActive =

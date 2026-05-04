@@ -42,7 +42,7 @@ export default async function DashboardPage() {
           <TopNavbar title="Overview" subtitle={subtitle} />
 
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="mx-auto max-w-6xl space-y-6">
+            <div className="mx-auto max-w-6xl space-y-7">
               {isFirstRun ? (
                 <DashboardOnboarding show={isFirstRun} displayName={displayName} />
               ) : null}
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
                 <ProposalWidget proposals={recentProposals} />
               </div>
 
-              <DashboardLeadsSnapshot leads={recentLeads} />
+              <DashboardLeadsSnapshot leads={recentLeads.slice(0, 12)} />
             </div>
           </main>
         </div>

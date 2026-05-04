@@ -1,8 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, KanbanSquare, FileText, Pin, PinOff, Users, PanelRight, ChevronDown, Lightbulb } from "lucide-react";
+import {
+  Sparkles,
+  ArrowRight,
+  KanbanSquare,
+  FileText,
+  Pin,
+  PinOff,
+  Users,
+  PanelRight,
+  ChevronDown,
+  Lightbulb,
+  X,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -11,6 +23,7 @@ import type { DashboardRecommendation } from "@/lib/dashboard-recommendations";
 import type { DashboardRecentLead } from "@/lib/dashboard-stats";
 
 const PIN_KEY = "clinq-insights-pinned";
+const DISMISS_REC_PREFIX = "clinq-dismiss-rec:";
 
 function InsightsPanelBody({
   recentLeads,
@@ -23,6 +36,31 @@ function InsightsPanelBody({
   recommendations: DashboardRecommendation[];
   className?: string;
 }) {
+  const [dismissed, setDismissed] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const next = recommendations.filter((r) => localStorage.getItem(DISMISS_REC_PREFIX + r.id)).map((r) => r.id);
+      setDismissed(next);
+    } catch {
+      setDismissed([]);
+    }
+  }, [recommendations]);
+
+  const visibleRecommendations = useMemo(
+    () => recommendations.filter((r) => !dismissed.includes(r.id)),
+    [recommendations, dismissed],
+  );
+
+  const dismissRec = useCallback((id: string) => {
+    try {
+      localStorage.setItem(DISMISS_REC_PREFIX + id, "1");
+    } catch {
+      /* ignore */
+    }
+    setDismissed((d) => (d.includes(id) ? d : [...d, id]));
+  }, []);
+
   const top = [...recentLeads].sort((a, b) => b.score - a.score).slice(0, 3);
   const isEmpty = recentLeads.length === 0 && proposalCount === 0;
 
@@ -84,19 +122,37 @@ function InsightsPanelBody({
                 <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/rec:rotate-180" />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <ul className="mt-2 space-y-2">
-                  {recommendations.map((r) => (
-                    <li key={r.id}>
-                      <Link
-                        href={r.href}
-                        className="block rounded-lg border border-clinq-glass-border/40 bg-background/20 px-2.5 py-2 transition-colors hover:border-clinq-glass-border hover:bg-clinq-glass/25"
-                      >
-                        <p className="text-xs font-medium text-foreground">{r.title}</p>
-                        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{r.detail}</p>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                {visibleRecommendations.length === 0 ? (
+                  <p className="mt-2 text-[11px] text-muted-foreground">All caught up for now — dismissals reset if you clear site data.</p>
+                ) : (
+                  <ul className="mt-2 space-y-2">
+                    {visibleRecommendations.map((r) => (
+                      <li key={r.id} className="relative rounded-lg border border-clinq-glass-border/40 bg-background/20 pr-8">
+                        <Link href={r.href} className="block px-2.5 py-2 transition-colors hover:bg-clinq-glass/25">
+                          <p className="text-xs font-medium text-foreground">{r.title}</p>
+                          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{r.detail}</p>
+                          {r.why ? (
+                            <p className="mt-1.5 border-l border-primary/25 pl-2 text-[10px] leading-snug text-muted-foreground/90">
+                              {r.why}
+                            </p>
+                          ) : null}
+                        </Link>
+                        <button
+                          type="button"
+                          title="Dismiss"
+                          aria-label={`Dismiss ${r.title}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            dismissRec(r.id);
+                          }}
+                          className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-clinq-glass/40 hover:text-foreground"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </CollapsibleContent>
             </Collapsible>
           ) : null}

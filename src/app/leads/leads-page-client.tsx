@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { countLeadsBySourceFilter, getLeadImportedAtIso, leadMatchesSourceFilter, type LeadSourceFilter } from "@/lib/leads/source-filters";
+
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { useLeadCapture } from "@/components/leads/lead-quick-capture-root";
@@ -24,17 +26,43 @@ export default function LeadsPageClient({
   const { openCapture } = useLeadCapture();
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
   const [listSearch, setListSearch] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<LeadSourceFilter>("all");
 
-  const uiLeads = useMemo(() => initialRows.map((r) => mapLeadRowToUiLead(r)), [initialRows]);
+  const sourceCounts = useMemo(() => countLeadsBySourceFilter(initialRows), [initialRows]);
 
-  const filteredUiLeads = useMemo(() => {
+  const importSummaryLine = useMemo(() => {
+    let latest: Date | null = null;
+    for (const r of initialRows) {
+      const t = getLeadImportedAtIso(r);
+      if (!t) continue;
+      const d = new Date(t);
+      if (!Number.isNaN(d.getTime()) && (!latest || d > latest)) latest = d;
+    }
+    if (!latest && sourceCounts.imported === 0) return null;
+    const n = sourceCounts.imported;
+    if (n === 0) return null;
+    return `${n} imported lead${n === 1 ? "" : "s"} · latest ${latest ? latest.toLocaleDateString() : "—"}`;
+  }, [initialRows, sourceCounts.imported]);
+
+  const sourceFilteredRows = useMemo(
+    () => initialRows.filter((r) => leadMatchesSourceFilter(r, sourceFilter)),
+    [initialRows, sourceFilter],
+  );
+
+  const filteredRows = useMemo(() => {
     const q = listSearch.trim().toLowerCase();
-    if (!q) return uiLeads;
-    return uiLeads.filter((l) => {
-      const hay = [l.name, l.company, l.projectTitle, l.email, l.aiInsight, l.industry].join(" ").toLowerCase();
+    if (!q) return sourceFilteredRows;
+    return sourceFilteredRows.filter((r) => {
+      const meta = r.metadata && typeof r.metadata === "object" ? (r.metadata as Record<string, unknown>) : {};
+      const title = typeof meta.project_title === "string" ? meta.project_title : "";
+      const hay = [r.client_name, r.company ?? "", title, r.project_description ?? "", r.platform ?? ""]
+        .join(" ")
+        .toLowerCase();
       return hay.includes(q);
     });
-  }, [uiLeads, listSearch]);
+  }, [sourceFilteredRows, listSearch]);
+
+  const filteredUiLeads = useMemo(() => filteredRows.map((r) => mapLeadRowToUiLead(r)), [filteredRows]);
 
   const detail = useMemo(() => {
     if (!selectedLead) return null;
@@ -69,6 +97,10 @@ export default function LeadsPageClient({
             avgScore={avgScore}
             listSearch={listSearch}
             onListSearchChange={setListSearch}
+            sourceFilter={sourceFilter}
+            onSourceFilterChange={setSourceFilter}
+            sourceCounts={sourceCounts}
+            importSummaryLine={importSummaryLine}
           />
 
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">

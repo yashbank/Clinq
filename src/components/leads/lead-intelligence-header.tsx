@@ -5,6 +5,8 @@ import { useState } from "react";
 
 import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { LeadSourceFilter } from "@/lib/leads/source-filters";
 
 function formatUsd(n: number) {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
@@ -22,6 +24,10 @@ export function LeadIntelligenceHeader({
   avgScore = 0,
   listSearch = "",
   onListSearchChange,
+  sourceFilter = "all",
+  onSourceFilterChange,
+  sourceCounts,
+  importSummaryLine,
 }: {
   onAddLead?: () => void;
   leadCount?: number;
@@ -31,6 +37,10 @@ export function LeadIntelligenceHeader({
   avgScore?: number;
   listSearch?: string;
   onListSearchChange?: (value: string) => void;
+  sourceFilter?: LeadSourceFilter;
+  onSourceFilterChange?: (value: LeadSourceFilter) => void;
+  sourceCounts?: { all: number; imported: number; manual: number; freelancer: number };
+  importSummaryLine?: string | null;
 }) {
   const [localSearch, setLocalSearch] = useState("");
   const searchQuery = onListSearchChange ? listSearch : localSearch;
@@ -74,16 +84,48 @@ export function LeadIntelligenceHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto border-t border-clinq-glass-border/50 px-3 py-2.5 sm:px-6">
-        <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-          All · {leadCount}
-        </span>
-        <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-          80+ score · {highScoreCount}
-        </span>
-        <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-          Repeat · {repeatCount}
-        </span>
+      <div className="flex flex-col gap-2 border-t border-clinq-glass-border/50 px-3 py-2.5 sm:px-6">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {onSourceFilterChange && sourceCounts ? (
+            <>
+              {(
+                [
+                  ["all", "All", sourceCounts.all],
+                  ["imported", "Imported", sourceCounts.imported],
+                  ["manual", "Manual", sourceCounts.manual],
+                  ["freelancer", "Freelancer", sourceCounts.freelancer],
+                ] as const
+              ).map(([key, label, n]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onSourceFilterChange(key)}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                    sourceFilter === key
+                      ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted/55 hover:text-foreground",
+                  )}
+                >
+                  {label} · {n}
+                </button>
+              ))}
+            </>
+          ) : (
+            <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+              All · {leadCount}
+            </span>
+          )}
+          <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+            80+ · {highScoreCount}
+          </span>
+          <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+            Repeat · {repeatCount}
+          </span>
+        </div>
+        {importSummaryLine ? (
+          <p className="text-[11px] leading-snug text-muted-foreground">{importSummaryLine}</p>
+        ) : null}
       </div>
 
       {leadCount > 0 ? (

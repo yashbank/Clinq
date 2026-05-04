@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import {
   MoreHorizontal,
@@ -493,6 +494,11 @@ export function AdvancedLeadsTable({
                             Freelancer
                           </span>
                         ) : null}
+                        {lead.isImported && lead.sourceChannel !== "freelancer" ? (
+                          <span className="rounded border border-clinq-glass-border bg-muted/30 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Imported
+                          </span>
+                        ) : null}
                         <TierBadge tier={lead.leadTier} />
                         <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
                           {lead.confidenceScore}% conf
@@ -505,6 +511,12 @@ export function AdvancedLeadsTable({
                       </div>
                       {lead.projectTitle ? (
                         <p className="mt-0.5 max-w-[240px] truncate text-xs text-muted-foreground">{lead.projectTitle}</p>
+                      ) : null}
+                      {lead.isImported && lead.importedAt ? (
+                        <p className="mt-0.5 text-[10px] text-muted-foreground/80">
+                          Imported{" "}
+                          {formatDistanceToNow(new Date(lead.importedAt), { addSuffix: true })}
+                        </p>
                       ) : null}
                       {lead.projectUrl ? (
                         <a

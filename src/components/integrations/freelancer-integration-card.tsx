@@ -251,26 +251,45 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
                 Import history
               </div>
               <ul className="max-h-48 divide-y divide-clinq-glass-border/40 overflow-y-auto text-xs">
-                {jobs.map((j) => (
-                  <li key={j.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                    <div className="min-w-0">
-                      <span className="font-medium text-foreground">{j.status}</span>
-                      <span className="ml-2 text-muted-foreground">{new Date(j.scheduled_at).toLocaleString()}</span>
-                      {j.error ? <p className="mt-0.5 truncate text-destructive">{j.error}</p> : null}
-                    </div>
-                    {j.status === "failed" ? (
-                      <button
-                        type="button"
-                        disabled={busy || pending}
-                        onClick={() => retryJob(j.id)}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-clinq-glass-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted/30 disabled:opacity-50"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        Retry
-                      </button>
-                    ) : null}
-                  </li>
-                ))}
+                {jobs.map((j) => {
+                  const res = j.result && typeof j.result === "object" ? (j.result as Record<string, unknown>) : null;
+                  const dup = res && typeof res.duplicates === "number" ? res.duplicates : null;
+                  const imp = res && typeof res.imported === "number" ? res.imported : null;
+                  const fail = res && typeof res.failed === "number" ? res.failed : null;
+                  return (
+                    <li key={j.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-foreground">{j.status}</span>
+                          <span className="text-muted-foreground">{new Date(j.scheduled_at).toLocaleString()}</span>
+                        </div>
+                        {imp != null || dup != null || fail != null ? (
+                          <p className="mt-1 text-[10px] text-muted-foreground">
+                            {imp != null ? <span className="mr-2">New: {imp}</span> : null}
+                            {dup != null ? <span className="mr-2">Dup: {dup}</span> : null}
+                            {fail != null ? <span>Fail: {fail}</span> : null}
+                          </p>
+                        ) : null}
+                        {j.error ? (
+                          <p className="mt-1 line-clamp-3 text-[11px] leading-snug text-destructive" title={j.error}>
+                            {j.error}
+                          </p>
+                        ) : null}
+                      </div>
+                      {j.status === "failed" ? (
+                        <button
+                          type="button"
+                          disabled={busy || pending}
+                          onClick={() => retryJob(j.id)}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-clinq-glass-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted/30 disabled:opacity-50"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Retry
+                        </button>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ) : null}

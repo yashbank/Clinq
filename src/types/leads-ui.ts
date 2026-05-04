@@ -35,4 +35,8 @@ export interface Lead {
   winProbability: number;
   /** Canonical lead source from metadata (e.g. freelancer) for compact badges. */
   sourceChannel?: string | null;
+  /** ISO timestamp when lead was imported via API, if applicable. */
+  importedAt?: string | null;
+  /** True when `import_external_id` exists on lead metadata. */
+  isImported?: boolean;
 }

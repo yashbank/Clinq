@@ -123,6 +123,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     { count: proposalCount },
     { data: recentProposalRows },
     { data: projects },
+    { data: proposalLeadRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -134,7 +135,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
       .from("leads")
       .select("id, client_name, company, budget, score, stage, repeat_hire, metadata, updated_at")
       .order("updated_at", { ascending: false })
-      .limit(12),
+      .limit(40),
     supabase.from("proposals").select("id", { count: "exact", head: true }),
     supabase
       .from("proposals")
@@ -142,6 +143,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
       .order("created_at", { ascending: false })
       .limit(6),
     supabase.from("projects").select("earnings, status"),
+    supabase.from("proposals").select("lead_id").not("lead_id", "is", null),
   ]);
 
   const agg = leadsAgg ?? [];
@@ -167,10 +169,14 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   }));
 
   const intel = parseStoredProfileIntelligence(profile?.profile_intelligence);
+  const proposalLeadIds = new Set(
+    (proposalLeadRows ?? []).map((r) => r.lead_id).filter((id): id is string => typeof id === "string" && id.length > 0),
+  );
   const recommendations = buildDashboardRecommendations({
     recentLeads,
     recentProposals,
     profileQualityScore: intel?.profileQualityScore ?? null,
+    proposalLeadIds,
   });
 
   return {

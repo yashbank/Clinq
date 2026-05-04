@@ -2,6 +2,7 @@ import { formatDistanceToNow } from "date-fns";
 
 import { intelligenceFromMetadata, type LeadTier } from "@/lib/ai/lead-intelligence";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
+import { getLeadImportedAtIso, isFreelancerLeadRow, isImportedLeadRow } from "@/lib/leads/source-filters";
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
 
@@ -52,6 +53,9 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
   const sourceRaw = meta.source;
   const sourceChannel =
     typeof sourceRaw === "string" && sourceRaw.length > 0 && sourceRaw !== "manual" ? sourceRaw : null;
+  const importedAt = getLeadImportedAtIso(row);
+  const isImported = isImportedLeadRow(row);
+  const isFreelancer = isFreelancerLeadRow(row);
   const int = intelligenceFromMetadata(meta);
   const projectTitle = typeof meta.project_title === "string" ? meta.project_title : "";
   const projectUrl = typeof meta.project_url === "string" ? meta.project_url : "";
@@ -117,6 +121,8 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
     proposalStatus: extras?.proposalStatus ?? "none",
     competitorCount: Math.max(0, row.competition_level * 2 - 1),
     winProbability: Math.min(98, Math.round(score * 0.85 + (row.repeat_hire ? 8 : 0))),
-    sourceChannel,
+    sourceChannel: isFreelancer ? "freelancer" : sourceChannel,
+    importedAt,
+    isImported,
   };
 }
