@@ -4,7 +4,43 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  input,
+  textarea,
+  select {
+    color: var(--foreground);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--muted-foreground);
+    opacity: 1;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground) !important;
+    caret-color: var(--foreground);
+    box-shadow: 0 0 0px 1000px var(--control-bg) inset !important;
+    transition: background-color 999999s ease-out;
+  }
+}
+
 @layer components {
+  .clinq-input {
+    @apply outline-none transition-[box-shadow,border-color,background-color] duration-200;
+  }
+
+  .clinq-input:focus-visible {
+    border-color: var(--ring);
+    outline: none;
+    box-shadow: 0 0 0 2px oklch(0.7 0.15 200 / 0.28);
+  }
+
   /** Opaque auth card so inputs never sit on variable mesh / video luminance. */
   .auth-card {
     @apply relative mx-auto w-full max-w-md rounded-2xl border border-white/[0.06] p-8 shadow-[0_8px_40px_-8px_rgba(0,0,0,0.45)];

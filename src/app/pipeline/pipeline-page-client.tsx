@@ -32,6 +32,10 @@ export default function PipelinePageClient({ initialRows }: { initialRows: LeadR
   const [pending, startTransition] = useTransition();
 
   const kanbanLeads = useMemo(() => initialRows.map(toKanban), [initialRows]);
+  const totalBudget = useMemo(
+    () => initialRows.reduce((sum, r) => sum + (Number(r.budget) || 0), 0),
+    [initialRows],
+  );
   const selectedSummary = useMemo(
     () => kanbanLeads.find((l) => l.id === selectedClient) ?? null,
     [kanbanLeads, selectedClient],
@@ -57,6 +61,8 @@ export default function PipelinePageClient({ initialRows }: { initialRows: LeadR
             onToggleTimeline={() => setShowTimeline(!showTimeline)}
             showAIPanel={showAIPanel}
             showTimeline={showTimeline}
+            leadCount={initialRows.length}
+            totalBudget={totalBudget}
           />
 
           <div className="flex flex-1 overflow-hidden">

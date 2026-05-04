@@ -53,39 +53,32 @@ function buildStats(snapshot: DashboardAnalyticsSnapshot) {
   ];
 }
 
-export function AnalyticsCards({
-  snapshot,
-  variant = "grid",
-}: {
-  snapshot: DashboardAnalyticsSnapshot;
-  variant?: "grid" | "compact";
-}) {
-  const stats = buildStats(snapshot);
+export function AnalyticsCards({ snapshot }: { snapshot: DashboardAnalyticsSnapshot }) {
   const isEmpty = snapshot.activeLeads === 0 && snapshot.proposalsSent === 0;
 
-  if (variant === "compact" && isEmpty) {
+  if (isEmpty) {
     return (
-      <div className="rounded-2xl border border-clinq-glass-border/60 bg-background/40 px-5 py-4 sm:px-6">
-        <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Metrics</span> stay at zero until you add leads and log proposals. Numbers below update from your database only.
+      <div className="rounded-xl border border-clinq-glass-border/50 bg-background/35 px-5 py-4 sm:px-6">
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          <span className="font-medium text-foreground">Metrics</span> appear when you add leads and log proposals.
+          Nothing below is simulated.
         </p>
       </div>
     );
   }
+
+  const stats = buildStats(snapshot);
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className={cn(
-            "glass-card group relative overflow-hidden rounded-xl border border-clinq-glass-border/60 p-5",
-            isEmpty && "opacity-95",
-          )}
+          className="glass-card group relative overflow-hidden rounded-xl border border-clinq-glass-border/60 p-5"
         >
           <div
             className={cn(
-              "pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br opacity-[0.06] blur-2xl transition-opacity group-hover:opacity-[0.12]",
+              "pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br opacity-[0.05] blur-2xl transition-opacity group-hover:opacity-[0.09]",
               stat.accentColor,
             )}
           />

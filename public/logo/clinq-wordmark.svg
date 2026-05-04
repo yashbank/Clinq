@@ -1,16 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 36" fill="none" role="img" aria-label="Clinq">
+  <g transform="translate(2 4)">
+    <rect x="0" y="0" width="28" height="28" rx="7" fill="#080c14" stroke="#1e293b" stroke-opacity="0.65" stroke-width="1"/>
+    <path d="M18.5 8.8c-3.4-1.9-8-.3-8 4.5s4.6 6.4 8 4.5" stroke="#e8ecf4" stroke-width="1.45" stroke-linecap="round" fill="none"/>
+    <circle cx="19" cy="8.8" r="1.2" fill="#67e8f9" opacity="0.95"/>
+    <circle cx="19" cy="8.8" r="2.4" stroke="#22d3ee" stroke-opacity="0.35" stroke-width="0.65" fill="none"/>
+  </g>
+  <text x="38" y="24" fill="#e8ecf4" font-family="ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="650" letter-spacing="-0.045em">Clinq</text>
+  <rect x="38" y="27" width="52" height="1.5" rx="0.75" fill="url(#w)"/>
   <defs>
-    <linearGradient id="w" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0c1428"/>
-      <stop offset="1" stop-color="#111827"/>
-    </linearGradient>
-    <linearGradient id="g" x1="6" y1="30" x2="30" y2="6" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#22d3ee"/>
-      <stop offset="1" stop-color="#06b6d4"/>
+    <linearGradient id="w" x1="38" y1="27" x2="90" y2="27" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22d3ee" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#22d3ee" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <rect x="0" y="2" width="32" height="32" rx="8" fill="url(#w)" stroke="url(#g)" stroke-opacity="0.5" stroke-width="0.75"/>
-  <path d="M20 11.5c-4.3-2.5-10-.3-10 4.6s5.6 7.1 10 4.6" stroke="url(#g)" stroke-width="1.6" stroke-linecap="round" fill="none" transform="translate(4 4)"/>
-  <circle cx="24.5" cy="11.5" r="1.4" fill="#a5f3fc" transform="translate(4 4)"/>
-  <text x="42" y="24" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="650" letter-spacing="-0.03em">Clinq</text>
 </svg>

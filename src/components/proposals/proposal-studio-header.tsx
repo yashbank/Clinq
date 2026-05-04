@@ -1,6 +1,7 @@
 "use client";
 
 import { FileText, Sparkles, History, BookOpen, Send, Save } from "lucide-react";
+import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 import { Button } from "@/components/ui/button";
 import { CLINQ_PROPOSAL_COPY_FOR_SEND, CLINQ_PROPOSAL_SAVE_DRAFT } from "@/lib/proposal/studio-events";
 
@@ -15,8 +16,9 @@ export function ProposalStudioHeader({
 }: ProposalStudioHeaderProps) {
   return (
     <header className="shrink-0 border-b border-clinq-glass-border bg-background/90">
-      <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-6">
-        <div className="flex items-center gap-4">
+      <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+          <MobileAppNav />
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
             <FileText className="h-4 w-4 text-primary" />
           </div>
@@ -25,9 +27,9 @@ export function ProposalStudioHeader({
               <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
                 AI Proposal Studio
               </h1>
-              <span className="flex items-center gap-1 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary">
+              <span className="hidden items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-medium text-primary sm:flex">
                 <Sparkles className="h-3 w-3" />
-                AI-Powered
+                AI
               </span>
             </div>
             <p className="hidden text-xs text-muted-foreground sm:block sm:text-sm">
@@ -62,11 +64,8 @@ export function ProposalStudioHeader({
 
           <div className="hidden h-5 w-px bg-clinq-glass-border sm:block" />
 
-          <div className="hidden items-center gap-1.5 rounded-md border border-clinq-glass-border bg-background/50 px-2 py-1 sm:flex">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-clinq-success opacity-40" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-clinq-success" />
-            </span>
+          <div className="hidden items-center gap-1.5 rounded-md border border-clinq-glass-border/60 bg-background/40 px-2 py-1 sm:flex">
+            <span className="h-2 w-2 rounded-full bg-clinq-success" />
             <span className="text-[11px] text-muted-foreground">Ready</span>
           </div>
 
@@ -86,7 +85,7 @@ export function ProposalStudioHeader({
           <Button
             type="button"
             size="sm"
-            className="gap-1.5 bg-gradient-to-r from-primary to-cyan-600 px-3 text-xs font-medium text-primary-foreground shadow-sm sm:text-sm"
+            className="gap-1.5 bg-primary px-3 text-xs font-medium text-primary-foreground shadow-none hover:bg-primary/90 sm:text-sm"
             onClick={() => window.dispatchEvent(new Event(CLINQ_PROPOSAL_COPY_FOR_SEND))}
           >
             <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

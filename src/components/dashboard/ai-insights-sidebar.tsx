@@ -15,52 +15,41 @@ export function AIInsightsSidebar({
   const isEmpty = recentLeads.length === 0 && proposalCount === 0;
 
   return (
-    <aside className="flex h-full w-[min(100%,20rem)] shrink-0 flex-col border-l border-clinq-glass-border/60 bg-sidebar/40">
-      <div className="flex items-center gap-3 border-b border-clinq-glass-border px-5 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/80 to-accent/70">
-          <Sparkles className="h-4 w-4 text-white" />
+    <aside className="hidden h-full w-[min(100%,18rem)] shrink-0 flex-col border-l border-clinq-glass-border/50 bg-sidebar/30 xl:flex">
+      <div className="flex items-center gap-3 border-b border-clinq-glass-border/60 px-4 py-3.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
+          <Sparkles className="h-4 w-4 text-primary" />
         </div>
-        <div>
-          <h3 className="font-semibold text-foreground">At a glance</h3>
-          <p className="text-xs text-muted-foreground">Only your saved data</p>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-foreground">At a glance</h3>
+          <p className="text-[11px] text-muted-foreground">Your data only</p>
         </div>
       </div>
 
       {isEmpty ? (
-        <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="flex flex-1 flex-col gap-4 p-4">
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Start in three calm steps. Nothing here is simulated—sections stay quiet until you add real records.
+            Add a lead to see top scores here. No sample rows.
           </p>
-          <ol className="space-y-3 text-sm">
-            <li className="rounded-lg border border-clinq-glass-border/60 bg-background/30 px-3 py-2.5">
-              <span className="font-medium text-foreground">1.</span> Save a lead
-            </li>
-            <li className="rounded-lg border border-clinq-glass-border/60 bg-background/30 px-3 py-2.5">
-              <span className="font-medium text-foreground">2.</span> Draft a proposal in the studio
-            </li>
-            <li className="rounded-lg border border-clinq-glass-border/60 bg-background/30 px-3 py-2.5">
-              <span className="font-medium text-foreground">3.</span> Move the card on Pipeline
-            </li>
-          </ol>
           <Link
             href="/leads"
             className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-95"
           >
-            Add your first lead
+            Add a lead
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       ) : (
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
           {top.length > 0 ? (
             <div>
               <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Highest score</p>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {top.map((l) => (
                   <li key={l.id}>
                     <Link
                       href="/leads"
-                      className="block rounded-lg border border-transparent px-2 py-2 transition-colors hover:border-clinq-glass-border hover:bg-clinq-glass/30"
+                      className="block rounded-lg border border-transparent px-2 py-2 transition-colors hover:border-clinq-glass-border hover:bg-clinq-glass/25"
                     >
                       <p className="text-sm font-medium text-foreground">{l.client_name}</p>
                       <p className="text-xs text-muted-foreground">Score {l.score}</p>
@@ -71,16 +60,19 @@ export function AIInsightsSidebar({
             </div>
           ) : null}
 
-          <div className="mt-auto space-y-2 border-t border-clinq-glass-border pt-4">
+          <div className="mt-auto space-y-1 border-t border-clinq-glass-border/60 pt-3">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Shortcuts</p>
             <Link
               href="/proposals"
-              className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground hover:bg-clinq-glass/40"
+              className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground hover:bg-clinq-glass/30"
             >
               <FileText className="h-4 w-4 text-primary" />
               Proposal studio
             </Link>
-            <Link href="/pipeline" className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground hover:bg-clinq-glass/40">
+            <Link
+              href="/pipeline"
+              className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground hover:bg-clinq-glass/30"
+            >
               <KanbanSquare className="h-4 w-4 text-primary" />
               Pipeline
             </Link>

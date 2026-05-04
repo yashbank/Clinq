@@ -1,21 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Clinq">
-  <defs>
-    <linearGradient id="m" x1="6" y1="8" x2="42" y2="40" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0c1428"/>
-      <stop offset="1" stop-color="#111827"/>
-    </linearGradient>
-    <linearGradient id="a" x1="10" y1="38" x2="38" y2="10" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#22d3ee"/>
-      <stop offset="1" stop-color="#06b6d4"/>
-    </linearGradient>
-  </defs>
-  <rect width="48" height="48" rx="12" fill="url(#m)" stroke="url(#a)" stroke-opacity="0.55" stroke-width="1"/>
-  <path
-    d="M30 17.5c-6.5-3.8-15-.5-15 7s8.5 10.8 15 7"
-    stroke="url(#a)"
-    stroke-width="2.4"
-    stroke-linecap="round"
-    fill="none"
-  />
-  <circle cx="31" cy="17" r="2.2" fill="#a5f3fc"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Clinq">
+  <rect x="1" y="1" width="30" height="30" rx="8" fill="#080c14" stroke="#1e293b" stroke-opacity="0.65" stroke-width="1"/>
+  <path d="M21.2 10.2c-3.9-2.2-9.1-.3-9.1 5.1 0 5.4 5.2 7.3 9.1 5.1" stroke="#e8ecf4" stroke-width="1.65" stroke-linecap="round" fill="none"/>
+  <circle cx="21.5" cy="10.2" r="1.35" fill="#67e8f9" opacity="0.95"/>
+  <circle cx="21.5" cy="10.2" r="2.8" stroke="#22d3ee" stroke-opacity="0.35" stroke-width="0.75" fill="none"/>
 </svg>

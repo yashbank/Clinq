@@ -44,7 +44,7 @@ export default async function DashboardPage() {
                 <DashboardOnboarding show={isFirstRun} displayName={displayName} />
               ) : null}
 
-              <AnalyticsCards snapshot={snapshot} variant={isFirstRun ? "compact" : "grid"} />
+              <AnalyticsCards snapshot={snapshot} />
 
               <div className="grid gap-6 lg:grid-cols-2">
                 <PipelinePreview

@@ -1,262 +1,102 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Search,
-  Filter,
-  ChevronDown,
-  Sparkles,
-  Target,
-  TrendingUp,
-  Shield,
-  Clock,
-  X,
-} from "lucide-react";
+import { Search, Target } from "lucide-react";
+import { useState } from "react";
+
+import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
-function buildQuickFilters(leadCount: number, highScore: number, repeat: number) {
-  return [
-    { label: "All Leads", value: "all", count: leadCount },
-    { label: "Score 80+", value: "high-score", count: highScore, icon: Target },
-    { label: "Hot Leads", value: "hot", count: Math.max(0, Math.floor(leadCount * 0.12)) },
-    { label: "Repeat Clients", value: "repeat", count: repeat },
-    { label: "Bid Now", value: "bid-now", count: Math.min(leadCount, 8), icon: Clock },
-    { label: "Low Risk", value: "low-risk", count: Math.max(0, leadCount - 2), icon: Shield },
-  ];
+function formatUsd(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+  if (n > 0) return `$${Math.round(n).toLocaleString()}`;
+  return "$0";
 }
-
-const advancedFilters = [
-  {
-    label: "Score Range",
-    options: ["All", "90+", "80-89", "70-79", "60-69", "Below 60"],
-  },
-  {
-    label: "Risk Level",
-    options: ["All", "Low Risk", "Medium Risk", "High Risk"],
-  },
-  {
-    label: "Best Time",
-    options: ["All", "Today", "Tomorrow", "This Week", "Next Week"],
-  },
-  {
-    label: "Value Range",
-    options: ["All", "$50k+", "$25k-50k", "$10k-25k", "Under $10k"],
-  },
-  { label: "Status", options: ["All", "Hot", "Warm", "New", "Cold"] },
-  {
-    label: "Proposal Status",
-    options: ["All", "Draft", "Sent", "Viewed", "None"],
-  },
-];
 
 export function LeadIntelligenceHeader({
   onAddLead,
   leadCount = 0,
   highScoreCount = 0,
   repeatCount = 0,
+  totalBudget = 0,
+  avgScore = 0,
+  listSearch = "",
+  onListSearchChange,
 }: {
   onAddLead?: () => void;
   leadCount?: number;
   highScoreCount?: number;
   repeatCount?: number;
+  totalBudget?: number;
+  avgScore?: number;
+  listSearch?: string;
+  onListSearchChange?: (value: string) => void;
 }) {
-  const quickFilters = useMemo(
-    () => buildQuickFilters(leadCount, highScoreCount, repeatCount),
-    [leadCount, highScoreCount, repeatCount],
-  );
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [activeAdvanced, setActiveAdvanced] = useState<
-    Record<string, string>
-  >({});
-
-  const activeAdvancedCount = Object.values(activeAdvanced).filter(
-    (v) => v && v !== "All"
-  ).length;
+  const [localSearch, setLocalSearch] = useState("");
+  const searchQuery = onListSearchChange ? listSearch : localSearch;
+  const setSearchQuery = onListSearchChange ?? setLocalSearch;
+  const avgScoreLabel = leadCount === 0 ? "—" : avgScore.toFixed(1);
 
   return (
-    <header className="shrink-0 border-b border-clinq-glass-border bg-background/85">
-      {/* Top Section */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
+    <header className="shrink-0 border-b border-clinq-glass-border bg-background/90 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <MobileAppNav />
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 sm:flex">
               <Target className="h-5 w-5 text-primary" />
             </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">
-                Lead Intelligence
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                AI-powered lead scoring and opportunity detection
-              </p>
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-semibold text-foreground sm:text-xl">Lead Intelligence</h1>
+              <p className="truncate text-xs text-muted-foreground sm:text-sm">Scores and fields from your saved leads</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
           {onAddLead ? (
-            <Button
-              type="button"
-              onClick={onAddLead}
-              className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-95"
-            >
+            <Button type="button" onClick={onAddLead} className="gap-2 bg-primary text-primary-foreground shadow-none hover:bg-primary/90">
               <Target className="h-4 w-4" />
               Add lead
             </Button>
           ) : null}
-          {/* AI Analysis Button */}
-          <Button
-            variant="ghost"
-            className="gap-2 border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
-          >
-            <Sparkles className="h-4 w-4" />
-            AI Analysis
-          </Button>
 
-          {/* Search */}
-          <div className="relative">
+          <div className="relative min-w-0 flex-1 sm:max-w-xs sm:flex-initial">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search leads, companies..."
+              placeholder="Search in this list…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-full min-w-[12rem] max-w-xs rounded-lg border border-input bg-secondary/90 pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground/80 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-64 sm:max-w-none"
+              className="clinq-input h-10 w-full min-w-0 rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground sm:w-64"
             />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-              /
-            </kbd>
           </div>
-
-          {/* Advanced Filters Toggle */}
-          <Button
-            variant="ghost"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className={cn(
-              "gap-2",
-              showAdvanced && "bg-clinq-glass text-foreground"
-            )}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-            {activeAdvancedCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                {activeAdvancedCount}
-              </span>
-            )}
-            <ChevronDown
-              className={cn(
-                "h-3 w-3 transition-transform",
-                showAdvanced && "rotate-180"
-              )}
-            />
-          </Button>
         </div>
       </div>
 
-      {/* Quick Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto px-4 pb-3 sm:px-6">
-        {quickFilters.map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => setActiveFilter(filter.value)}
-            className={cn(
-              "flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all",
-              activeFilter === filter.value
-                ? "bg-primary/20 text-primary shadow-sm shadow-primary/10"
-                : "text-muted-foreground hover:bg-clinq-glass hover:text-foreground"
-            )}
-          >
-            {filter.icon && <filter.icon className="h-3.5 w-3.5" />}
-            {filter.label}
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0.5 text-xs",
-                activeFilter === filter.value
-                  ? "bg-primary/30"
-                  : "bg-muted/50"
-              )}
-            >
-              {filter.count}
-            </span>
-          </button>
-        ))}
+      <div className="flex items-center gap-2 overflow-x-auto border-t border-clinq-glass-border/50 px-3 py-2.5 sm:px-6">
+        <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+          All · {leadCount}
+        </span>
+        <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+          80+ score · {highScoreCount}
+        </span>
+        <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+          Repeat · {repeatCount}
+        </span>
       </div>
 
-      {/* Advanced Filters Panel */}
-      {showAdvanced && (
-        <div className="border-t border-clinq-glass-border bg-background/50 px-4 py-4 sm:px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              {advancedFilters.map((filter) => (
-                <div key={filter.label} className="relative">
-                  <select
-                    value={activeAdvanced[filter.label] || "All"}
-                    onChange={(e) =>
-                      setActiveAdvanced({
-                        ...activeAdvanced,
-                        [filter.label]: e.target.value,
-                      })
-                    }
-                    className={cn(
-                      "h-9 appearance-none rounded-lg border border-clinq-glass-border bg-clinq-glass px-3 pr-8 text-sm transition-colors focus:border-primary/50 focus:outline-none",
-                      activeAdvanced[filter.label] &&
-                        activeAdvanced[filter.label] !== "All"
-                        ? "border-primary/40 text-foreground"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {filter.options.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {filter.label}: {opt}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                </div>
-              ))}
-            </div>
-
-            {activeAdvancedCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setActiveAdvanced({})}
-                className="gap-1 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3 w-3" />
-                Clear all
-              </Button>
-            )}
-          </div>
+      {leadCount > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-clinq-glass-border/50 bg-sidebar/25 px-4 py-2 text-xs text-muted-foreground sm:px-6 sm:text-sm">
+          <span>
+            Pipeline budgets (sum): <span className="font-medium text-foreground">{formatUsd(totalBudget)}</span>
+          </span>
+          <span className="hidden h-3 w-px bg-clinq-glass-border sm:inline" />
+          <span>
+            Avg score: <span className="font-medium text-foreground">{avgScoreLabel}</span>
+          </span>
         </div>
-      )}
-
-      {/* Stats Bar */}
-      <div className="flex items-center justify-between border-t border-clinq-glass-border/50 bg-sidebar/30 px-6 py-2">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Total Value:</span>
-            <span className="font-semibold text-foreground">$2.4M</span>
-          </div>
-          <div className="h-4 w-px bg-clinq-glass-border" />
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Avg Score:</span>
-            <span className="font-semibold text-clinq-success">78.5</span>
-          </div>
-          <div className="h-4 w-px bg-clinq-glass-border" />
-          <div className="flex items-center gap-2 text-sm">
-            <TrendingUp className="h-3.5 w-3.5 text-clinq-success" />
-            <span className="text-clinq-success">+12% this week</span>
-          </div>
-        </div>
-        <div className="text-sm text-muted-foreground">
-          Last AI analysis: <span className="text-foreground">2 min ago</span>
-        </div>
-      </div>
+      ) : null}
     </header>
   );
 }

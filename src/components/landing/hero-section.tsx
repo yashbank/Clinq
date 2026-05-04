@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[26rem] overflow-hidden px-4 pb-20 pt-16 sm:px-6 md:min-h-[28rem] md:pb-24 md:pt-24">
+    <section className="relative min-h-[24rem] overflow-hidden px-4 pb-16 pt-14 sm:px-6 md:min-h-[26rem] md:pb-20 md:pt-20">
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <VideoWithFallback
           videoSrc="/background/bg-video.mp4"
@@ -18,7 +18,7 @@ export function HeroSection() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl text-center">
-        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-clinq-glass-border bg-background/60 px-3 py-1 text-xs text-muted-foreground">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-background/55 px-3 py-1 text-xs text-muted-foreground">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           AI operating system for elite freelancers
         </div>
@@ -32,19 +32,15 @@ export function HeroSection() {
           Clinq scores leads, drafts proposals, tracks your pipeline, and nudges follow-ups—
           without spam or shady automation.
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:mt-10">
-          <Button
-            size="lg"
-            className="h-12 gap-2 bg-gradient-to-r from-primary to-accent px-8 text-primary-foreground"
-            asChild
-          >
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3 sm:mt-10">
+          <Button size="lg" className="h-12 gap-2 bg-primary px-8 text-primary-foreground shadow-none hover:bg-primary/90" asChild>
             <Link href="/dashboard">
               Enter command center
               <ArrowRight className="h-4 w-4" />
             </Link>
           </Button>
-          <Button size="lg" variant="outline" className="h-12 border-clinq-glass-border bg-background/70" asChild>
-            <a href="#features">See capabilities</a>
+          <Button size="lg" variant="outline" className="h-12 border-white/[0.08] bg-background/50 text-foreground hover:bg-background/70" asChild>
+            <a href="#features">Capabilities</a>
           </Button>
         </div>
       </div>
