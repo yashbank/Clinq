@@ -73,7 +73,7 @@ export function TopNavbar({
           type="button"
           variant="ghost"
           size="icon"
-          className="relative h-8 w-8 rounded-lg text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
+          className="relative h-10 w-10 rounded-lg text-muted-foreground hover:bg-white/[0.05] hover:text-foreground sm:h-8 sm:w-8"
           onClick={() =>
             toast.message("No notification feed yet", {
               description: "Follow-ups and pipeline changes stay in their pages for now.",

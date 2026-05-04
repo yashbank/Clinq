@@ -7,12 +7,10 @@ import {
   Settings,
   Zap,
   FileText,
-  MessageSquare,
   Crown,
   Code,
   Heart,
   Target,
-  ChevronDown,
   Check,
   Info,
 } from "lucide-react";

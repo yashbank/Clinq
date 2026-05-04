@@ -12,9 +12,7 @@ import {
   Eye,
   Copy,
   MoreHorizontal,
-  Filter,
   TrendingUp,
-  ChevronDown,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

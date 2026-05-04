@@ -6,10 +6,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   TrendingUp,
-  Heart,
   Shield,
   Zap,
-  ChevronRight,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";

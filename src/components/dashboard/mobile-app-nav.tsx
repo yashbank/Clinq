@@ -30,7 +30,7 @@ export function MobileAppNav() {
           type="button"
           variant="ghost"
           size="icon"
-          className="h-9 w-9 shrink-0 rounded-lg text-muted-foreground hover:bg-white/[0.05] hover:text-foreground md:hidden"
+          className="h-10 w-10 shrink-0 rounded-lg text-muted-foreground hover:bg-white/[0.05] hover:text-foreground md:hidden"
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />

@@ -23,7 +23,7 @@ export function FloatingAIOrb() {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-clinq-glass-border bg-gradient-to-br from-primary to-primary/85 text-primary-foreground shadow-lg transition-transform duration-200 md:bottom-6 md:right-6",
+          "fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-clinq-glass-border bg-gradient-to-br from-primary to-primary/88 text-primary-foreground shadow-md transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background md:bottom-6 md:right-6",
           isOpen ? "pointer-events-none scale-90 opacity-0" : "scale-100 opacity-100 hover:scale-[1.02]",
         )}
         aria-expanded={isOpen}
@@ -40,7 +40,7 @@ export function FloatingAIOrb() {
             : "pointer-events-none translate-y-2 scale-[0.98] opacity-0",
         )}
       >
-        <div className="glass-card overflow-hidden rounded-2xl border border-clinq-glass-border shadow-xl">
+        <div className="glass-card overflow-hidden rounded-2xl border border-clinq-glass-border shadow-lg">
           <div className="relative flex items-center justify-between border-b border-clinq-glass-border px-4 py-3.5">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/15">
@@ -57,7 +57,7 @@ export function FloatingAIOrb() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-clinq-glass hover:text-foreground"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-clinq-glass hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               aria-label="Close"
             >
               <X className="h-4 w-4" />
@@ -81,7 +81,7 @@ export function FloatingAIOrb() {
                     key={s.href}
                     href={s.href}
                     onClick={() => setIsOpen(false)}
-                    className="flex flex-col rounded-lg border border-clinq-glass-border/70 bg-background/40 px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-primary/25 hover:bg-primary/5"
+                    className="flex flex-col rounded-lg border border-clinq-glass-border/70 bg-background/40 px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-primary/25 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     <span className="font-medium">{s.label}</span>
                     <span className="text-[11px] text-muted-foreground">{s.hint}</span>
@@ -125,7 +125,7 @@ export function FloatingAIOrb() {
                   });
                 }}
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   input.trim()
                     ? "border-primary/40 bg-primary text-primary-foreground"
                     : "border-clinq-glass-border bg-secondary text-muted-foreground",

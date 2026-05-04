@@ -5,14 +5,12 @@ import {
   X,
   Search,
   BookOpen,
-  Folder,
   Plus,
   Copy,
   Check,
   Star,
   Sparkles,
   TrendingUp,
-  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
