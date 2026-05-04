@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, KanbanSquare, FileText, Pin, PinOff, Users } from "lucide-react";
+import { Sparkles, ArrowRight, KanbanSquare, FileText, Pin, PinOff, Users, PanelRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -191,7 +191,7 @@ export function AIInsightsSidebar({
             className="fixed bottom-[5.5rem] right-4 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-clinq-glass-border/60 bg-sidebar/90 text-primary shadow-md backdrop-blur-sm transition-transform hover:scale-[1.02] active:scale-[0.98] md:hidden"
             aria-label="Open insights"
           >
-            <Sparkles className="h-5 w-5" />
+            <PanelRight className="h-5 w-5" />
           </button>
         </SheetTrigger>
         <SheetContent side="right" className="w-[min(100%,20rem)] border-clinq-glass-border p-0 sm:max-w-sm">
