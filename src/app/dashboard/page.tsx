@@ -3,13 +3,13 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
-import { LeadsTable } from "@/components/dashboard/leads-table";
-import { FuturisticAnalytics } from "@/components/dashboard/futuristic-analytics";
+import { DashboardLeadsSnapshot } from "@/components/dashboard/leads-table";
 import { PipelinePreview } from "@/components/dashboard/pipeline-preview";
 import { ProposalWidget } from "@/components/dashboard/proposal-widget";
 import { AIInsightsSidebar } from "@/components/dashboard/ai-insights-sidebar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
-import { getDashboardAnalyticsSnapshot } from "@/lib/dashboard-stats";
+import { DashboardOnboarding } from "@/components/dashboard/dashboard-onboarding";
+import { getDashboardPageData } from "@/lib/dashboard-stats";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage() {
@@ -21,33 +21,46 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const snapshot = await getDashboardAnalyticsSnapshot();
+  const data = await getDashboardPageData();
+  if (!data) {
+    redirect("/login");
+  }
+
+  const { snapshot, recentLeads, recentProposals, stages, displayName } = data;
+  const isFirstRun = snapshot.activeLeads === 0 && snapshot.proposalsSent === 0;
+  const subtitle = displayName ? `Signed in · ${displayName}` : undefined;
 
   return (
-    <div className="gradient-mesh flex h-screen overflow-hidden">
+    <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
       <Sidebar />
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <TopNavbar />
+      <div className="flex min-w-0 flex-1 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <TopNavbar title="Overview" subtitle={subtitle} />
 
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
-              <AnalyticsCards snapshot={snapshot ?? undefined} />
+              {isFirstRun ? (
+                <DashboardOnboarding show={isFirstRun} displayName={displayName} />
+              ) : null}
 
-              <FuturisticAnalytics />
+              <AnalyticsCards snapshot={snapshot} variant={isFirstRun ? "compact" : "grid"} />
 
               <div className="grid gap-6 lg:grid-cols-2">
-                <PipelinePreview />
-                <ProposalWidget />
+                <PipelinePreview
+                  stages={stages}
+                  totalLeads={snapshot.activeLeads}
+                  totalPipelineValue={snapshot.pipelineValue}
+                />
+                <ProposalWidget proposals={recentProposals} />
               </div>
 
-              <LeadsTable />
+              <DashboardLeadsSnapshot leads={recentLeads} />
             </div>
           </main>
         </div>
 
-        <AIInsightsSidebar />
+        <AIInsightsSidebar recentLeads={recentLeads} proposalCount={snapshot.proposalsSent} />
       </div>
 
       <FloatingAIOrb />
