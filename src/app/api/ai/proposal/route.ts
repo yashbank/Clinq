@@ -1,3 +1,4 @@
+import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -5,13 +6,27 @@ import { buildProposalSystemPrompt, type ProposalTone } from "@/lib/ai/proposal-
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOpenAIClient } from "@/services/ai/openai.server";
 
+const MAX_TEXT = 48_000;
+
 const bodySchema = z.object({
-  jobDescription: z.string().min(10),
+  jobDescription: z.string().min(10).max(MAX_TEXT),
   mode: z.enum(["short", "long"]),
   tone: z.enum(["professional", "friendly", "confident", "consultative"]),
   leadId: z.string().uuid().optional(),
   title: z.string().max(200).optional(),
 });
+
+function statusFromAiError(e: unknown): number {
+  if (e instanceof OpenAI.APIError) {
+    if (e.status === 429) return 429;
+    if (e.status && e.status >= 500) return 503;
+    if (e.status === 401 || e.status === 403) return 502;
+  }
+  if (e instanceof Error && /OPENAI_API_KEY|OpenAI environment/i.test(e.message)) {
+    return 503;
+  }
+  return 500;
+}
 
 export async function POST(req: Request) {
   try {
@@ -44,18 +59,31 @@ export async function POST(req: Request) {
       }
     }
 
-    const openai = getOpenAIClient();
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.65,
-      messages: [
-        { role: "system", content: buildProposalSystemPrompt(mode, tone as ProposalTone) },
-        {
-          role: "user",
-          content: `Write the proposal for this opportunity.\n${leadContext}\nJob / RFP text:\n${jobDescription}`,
-        },
-      ],
-    });
+    let openai: ReturnType<typeof getOpenAIClient>;
+    try {
+      openai = getOpenAIClient();
+    } catch {
+      return NextResponse.json({ error: "AI is not configured" }, { status: 503 });
+    }
+
+    let completion: OpenAI.Chat.Completions.ChatCompletion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        temperature: 0.65,
+        messages: [
+          { role: "system", content: buildProposalSystemPrompt(mode, tone as ProposalTone) },
+          {
+            role: "user",
+            content: `Write the proposal for this opportunity.\n${leadContext}\nJob / RFP text:\n${jobDescription}`,
+          },
+        ],
+      });
+    } catch (e) {
+      const status = statusFromAiError(e);
+      const message = e instanceof Error ? e.message : "AI request failed";
+      return NextResponse.json({ error: "Proposal generation failed", detail: message }, { status });
+    }
 
     const text = completion.choices[0]?.message?.content?.trim() ?? "";
     if (!text) {
@@ -80,7 +108,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ text, warning: saveErr.message, saved: false });
     }
 
-    await supabase.from("analytics").insert({
+    void supabase.from("analytics").insert({
       user_id: user.id,
       metric: "proposal_generated",
       value: 1,
@@ -90,6 +118,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ text, proposalId: saved?.id, saved: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Unexpected error", detail: message }, { status: 500 });
   }
 }

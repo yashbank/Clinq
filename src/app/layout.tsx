@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { GlobalSiteBackground } from "@/components/layout/global-site-background";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
     "Lead intelligence, AI scoring, proposals, pipeline, and analytics—built for serious freelancers.",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
@@ -36,7 +38,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`}>
-      <body className="min-h-screen font-sans antialiased">
+      <body className="relative min-h-screen font-sans antialiased">
+        <GlobalSiteBackground />
         {children}
         <Toaster richColors position="top-center" />
         {process.env.NODE_ENV === "production" ? <Analytics /> : null}

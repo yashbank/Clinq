@@ -88,9 +88,18 @@ export async function updateLeadStageAction(
     return { ok: false, error: "Unauthorized" };
   }
 
-  const { error } = await supabase.from("leads").update({ stage }).eq("id", leadId).eq("user_id", user.id);
+  const { data: updated, error } = await supabase
+    .from("leads")
+    .update({ stage })
+    .eq("id", leadId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
   if (error) {
     return { ok: false, error: error.message };
+  }
+  if (!updated) {
+    return { ok: false, error: "Lead not found or access denied" };
   }
 
   await supabase.from("activities").insert({
@@ -135,9 +144,18 @@ export async function recalculateLeadScoreAction(leadId: string): Promise<{ ok: 
     proposalMatchNotes: lead.proposal_match_notes,
   });
 
-  const { error } = await supabase.from("leads").update({ score }).eq("id", leadId).eq("user_id", user.id);
+  const { data: updatedScore, error } = await supabase
+    .from("leads")
+    .update({ score })
+    .eq("id", leadId)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
   if (error) {
     return { ok: false, error: error.message };
+  }
+  if (!updatedScore) {
+    return { ok: false, error: "Lead not found or access denied" };
   }
 
   revalidatePath("/leads");

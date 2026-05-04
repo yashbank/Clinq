@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { ClinqLogo } from "@/components/brand/clinq-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ export default function SignupPage() {
     <div className="relative flex min-h-screen items-center justify-center bg-background gradient-mesh px-4">
       <div className="glass-card w-full max-w-md rounded-2xl border border-clinq-glass-border p-8 backdrop-blur-xl">
         <div className="mb-8 text-center">
+          <ClinqLogo width={56} height={56} priority className="mx-auto mb-4 h-14 w-14" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Create your Clinq account</h1>
           <p className="mt-2 text-sm text-muted-foreground">AI operating system for serious freelancers</p>
         </div>
@@ -39,21 +41,28 @@ export default function SignupPage() {
                 return;
               }
               const supabase = createSupabaseBrowserClient();
-              const origin = typeof window !== "undefined" ? window.location.origin : "";
-              const { error: signErr } = await supabase.auth.signUp({
+              const site =
+                (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "").trim() ||
+                (typeof window !== "undefined" ? window.location.origin : "");
+              const { data, error: signErr } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                   data: { full_name: displayName || email.split("@")[0] },
-                  emailRedirectTo: `${origin}/auth/callback`,
+                  emailRedirectTo: `${site}/auth/callback`,
                 },
               });
               if (signErr) {
                 setError(signErr.message);
                 return;
               }
-              router.push("/dashboard");
-              router.refresh();
+              if (data.session) {
+                router.push("/dashboard");
+                router.refresh();
+              } else {
+                setError(null);
+                router.push("/login?confirmed=1");
+              }
             });
           }}
         >

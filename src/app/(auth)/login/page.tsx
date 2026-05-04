@@ -7,6 +7,8 @@ import { Suspense, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { ClinqLogo } from "@/components/brand/clinq-logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -19,6 +21,7 @@ function LoginForm() {
     <div className="relative flex min-h-screen items-center justify-center bg-background gradient-mesh px-4">
       <div className="glass-card w-full max-w-md rounded-2xl border border-clinq-glass-border p-8 backdrop-blur-xl">
         <div className="mb-8 text-center">
+          <ClinqLogo width={56} height={56} priority className="mx-auto mb-4 h-14 w-14" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
           <p className="mt-2 text-sm text-muted-foreground">Sign in to your Clinq workspace</p>
         </div>
@@ -26,6 +29,11 @@ function LoginForm() {
         {searchParams.get("error") ? (
           <p className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Authentication failed. Try again.
+          </p>
+        ) : null}
+        {searchParams.get("confirmed") ? (
+          <p className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
+            Check your email to confirm your account, then sign in.
           </p>
         ) : null}
 
@@ -38,7 +46,7 @@ function LoginForm() {
               .trim()
               .toLowerCase();
             const password = String(fd.get("password") ?? "");
-            const next = String(fd.get("next") ?? "/dashboard").trim() || "/dashboard";
+            const next = safeNextPath(String(fd.get("next") ?? "/dashboard"));
             setError(null);
             startTransition(async () => {
               const supabase = createSupabaseBrowserClient();
@@ -47,12 +55,12 @@ function LoginForm() {
                 setError(signErr.message);
                 return;
               }
-              router.push(next.startsWith("/") ? next : "/dashboard");
+              router.push(next);
               router.refresh();
             });
           }}
         >
-          <input type="hidden" name="next" value={searchParams.get("next") ?? "/dashboard"} />
+          <input type="hidden" name="next" value={safeNextPath(searchParams.get("next"))} />
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input

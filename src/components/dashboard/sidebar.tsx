@@ -16,10 +16,10 @@ import {
   Target,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   LogOut,
 } from "lucide-react";
 
+import { ClinqLogo } from "@/components/brand/clinq-logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const navItems = [
@@ -61,10 +61,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-clinq-glass-border px-4">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 items-center justify-center">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary to-accent opacity-80" />
-            <Sparkles className="relative z-10 h-5 w-5 text-primary-foreground" />
-          </div>
+          <ClinqLogo width={40} height={40} className="h-10 w-10 shrink-0 rounded-xl" />
           {!collapsed && (
             <span className="text-xl font-semibold tracking-tight text-foreground">
               Clinq
