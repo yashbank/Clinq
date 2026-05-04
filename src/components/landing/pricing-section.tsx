@@ -23,7 +23,7 @@ export function PricingSection() {
     <section id="pricing" className="px-6 py-24">
       <div className="mx-auto max-w-4xl text-center">
         <h2 className="text-3xl font-semibold tracking-tight text-foreground">Simple pricing</h2>
-        <p className="mt-3 text-muted-foreground">Placeholder tiers—wire to billing when you launch.</p>
+        <p className="mt-3 text-muted-foreground">Indicative pricing for early access; billing is finalized at signup.</p>
       </div>
       <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
         {tiers.map((t) => (

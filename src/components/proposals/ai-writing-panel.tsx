@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -11,18 +11,17 @@ import {
   ChevronDown,
   Zap,
   MessageSquare,
-  ArrowRight,
   Plus,
   Loader2,
   Bold,
   Italic,
   List,
   Link2,
-  Type,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useProposalStudio } from "@/context/proposal-studio";
+import { CLINQ_PROPOSAL_COPY_FOR_SEND, CLINQ_PROPOSAL_SAVE_DRAFT } from "@/lib/proposal/studio-events";
 
 type WritingSection = "greeting" | "hook" | "experience" | "approach" | "closing";
 
@@ -79,14 +78,74 @@ const followUpTemplates = [
   { label: "Last Chance", timing: "7 days after" },
 ];
 
+const DRAFT_KEY = "clinq_proposal_draft_v1";
+
 export function AIWritingPanel() {
-  const { mapModeToApi, tone, rfpText } = useProposalStudio();
+  const { mapModeToApi, tone, rfpText, setRfpText } = useProposalStudio();
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [activeSection, setActiveSection] = useState<WritingSection>("greeting");
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showFollowUps, setShowFollowUps] = useState(false);
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
+  const sectionsRef = useRef(sections);
+  sectionsRef.current = sections;
+  const rfpRef = useRef(rfpText);
+  rfpRef.current = rfpText;
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { sections?: Section[]; rfp?: string };
+      if (parsed.sections?.length === initialSections.length) {
+        setSections(
+          parsed.sections.map((s) => ({
+            ...s,
+            isGenerating: false,
+          })),
+        );
+      }
+      if (typeof parsed.rfp === "string" && parsed.rfp.trim()) {
+        setRfpText(parsed.rfp);
+      }
+    } catch {
+      /* ignore corrupt draft */
+    }
+  }, [setRfpText]);
+
+  useEffect(() => {
+    const onSaveDraft = () => {
+      try {
+        const payload = {
+          sections: sectionsRef.current.map((s) => ({ ...s, isGenerating: false })),
+          rfp: rfpRef.current,
+          savedAt: Date.now(),
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+        toast.success("Draft saved on this device");
+      } catch {
+        toast.error("Could not save draft (browser storage may be blocked).");
+      }
+    };
+
+    const onCopyForSend = () => {
+      const full = sectionsRef.current.map((s) => s.content).join("\n\n").trim();
+      if (!full) {
+        toast.error("Write or generate your proposal first, then copy to send.");
+        return;
+      }
+      void navigator.clipboard.writeText(full);
+      toast.success("Copied — paste into the job platform to submit.");
+    };
+
+    window.addEventListener(CLINQ_PROPOSAL_SAVE_DRAFT, onSaveDraft);
+    window.addEventListener(CLINQ_PROPOSAL_COPY_FOR_SEND, onCopyForSend);
+    return () => {
+      window.removeEventListener(CLINQ_PROPOSAL_SAVE_DRAFT, onSaveDraft);
+      window.removeEventListener(CLINQ_PROPOSAL_COPY_FOR_SEND, onCopyForSend);
+    };
+  }, []);
 
   const handleGenerateSection = async (sectionId: WritingSection) => {
     const section = sections.find((s) => s.id === sectionId);
@@ -201,17 +260,37 @@ export function AIWritingPanel() {
       <div className="flex items-center justify-between border-b border-clinq-glass-border bg-sidebar/50 px-5 py-3">
         <div className="flex items-center gap-2">
           {/* Formatting Tools */}
-          <div className="flex items-center gap-1 rounded-lg bg-clinq-glass p-1">
-            <button className="rounded p-1.5 text-muted-foreground hover:bg-clinq-glass hover:text-foreground">
+          <div className="flex items-center gap-1 rounded-lg bg-clinq-glass p-1" title="Rich formatting is not applied in-app yet — paste from Docs if you need styles.">
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded p-1.5 text-muted-foreground opacity-40"
+              aria-disabled
+            >
               <Bold className="h-4 w-4" />
             </button>
-            <button className="rounded p-1.5 text-muted-foreground hover:bg-clinq-glass hover:text-foreground">
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded p-1.5 text-muted-foreground opacity-40"
+              aria-disabled
+            >
               <Italic className="h-4 w-4" />
             </button>
-            <button className="rounded p-1.5 text-muted-foreground hover:bg-clinq-glass hover:text-foreground">
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded p-1.5 text-muted-foreground opacity-40"
+              aria-disabled
+            >
               <List className="h-4 w-4" />
             </button>
-            <button className="rounded p-1.5 text-muted-foreground hover:bg-clinq-glass hover:text-foreground">
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded p-1.5 text-muted-foreground opacity-40"
+              aria-disabled
+            >
               <Link2 className="h-4 w-4" />
             </button>
           </div>

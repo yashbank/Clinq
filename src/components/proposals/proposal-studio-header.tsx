@@ -1,7 +1,8 @@
 "use client";
 
-import { FileText, Sparkles, History, BookOpen, Send, Save, Zap } from "lucide-react";
+import { FileText, Sparkles, History, BookOpen, Send, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CLINQ_PROPOSAL_COPY_FOR_SEND, CLINQ_PROPOSAL_SAVE_DRAFT } from "@/lib/proposal/studio-events";
 
 interface ProposalStudioHeaderProps {
   onOpenSnippets: () => void;
@@ -38,6 +39,7 @@ export function ProposalStudioHeader({
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {/* Quick Actions */}
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={onOpenSnippets}
@@ -48,6 +50,7 @@ export function ProposalStudioHeader({
           </Button>
 
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={onOpenHistory}
@@ -69,32 +72,39 @@ export function ProposalStudioHeader({
 
           <div className="hidden h-5 w-px bg-clinq-glass-border md:block" />
 
-          <Button variant="ghost" size="sm" className="hidden gap-1.5 px-2 text-muted-foreground hover:text-foreground md:flex">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="hidden gap-1.5 px-2 text-muted-foreground hover:text-foreground md:flex"
+            onClick={() => window.dispatchEvent(new Event(CLINQ_PROPOSAL_SAVE_DRAFT))}
+          >
             <Save className="h-4 w-4" />
-            Save
+            Save draft
           </Button>
 
-          <Button size="sm" className="gap-1.5 bg-gradient-to-r from-primary to-cyan-600 px-3 text-xs font-medium text-primary-foreground shadow-sm sm:text-sm">
+          <Button
+            type="button"
+            size="sm"
+            className="gap-1.5 bg-gradient-to-r from-primary to-cyan-600 px-3 text-xs font-medium text-primary-foreground shadow-sm sm:text-sm"
+            onClick={() => window.dispatchEvent(new Event(CLINQ_PROPOSAL_COPY_FOR_SEND))}
+          >
             <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Send</span>
+            <span className="hidden sm:inline">Copy to send</span>
+            <span className="sm:hidden">Send</span>
           </Button>
         </div>
       </div>
 
-      {/* Breadcrumb & Stats */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-clinq-glass-border/40 bg-background/50 px-4 py-2 text-xs sm:px-6 sm:text-sm">
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">New Proposal</span>
+          <span className="text-muted-foreground">Studio</span>
           <span className="text-muted-foreground">/</span>
-          <span className="text-foreground">Untitled</span>
+          <span className="text-foreground">Current session</span>
         </div>
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <Zap className="h-3.5 w-3.5 text-clinq-warning" />
-            <span className="text-muted-foreground">AI Credits:</span>
-            <span className="font-medium text-foreground">247 remaining</span>
-          </div>
-        </div>
+        <p className="max-w-md text-right text-[11px] leading-snug text-muted-foreground sm:text-xs">
+          Paste the RFP on the left, generate in the center, then copy into the marketplace. Save draft stores this device only.
+        </p>
       </div>
     </header>
   );

@@ -1,8 +1,11 @@
 "use client";
 
-import { Bell, Search, Command, Sparkles, Calendar } from "lucide-react";
+import { Bell, Search, Command, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export function TopNavbar({
   title = "Command Center",
@@ -11,6 +14,8 @@ export function TopNavbar({
   title?: string;
   subtitle?: string;
 }) {
+  const router = useRouter();
+  const [search, setSearch] = useState("");
   const dateLabel = useMemo(
     () =>
       new Intl.DateTimeFormat("en-US", {
@@ -38,7 +43,18 @@ export function TopNavbar({
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
           <input
             type="text"
-            placeholder="Search leads, proposals, analytics..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                router.push("/leads");
+                if (search.trim()) {
+                  toast.message("Opened Leads", { description: "Use the search field on that page to filter your table." });
+                }
+              }
+            }}
+            placeholder="Search on Leads page — Enter to open Leads"
             className="h-9 w-full rounded-lg border border-clinq-glass-border bg-clinq-glass pl-10 pr-20 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20"
           />
           <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded border border-clinq-glass-border bg-secondary/50 px-1.5 py-0.5">
@@ -51,26 +67,20 @@ export function TopNavbar({
       {/* Right Section */}
       <div className="flex items-center gap-2">
         {/* Quick Actions */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hidden h-8 gap-2 rounded-lg text-xs text-muted-foreground hover:bg-clinq-glass hover:text-foreground md:flex"
-        >
-          <Calendar className="h-3.5 w-3.5" />
-          3 meetings today
-        </Button>
-
         {/* Notifications */}
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           className="relative h-8 w-8 rounded-lg text-muted-foreground hover:bg-clinq-glass hover:text-foreground"
+          onClick={() =>
+            toast.message("No notification feed yet", {
+              description: "Follow-ups and pipeline changes stay in their pages for now.",
+            })
+          }
+          aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-          </span>
         </Button>
 
         {/* AI Status */}
@@ -79,9 +89,11 @@ export function TopNavbar({
           <span className="text-xs font-medium text-primary">AI Active</span>
         </div>
 
-        {/* Upgrade Button */}
-        <Button className="h-8 rounded-md bg-gradient-to-r from-primary to-cyan-600 px-3 text-xs font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-95">
-          Upgrade
+        <Button
+          asChild
+          className="h-8 rounded-md bg-gradient-to-r from-primary to-cyan-600 px-3 text-xs font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-95"
+        >
+          <Link href="/settings">Account</Link>
         </Button>
       </div>
     </header>
