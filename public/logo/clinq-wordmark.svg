@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 36" fill="none" role="img" aria-label="Clinq">
+  <defs>
+    <linearGradient id="w" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0c1428"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="g" x1="6" y1="30" x2="30" y2="6" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="2" width="32" height="32" rx="8" fill="url(#w)" stroke="url(#g)" stroke-opacity="0.5" stroke-width="0.75"/>
+  <path d="M20 11.5c-4.3-2.5-10-.3-10 4.6s5.6 7.1 10 4.6" stroke="url(#g)" stroke-width="1.6" stroke-linecap="round" fill="none" transform="translate(4 4)"/>
+  <circle cx="24.5" cy="11.5" r="1.4" fill="#a5f3fc" transform="translate(4 4)"/>
+  <text x="42" y="24" fill="#e2e8f0" font-family="ui-sans-serif, system-ui, sans-serif" font-size="17" font-weight="650" letter-spacing="-0.03em">Clinq</text>
+</svg>

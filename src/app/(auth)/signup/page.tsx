@@ -16,10 +16,10 @@ export default function SignupPage() {
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background gradient-mesh px-4">
-      <div className="glass-card w-full max-w-md rounded-2xl border border-clinq-glass-border p-8 backdrop-blur-xl">
-        <div className="mb-8 text-center">
-          <ClinqLogo width={56} height={56} priority className="mx-auto mb-4 h-14 w-14" />
+    <div className="relative z-10 flex min-h-screen items-center justify-center bg-background gradient-mesh px-4 py-12">
+      <div className="auth-card">
+        <div className="relative mb-8 text-center">
+          <ClinqLogo width={52} height={52} priority className="mx-auto mb-4 h-[52px] w-[52px]" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Create your Clinq account</h1>
           <p className="mt-2 text-sm text-muted-foreground">AI operating system for serious freelancers</p>
         </div>
@@ -67,46 +67,29 @@ export default function SignupPage() {
           }}
         >
           <div className="space-y-2">
-            <Label htmlFor="display_name">Display name</Label>
-            <Input
-              id="display_name"
-              name="display_name"
-              type="text"
-              autoComplete="name"
-              className="bg-background/50"
-              placeholder="Alex Morgan"
-            />
+            <Label htmlFor="display_name" className="text-foreground/90">
+              Display name
+            </Label>
+            <Input id="display_name" name="display_name" type="text" autoComplete="name" placeholder="Alex Morgan" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              className="bg-background/50"
-              placeholder="you@company.com"
-            />
+            <Label htmlFor="email" className="text-foreground/90">
+              Email
+            </Label>
+            <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@company.com" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              className="bg-background/50"
-            />
+            <Label htmlFor="password" className="text-foreground/90">
+              Password
+            </Label>
+            <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} />
             <p className="text-xs text-muted-foreground">At least 8 characters.</p>
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button
             type="submit"
             disabled={pending}
-            className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground"
+            className="w-full bg-gradient-to-r from-primary to-cyan-500 font-medium text-primary-foreground shadow-md shadow-cyan-500/10 transition-[transform,opacity] duration-200 hover:opacity-[0.97] active:scale-[0.99]"
           >
             {pending ? "Creating…" : "Sign up"}
           </Button>

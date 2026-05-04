@@ -60,12 +60,11 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-clinq-glass-border px-4">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <ClinqLogo width={40} height={40} className="h-10 w-10 shrink-0 rounded-xl" />
-          {!collapsed && (
-            <span className="text-xl font-semibold tracking-tight text-foreground">
-              Clinq
-            </span>
+        <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+          {collapsed ? (
+            <ClinqLogo width={36} height={36} className="h-9 w-9 shrink-0" priority />
+          ) : (
+            <ClinqLogo variant="wordmark" className="h-8 min-w-0 shrink" priority />
           )}
         </Link>
       </div>

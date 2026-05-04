@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" role="img" aria-label="Clinq">
+  <defs>
+    <linearGradient id="m" x1="6" y1="8" x2="42" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0c1428"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="a" x1="10" y1="38" x2="38" y2="10" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="url(#m)" stroke="url(#a)" stroke-opacity="0.55" stroke-width="1"/>
+  <path
+    d="M30 17.5c-6.5-3.8-15-.5-15 7s8.5 10.8 15 7"
+    stroke="url(#a)"
+    stroke-width="2.4"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <circle cx="31" cy="17" r="2.2" fill="#a5f3fc"/>
+</svg>

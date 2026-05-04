@@ -108,17 +108,24 @@ body {
 }
 
 .glass-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card-hover:hover {
   background: linear-gradient(
     135deg,
-    oklch(0.18 0.015 280 / 0.7) 0%,
-    oklch(0.14 0.01 280 / 0.5) 100%
+    oklch(0.18 0.015 280 / 0.72) 0%,
+    oklch(0.14 0.01 280 / 0.52) 100%
   );
-  border-color: oklch(0.4 0.03 280 / 0.4);
-  box-shadow: 0 8px 32px oklch(0.7 0.15 200 / 0.12);
+  border-color: oklch(0.42 0.03 280 / 0.45);
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.05) inset,
+    0 12px 40px oklch(0 0 0 / 0.35);
+  transform: translateY(-1px);
 }
 
 .ai-glow {

@@ -8,9 +8,8 @@ export function LandingNavbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-clinq-glass-border/60 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2.5">
-          <ClinqLogo width={36} height={36} priority className="h-9 w-9 shrink-0" />
-          <span className="text-lg font-semibold tracking-tight">Clinq</span>
+        <Link href="/" className="flex min-w-0 items-center gap-2">
+          <ClinqLogo variant="wordmark" className="h-8 w-auto max-w-[120px] sm:max-w-[140px]" priority />
         </Link>
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
           <a href="#features" className="transition-colors hover:text-foreground">
