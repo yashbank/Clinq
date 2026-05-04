@@ -7,14 +7,14 @@
 @layer components {
   /** Opaque auth card so inputs never sit on variable mesh / video luminance. */
   .auth-card {
-    @apply relative w-full max-w-md rounded-2xl border border-white/[0.08] p-8 shadow-[0_24px_80px_-12px_rgba(0,0,0,0.55)];
+    @apply relative mx-auto w-full max-w-md rounded-2xl border border-white/[0.06] p-8 shadow-[0_8px_40px_-8px_rgba(0,0,0,0.45)];
     background: linear-gradient(
       165deg,
-      oklch(0.12 0.02 280 / 0.97) 0%,
-      oklch(0.1 0.02 265 / 0.98) 100%
+      oklch(0.11 0.02 280 / 0.98) 0%,
+      oklch(0.095 0.018 265 / 0.99) 100%
     );
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(8px) saturate(125%);
+    -webkit-backdrop-filter: blur(8px) saturate(125%);
   }
 
   .auth-card::before {

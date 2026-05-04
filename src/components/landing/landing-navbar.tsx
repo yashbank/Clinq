@@ -6,8 +6,8 @@ import { ClinqLogo } from "@/components/brand/clinq-logo";
 
 export function LandingNavbar() {
   return (
-    <header className="sticky top-0 z-50 border-b border-clinq-glass-border/60 bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+    <header className="sticky top-0 z-50 border-b border-clinq-glass-border/50 bg-background/90">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/" className="flex min-w-0 items-center gap-2">
           <ClinqLogo variant="wordmark" className="h-8 w-auto max-w-[120px] sm:max-w-[140px]" priority />
         </Link>

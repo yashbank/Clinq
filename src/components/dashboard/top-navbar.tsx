@@ -23,7 +23,7 @@ export function TopNavbar({
   );
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-clinq-glass-border bg-background/50 px-6 backdrop-blur-xl">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-clinq-glass-border bg-background/80 px-4 sm:px-6">
       {/* Left Section */}
       <div className="flex items-center gap-6">
         <div>
@@ -80,7 +80,7 @@ export function TopNavbar({
         </div>
 
         {/* Upgrade Button */}
-        <Button className="h-8 rounded-lg bg-gradient-to-r from-primary to-accent px-3 text-xs font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30">
+        <Button className="h-8 rounded-md bg-gradient-to-r from-primary to-cyan-600 px-3 text-xs font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-95">
           Upgrade
         </Button>
       </div>

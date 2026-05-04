@@ -4,7 +4,7 @@ export function DashboardPreview() {
       <div className="mx-auto max-w-5xl">
         <div className="glass-card relative overflow-hidden rounded-2xl border border-clinq-glass-border p-1 shadow-2xl shadow-primary/5">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
-          <div className="relative rounded-xl bg-sidebar/80 p-8 backdrop-blur-xl">
+          <div className="relative rounded-xl border border-clinq-glass-border/50 bg-background/75 p-6 backdrop-blur-sm sm:p-8">
             <div className="mb-6 flex gap-2">
               <div className="h-2 w-2 rounded-full bg-destructive/60" />
               <div className="h-2 w-2 rounded-full bg-clinq-warning/80" />

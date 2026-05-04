@@ -31,8 +31,8 @@ export default async function DashboardPage() {
         <div className="flex flex-1 flex-col overflow-hidden">
           <TopNavbar />
 
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="mx-auto max-w-6xl space-y-6">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
               <AnalyticsCards snapshot={snapshot ?? undefined} />
 
               <FuturisticAnalytics />

@@ -77,9 +77,9 @@ export function LeadIntelligenceHeader({
   ).length;
 
   return (
-    <header className="shrink-0 border-b border-clinq-glass-border bg-sidebar/50 backdrop-blur-xl">
+    <header className="shrink-0 border-b border-clinq-glass-border bg-background/85">
       {/* Top Section */}
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
         <div>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
@@ -124,7 +124,7 @@ export function LeadIntelligenceHeader({
               placeholder="Search leads, companies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-64 rounded-xl border border-clinq-glass-border bg-clinq-glass pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full min-w-[12rem] max-w-xs rounded-lg border border-input bg-secondary/90 pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground/80 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-64 sm:max-w-none"
             />
             <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
               /
@@ -158,7 +158,7 @@ export function LeadIntelligenceHeader({
       </div>
 
       {/* Quick Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto px-6 pb-3">
+      <div className="flex items-center gap-2 overflow-x-auto px-4 pb-3 sm:px-6">
         {quickFilters.map((filter) => (
           <button
             key={filter.value}
@@ -188,7 +188,7 @@ export function LeadIntelligenceHeader({
 
       {/* Advanced Filters Panel */}
       {showAdvanced && (
-        <div className="border-t border-clinq-glass-border bg-clinq-glass/30 px-6 py-4">
+        <div className="border-t border-clinq-glass-border bg-background/50 px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap items-center gap-3">
               {advancedFilters.map((filter) => (

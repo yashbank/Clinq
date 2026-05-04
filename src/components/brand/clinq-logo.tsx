@@ -37,7 +37,7 @@ export function ClinqLogo({
       alt="Clinq"
       width={width}
       height={height}
-      className={cn("object-contain drop-shadow-[0_0_14px_rgba(34,211,238,0.12)]", className)}
+      className={cn("object-contain", className)}
       priority={priority}
     />
   );

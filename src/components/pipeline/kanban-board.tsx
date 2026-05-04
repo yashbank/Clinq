@@ -60,7 +60,7 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-64 shrink-0 flex-col rounded-xl border border-clinq-glass-border bg-sidebar/30 backdrop-blur-xl transition-shadow",
+        "flex w-64 shrink-0 flex-col rounded-xl border border-clinq-glass-border bg-background/40 backdrop-blur-sm transition-shadow",
         isOver && "ring-2 ring-primary/35 ring-offset-2 ring-offset-background",
       )}
     >

@@ -70,7 +70,7 @@ export default function PipelinePageClient({ initialRows }: { initialRows: LeadR
             </div>
 
             {showTimeline ? (
-              <aside className="w-80 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-sidebar/30 backdrop-blur-xl">
+              <aside className="w-80 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-background/55 backdrop-blur-sm">
                 <ActivityTimeline />
               </aside>
             ) : null}
@@ -78,7 +78,7 @@ export default function PipelinePageClient({ initialRows }: { initialRows: LeadR
         </main>
 
         {showAIPanel ? (
-          <aside className="w-80 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-sidebar/50 backdrop-blur-xl">
+          <aside className="w-80 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-background/60 backdrop-blur-sm">
             <AIRecommendationsPanel />
           </aside>
         ) : null}

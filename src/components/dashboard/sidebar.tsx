@@ -59,12 +59,12 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-clinq-glass-border px-4">
-        <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
+      <div className="flex h-14 shrink-0 items-center border-b border-clinq-glass-border px-3">
+        <Link href="/dashboard" className="flex min-w-0 flex-1 items-center justify-center gap-2 py-1">
           {collapsed ? (
-            <ClinqLogo width={36} height={36} className="h-9 w-9 shrink-0" priority />
+            <ClinqLogo width={32} height={32} className="h-8 w-8 shrink-0" priority />
           ) : (
-            <ClinqLogo variant="wordmark" className="h-8 min-w-0 shrink" priority />
+            <ClinqLogo variant="wordmark" className="h-7 w-full max-w-[9.5rem] object-contain object-left" priority />
           )}
         </Link>
       </div>
@@ -72,7 +72,7 @@ export function Sidebar() {
       {/* Toggle Button */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-20 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-clinq-glass-border bg-secondary text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="absolute -right-3 top-[calc(3.5rem-0.75rem)] z-50 flex h-6 w-6 items-center justify-center rounded-full border border-clinq-glass-border bg-secondary text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         {collapsed ? (
           <ChevronRight className="h-3 w-3" />
@@ -82,7 +82,7 @@ export function Sidebar() {
       </button>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden p-2">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -92,10 +92,10 @@ export function Sidebar() {
               key={item.label}
               href={item.href}
               className={cn(
-                "group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                "group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-[13px] font-medium leading-snug transition-colors duration-150",
                 isActive
-                  ? "glass-card ai-glow-subtle text-foreground"
-                  : "text-muted-foreground hover:bg-clinq-glass hover:text-foreground"
+                  ? "border border-primary/25 bg-primary/10 text-foreground"
+                  : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
               )}
             >
               <item.icon
@@ -127,12 +127,12 @@ export function Sidebar() {
       </nav>
 
       {/* Bottom Items */}
-      <div className="border-t border-clinq-glass-border p-3">
+      <div className="shrink-0 border-t border-clinq-glass-border p-2">
         {bottomItems.map((item) => (
           <Link
             key={item.label}
             href={item.href}
-            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-clinq-glass hover:text-foreground"
+            className="group flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-[13px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-white/[0.04] hover:text-foreground"
           >
             <item.icon className="h-5 w-5 shrink-0 transition-colors group-hover:text-primary" />
             {!collapsed && <span>{item.label}</span>}
@@ -141,10 +141,10 @@ export function Sidebar() {
       </div>
 
       {/* User Profile */}
-      <div className="border-t border-clinq-glass-border p-3">
+      <div className="shrink-0 border-t border-clinq-glass-border p-2">
         <div
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2",
+            "flex items-center gap-2.5 rounded-md px-2.5 py-2",
             collapsed && "justify-center"
           )}
         >
@@ -169,7 +169,7 @@ export function Sidebar() {
               await supabase.auth.signOut();
               router.push("/login");
             }}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-clinq-glass-border px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-clinq-glass hover:text-foreground"
+            className="mt-1.5 flex w-full items-center justify-center gap-2 rounded-md border border-clinq-glass-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-foreground"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sign out

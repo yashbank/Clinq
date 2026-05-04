@@ -42,7 +42,7 @@ export function PipelineHeader({
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <header className="shrink-0 border-b border-clinq-glass-border bg-sidebar/50 backdrop-blur-xl">
+    <header className="shrink-0 border-b border-clinq-glass-border bg-background/85">
       {/* Top Section */}
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">

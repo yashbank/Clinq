@@ -7,10 +7,10 @@ export function GlobalSiteBackground() {
         videoSrc="/background/bg-global.mp4"
         poster="/background/bg-image.png"
         fallbackImageSrc="/background/bg-image.png"
-        videoClassName="opacity-[0.32] scale-[1.02]"
+        videoClassName="opacity-[0.14]"
       />
-      <div className="absolute inset-0 bg-background/80" />
-      <div className="absolute inset-0 bg-gradient-to-b from-background/55 via-background/70 to-background/92" />
+      <div className="absolute inset-0 bg-background/94" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background/98" />
     </div>
   );
 }

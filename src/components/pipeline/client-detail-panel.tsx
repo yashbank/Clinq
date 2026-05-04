@@ -15,7 +15,7 @@ interface ClientDetailPanelProps {
 
 export function ClientDetailPanel({ clientId, onClose, summary }: ClientDetailPanelProps) {
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-clinq-glass-border bg-sidebar/95 shadow-2xl backdrop-blur-xl">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-clinq-glass-border bg-background/95 shadow-xl backdrop-blur-md">
       <div className="flex items-center justify-between border-b border-clinq-glass-border px-4 py-3">
         <div>
           <p className="text-xs text-muted-foreground">Lead</p>

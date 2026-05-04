@@ -31,8 +31,8 @@ function LoginForm() {
   const urlError = useMemo(() => authErrorMessage(searchParams.get("error")), [searchParams]);
 
   return (
-    <div className="relative z-10 flex min-h-screen items-center justify-center bg-background gradient-mesh px-4 py-12">
-      <div className="auth-card">
+    <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center bg-background gradient-mesh px-4 py-10 sm:py-12">
+      <div className="auth-card w-full">
         <div className="relative mb-8 text-center">
           <ClinqLogo width={52} height={52} priority className="mx-auto mb-4 h-[52px] w-[52px]" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>

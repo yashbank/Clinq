@@ -88,7 +88,7 @@ export function JobDescriptionInput() {
   };
 
   return (
-    <div className="glass-card rounded-2xl shadow-sm shadow-black/5 ring-1 ring-white/[0.04]">
+    <div className="glass-card rounded-xl">
       <div className="flex items-center justify-between border-b border-clinq-glass-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">

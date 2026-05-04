@@ -27,18 +27,18 @@ export default function ProposalsPage() {
             onOpenSnippets={() => setShowSnippets(true)}
             onOpenHistory={() => setShowHistory(true)}
           />
-          <div className="flex flex-1 overflow-hidden">
-            <div className="flex w-[420px] shrink-0 flex-col gap-4 overflow-y-auto border-r border-clinq-glass-border p-5">
+          <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+            <div className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-clinq-glass-border p-4 sm:p-5 lg:max-w-[420px] lg:border-r">
               <JobDescriptionInput />
               <ClientPsychologyAnalysis />
               <PortfolioMatcher />
             </div>
 
-            <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <AIWritingPanel />
             </div>
 
-            <div className="flex w-[340px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-clinq-glass-border p-5">
+            <div className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-clinq-glass-border p-4 sm:p-5 lg:max-w-[340px] lg:border-l">
               <ProposalSettings />
               <PerformancePrediction />
             </div>

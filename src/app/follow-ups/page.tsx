@@ -47,11 +47,11 @@ export default function FollowUpsPage() {
     <div className="gradient-mesh flex h-screen overflow-hidden">
       <Sidebar />
       <main className="flex flex-1 flex-col overflow-hidden">
-        <header className="shrink-0 border-b border-clinq-glass-border bg-sidebar/50 px-6 py-4 backdrop-blur-xl">
+        <header className="shrink-0 border-b border-clinq-glass-border bg-background/85 px-4 py-3 sm:px-6 sm:py-4">
           <h1 className="text-xl font-semibold text-foreground">Follow-ups</h1>
           <p className="text-sm text-muted-foreground">GPT-4o mini drafts — edit before sending.</p>
         </header>
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 overflow-y-auto p-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6">
           <div className="glass-card rounded-2xl border border-clinq-glass-border p-5">
             <Label htmlFor="ctx">Context</Label>
             <Textarea

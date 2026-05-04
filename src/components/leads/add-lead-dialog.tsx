@@ -39,7 +39,7 @@ export function AddLeadDialog({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-clinq-glass-border bg-sidebar/95 backdrop-blur-xl sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-clinq-glass-border bg-background/95 backdrop-blur-md sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add lead</DialogTitle>
           <DialogDescription>

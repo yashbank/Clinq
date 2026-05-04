@@ -83,7 +83,7 @@ export function LeadProfilePanel({ detail, onClose }: LeadProfilePanelProps) {
   const insights = [ui.aiInsight, row.project_description].filter(Boolean) as string[];
 
   return (
-    <aside className="flex w-[420px] shrink-0 flex-col border-l border-clinq-glass-border bg-sidebar/80 backdrop-blur-xl">
+    <aside className="flex w-full max-w-[420px] shrink-0 flex-col border-l border-clinq-glass-border bg-background/90 backdrop-blur-md sm:w-[420px]">
       <div className="flex items-center justify-between border-b border-clinq-glass-border p-4">
         <div>
           <p className="text-xs text-muted-foreground">Lead</p>
