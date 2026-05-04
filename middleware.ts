@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { updateSession } from "@/lib/supabase/middleware";
-import { isAuthPage, isProtectedPath } from "@/lib/routes";
+import { isProtectedPath } from "@/lib/routes";
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);

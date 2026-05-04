@@ -34,6 +34,32 @@ interface AdvancedLeadsTableProps {
   leads: Lead[];
   selectedLead: string | null;
   onSelectLead: (id: string | null) => void;
+  onAddLead?: () => void;
+}
+
+function TierBadge({ tier }: { tier: Lead["leadTier"] }) {
+  const styles: Record<Lead["leadTier"], string> = {
+    "high-value": "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+    standard: "border-clinq-glass-border bg-clinq-glass/50 text-muted-foreground",
+    "low-signal": "border-amber-500/35 bg-amber-500/10 text-amber-200",
+    "time-waster": "border-destructive/40 bg-destructive/10 text-destructive",
+  };
+  const labels: Record<Lead["leadTier"], string> = {
+    "high-value": "High value",
+    standard: "Standard",
+    "low-signal": "Low signal",
+    "time-waster": "Time risk",
+  };
+  return (
+    <span
+      className={cn(
+        "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+        styles[tier],
+      )}
+    >
+      {labels[tier]}
+    </span>
+  );
 }
 
 function getScoreColor(score: number) {
@@ -249,6 +275,7 @@ export function AdvancedLeadsTable({
   leads,
   selectedLead,
   onSelectLead,
+  onAddLead,
 }: AdvancedLeadsTableProps) {
   const [sortField, setSortField] = useState<SortField>("aiScore");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -397,8 +424,28 @@ export function AdvancedLeadsTable({
           <tbody className="divide-y divide-clinq-glass-border/50">
             {sortedLeads.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-5 py-16 text-center text-sm text-muted-foreground">
-                  No leads yet. Use “Add lead” in the header to create your first scored opportunity.
+                <td colSpan={11} className="px-5 py-20 text-center">
+                  <div className="mx-auto flex max-w-sm flex-col items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-clinq-glass-border bg-clinq-glass/40">
+                      <Target className="h-7 w-7 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">No leads yet</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Capture a client opportunity — Clinq scores it and surfaces risk flags automatically.
+                      </p>
+                    </div>
+                    {onAddLead ? (
+                      <Button
+                        type="button"
+                        onClick={onAddLead}
+                        className="bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                      >
+                        Add your first lead
+                      </Button>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground">Tip: ⌘⇧L (Ctrl⇧L) quick-add from anywhere in the app.</p>
+                  </div>
                 </td>
               </tr>
             ) : null}
@@ -439,14 +486,33 @@ export function AdvancedLeadsTable({
                       )}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium text-foreground">{lead.name}</p>
+                        <TierBadge tier={lead.leadTier} />
+                        <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
+                          {lead.confidenceScore}% conf
+                        </span>
                         {lead.isRepeatClient && (
                           <span className="rounded-full bg-clinq-success/10 px-1.5 py-0.5 text-[10px] font-semibold text-clinq-success">
                             {lead.projectsCompleted}x
                           </span>
                         )}
                       </div>
+                      {lead.projectTitle ? (
+                        <p className="mt-0.5 max-w-[240px] truncate text-xs text-muted-foreground">{lead.projectTitle}</p>
+                      ) : null}
+                      {lead.projectUrl ? (
+                        <a
+                          href={lead.projectUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(ev) => ev.stopPropagation()}
+                          className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Listing
+                        </a>
+                      ) : null}
                       <p className="text-sm text-muted-foreground">{lead.company}</p>
                       <p className="text-xs text-muted-foreground/70">{lead.industry}</p>
                     </div>
@@ -456,7 +522,7 @@ export function AdvancedLeadsTable({
                 {/* Value */}
                 <td className="px-4 py-4 text-center">
                   <span className="text-lg font-bold text-foreground">
-                    ${(lead.value / 1000).toFixed(0)}k
+                    {lead.value > 0 ? `$${(lead.value / 1000).toFixed(1)}k` : "—"}
                   </span>
                   {lead.isRepeatClient && lead.totalRevenue > 0 && (
                     <p className="text-[10px] text-muted-foreground">

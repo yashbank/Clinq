@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { Sidebar } from "@/components/dashboard/sidebar";
-import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
+import { useLeadCapture } from "@/components/leads/lead-quick-capture-root";
 import { AdvancedLeadsTable } from "@/components/leads/advanced-leads-table";
 import { AIOpportunityInsights } from "@/components/leads/ai-opportunity-insights";
 import { CompetitorAnalysis } from "@/components/leads/competitor-analysis";
@@ -16,9 +15,8 @@ import { mapLeadRowToUiLead } from "@/lib/mappers/lead";
 import type { LeadRow } from "@/types/database";
 
 export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[] }) {
-  const router = useRouter();
+  const { openCapture } = useLeadCapture();
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
 
   const uiLeads = useMemo(() => initialRows.map((r) => mapLeadRowToUiLead(r)), [initialRows]);
 
@@ -39,7 +37,7 @@ export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden">
           <LeadIntelligenceHeader
-            onAddLead={() => setAddOpen(true)}
+            onAddLead={openCapture}
             leadCount={initialRows.length}
             highScoreCount={highScore}
             repeatCount={repeatCount}
@@ -56,6 +54,7 @@ export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[
                 leads={uiLeads}
                 selectedLead={selectedLead}
                 onSelectLead={setSelectedLead}
+                onAddLead={openCapture}
               />
             </div>
           </main>
@@ -65,7 +64,6 @@ export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[
       </div>
 
       <FloatingAIOrb />
-      <AddLeadDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => router.refresh()} />
     </div>
   );
 }

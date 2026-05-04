@@ -1,7 +1,14 @@
+import type { LeadTier } from "@/lib/ai/lead-intelligence";
+
 /** Lead row shape consumed by the premium leads table UI. */
 export interface Lead {
   id: string;
   name: string;
+  projectTitle: string;
+  projectUrl: string;
+  leadTier: LeadTier;
+  confidenceScore: number;
+  intelligenceFlags: string[];
   company: string;
   email: string;
   phone: string;

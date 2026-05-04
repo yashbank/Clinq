@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 
+import { intelligenceFromMetadata, type LeadTier } from "@/lib/ai/lead-intelligence";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
@@ -34,21 +35,47 @@ function scoreToUrgency(score: number, competition: number): { bidUrgency: Lead[
   return { bidUrgency: "later", bestTimeToBid: "Plan outreach" };
 }
 
+function defaultTier(score: number): LeadTier {
+  if (score >= 78) return "high-value";
+  if (score <= 30) return "time-waster";
+  if (score < 48) return "low-signal";
+  return "standard";
+}
+
 export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lead["proposalStatus"] }): Lead {
   const budget = Number(row.budget) || 0;
   const score = row.score;
   const { bidUrgency, bestTimeToBid } = scoreToUrgency(score, row.competition_level);
   const high = isHighConversionScore(score);
 
+  const meta = (row.metadata && typeof row.metadata === "object" ? row.metadata : {}) as Record<string, unknown>;
+  const int = intelligenceFromMetadata(meta);
+  const projectTitle = typeof meta.project_title === "string" ? meta.project_title : "";
+  const projectUrl = typeof meta.project_url === "string" ? meta.project_url : "";
+  const leadTier = (int.tier as LeadTier | undefined) ?? defaultTier(score);
+  const confidenceScore = typeof int.confidence === "number" ? int.confidence : 50;
+  const intelligenceFlags = Array.isArray(int.flags) ? (int.flags as string[]) : [];
+
+  const strategy =
+    typeof int.proposalStrategyHint === "string" && int.proposalStrategyHint.length > 0
+      ? int.proposalStrategyHint
+      : null;
+
   const aiInsight =
+    strategy ||
     row.proposal_match_notes?.trim() ||
     (high
       ? "High-conversion lead: strong fit vs. your pipeline. Prioritize a tailored proposal."
-      : "Review brief and competition. Tune proposal_match_notes after client research.");
+      : "Review brief and competition. Add strategy notes when you research the buyer.");
 
   return {
     id: row.id,
     name: row.client_name,
+    projectTitle,
+    projectUrl,
+    leadTier,
+    confidenceScore,
+    intelligenceFlags,
     company: row.company || row.platform || "—",
     email: row.email || "—",
     phone: row.phone || "—",

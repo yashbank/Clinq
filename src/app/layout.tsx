@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { GlobalSiteBackground } from "@/components/layout/global-site-background";
+import { LeadCaptureProvider } from "@/components/leads/lead-quick-capture-root";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -39,8 +40,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`}>
       <body className="relative min-h-screen font-sans antialiased">
-        <GlobalSiteBackground />
-        {children}
+        <LeadCaptureProvider>
+          <GlobalSiteBackground />
+          {children}
+        </LeadCaptureProvider>
         <Toaster richColors position="top-center" />
         {process.env.NODE_ENV === "production" ? <Analytics /> : null}
       </body>

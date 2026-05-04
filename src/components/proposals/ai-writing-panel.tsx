@@ -80,7 +80,7 @@ const followUpTemplates = [
 ];
 
 export function AIWritingPanel() {
-  const { mapModeToApi, tone } = useProposalStudio();
+  const { mapModeToApi, tone, rfpText } = useProposalStudio();
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [activeSection, setActiveSection] = useState<WritingSection>("greeting");
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
@@ -88,42 +88,61 @@ export function AIWritingPanel() {
   const [showFollowUps, setShowFollowUps] = useState(false);
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
-  const handleGenerateSection = (sectionId: WritingSection) => {
-    setSections((prev) =>
-      prev.map((s) =>
-        s.id === sectionId ? { ...s, isGenerating: true } : s
-      )
-    );
+  const handleGenerateSection = async (sectionId: WritingSection) => {
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) return;
 
-    // Simulate AI generation
-    setTimeout(() => {
-      const generatedContent: Record<WritingSection, string> = {
-        greeting:
-          "Hi Sarah,\n\nI came across your project for a Senior React Developer and was immediately drawn to the technical depth and vision behind what you're building at TechFlow.",
-        hook:
-          "What caught my attention wasn't just the tech stack—it's the problem you're solving. Real-time collaboration at scale is exactly where I've spent the last 4 years, and I've seen firsthand how the right architecture decisions early on can make or break the user experience.",
-        experience:
-          "Most recently, I led the frontend architecture for a real-time analytics platform that now serves 50,000+ concurrent users. We achieved sub-100ms updates using a custom WebSocket layer with React Query—something that sounds aligned with your needs.\n\nKey achievements from this project:\n• 3x improvement in perceived performance\n• 60% reduction in server costs through optimized state management\n• Zero-downtime deployments with feature flag rollouts",
-        approach:
-          "For your SaaS platform, I'd propose a phased approach:\n\nPhase 1 (Weeks 1-3): Architecture foundation\n- Set up Next.js 14 with App Router\n- Implement real-time infrastructure with WebSockets\n- Establish TypeScript patterns and testing framework\n\nPhase 2 (Weeks 4-8): Core features\n- Build the collaborative workspace components\n- Integrate PostgreSQL with optimistic updates\n- Deploy to AWS with auto-scaling\n\nPhase 3 (Weeks 9-12): Polish & Launch\n- Performance optimization\n- Security audit\n- Production deployment with monitoring",
-        closing:
-          "I'd love to discuss how we can bring this vision to life together. Would you be available for a quick 20-minute call this week? I can walk you through a similar project I built and answer any technical questions.\n\nLooking forward to hearing from you,\nAlex",
-      };
+    const rfp = rfpText.trim();
+    const draftNotes = sections.map((s) => `${s.label}: ${s.content}`).join("\n");
+    if (rfp.length < 12 && draftNotes.replace(/:\s*$/gm, "").length < 30) {
+      toast.error("Add RFP text in the job panel (left) or type context in the sections first.");
+      return;
+    }
 
+    setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, isGenerating: true } : s)));
+
+    try {
+      const other = sections
+        .filter((s) => s.id !== sectionId)
+        .map((s) => `${s.label}: ${s.content || "(empty)"}`)
+        .join("\n");
+      const jobDescription = `[Write ONLY the "${section.label}" section of a professional client proposal. Use plain paragraphs, no markdown # headings.]\n\nRFP / opportunity:\n${rfp || "See section notes below."}\n\nOther sections (reference only):\n${other}`;
+
+      const res = await fetch("/api/ai/proposal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobDescription,
+          mode: "short",
+          tone,
+        }),
+      });
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok) {
+        throw new Error(data.error ?? "Generation failed");
+      }
+      if (!data.text?.trim()) {
+        throw new Error("Empty response");
+      }
       setSections((prev) =>
-        prev.map((s) =>
-          s.id === sectionId
-            ? { ...s, content: generatedContent[sectionId], isGenerating: false }
-            : s
-        )
+        prev.map((s) => (s.id === sectionId ? { ...s, content: data.text as string, isGenerating: false } : s)),
       );
-    }, 1500);
+      toast.success(`${section.label} generated`);
+    } catch (e) {
+      setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, isGenerating: false } : s)));
+      toast.error(e instanceof Error ? e.message : "Could not generate section");
+    }
   };
 
   const handleGenerateAll = async () => {
-    const jobDescription = sections.map((s) => `${s.label}:\n${s.content}`).join("\n\n").trim();
+    const fromRfp = rfpText.trim();
+    const fromSections = sections.map((s) => `${s.label}:\n${s.content}`).join("\n\n").trim();
+    const jobDescription =
+      fromRfp.length >= 20
+        ? `Compose a complete client proposal from the following RFP. Use clear sections that map to: Opening, Hook, Relevant experience, Proposed approach, Closing CTA.\n\n--- RFP ---\n${fromRfp}\n\n--- Workspace notes ---\n${fromSections || "(none)"}`
+        : fromSections;
     if (jobDescription.length < 20) {
-      toast.error("Add RFP text across sections (or paste into Opening) before generating.");
+      toast.error("Paste the job description in the left panel, or add at least ~20 characters across sections.");
       return;
     }
 
@@ -294,20 +313,24 @@ export function AIWritingPanel() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    {section.content && (
+                    {section.content ? (
                       <Button
                         variant="ghost"
                         size="sm"
+                        type="button"
+                        onClick={() => void handleGenerateSection(section.id)}
+                        disabled={section.isGenerating}
                         className="h-7 gap-1 px-2 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
                       >
                         <RotateCcw className="h-3 w-3" />
                         Regenerate
                       </Button>
-                    )}
+                    ) : null}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleGenerateSection(section.id)}
+                      type="button"
+                      onClick={() => void handleGenerateSection(section.id)}
                       disabled={section.isGenerating}
                       className="h-7 gap-1 px-2 text-xs text-primary hover:text-primary"
                     >
