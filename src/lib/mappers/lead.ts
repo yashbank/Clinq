@@ -49,6 +49,9 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
   const high = isHighConversionScore(score);
 
   const meta = (row.metadata && typeof row.metadata === "object" ? row.metadata : {}) as Record<string, unknown>;
+  const sourceRaw = meta.source;
+  const sourceChannel =
+    typeof sourceRaw === "string" && sourceRaw.length > 0 && sourceRaw !== "manual" ? sourceRaw : null;
   const int = intelligenceFromMetadata(meta);
   const projectTitle = typeof meta.project_title === "string" ? meta.project_title : "";
   const projectUrl = typeof meta.project_url === "string" ? meta.project_url : "";
@@ -114,5 +117,6 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
     proposalStatus: extras?.proposalStatus ?? "none",
     competitorCount: Math.max(0, row.competition_level * 2 - 1),
     winProbability: Math.min(98, Math.round(score * 0.85 + (row.repeat_hire ? 8 : 0))),
+    sourceChannel,
   };
 }

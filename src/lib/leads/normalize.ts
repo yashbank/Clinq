@@ -1,4 +1,4 @@
-import type { CreateLeadInput } from "@/actions/leads";
+import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
 import { normalizePlatformLabel, type LeadSource } from "@/lib/leads/platforms";
 
 /** Normalize manual / pasted intake into server action input. */

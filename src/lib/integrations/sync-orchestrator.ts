@@ -14,6 +14,9 @@ export async function recordStubSyncForManualConnect(
   userId: string,
   provider: IntegrationProviderId,
 ): Promise<{ ok: true; jobId: string } | { ok: false; error: string }> {
+  if (provider === "freelancer") {
+    return { ok: false, error: "Freelancer uses OAuth and the real import pipeline — manual stub sync is disabled." };
+  }
   const adapter = getIntegrationProviderAdapter(provider);
   const plan = adapter.buildIngestionPlan();
 

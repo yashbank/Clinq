@@ -14,7 +14,7 @@ export const INTEGRATION_PROVIDERS: IntegrationDefinition[] = [
   {
     id: "freelancer",
     label: "Freelancer",
-    description: "Reserved integration slot. OAuth and API ingestion ship in a later milestone.",
+    description: "OAuth2 + official REST API: import active project listings into Clinq with dedupe and scoring.",
     moduleKey: "freelancer.v1",
     initial: "F",
   },

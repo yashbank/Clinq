@@ -7,12 +7,28 @@ import { toast } from "sonner";
 import { Loader2, Plug2, Unplug } from "lucide-react";
 
 import { setIntegrationStatusAction } from "@/actions/integrations";
+import {
+  FreelancerIntegrationCard,
+  type FreelancerImportJobSummary,
+} from "@/components/integrations/freelancer-integration-card";
 import { IntegrationPlatformMark } from "@/components/integrations/integration-platform-mark";
 import { INTEGRATION_PROVIDERS } from "@/lib/integrations/registry";
 import { cn } from "@/lib/utils";
 import type { IntegrationAccountRow, IntegrationProviderId } from "@/types/integrations";
 
-export function IntegrationHub({ initialAccounts }: { initialAccounts: IntegrationAccountRow[] }) {
+const OTHER_PROVIDERS = INTEGRATION_PROVIDERS.filter((p) => p.id !== "freelancer");
+
+export function IntegrationHub({
+  initialAccounts,
+  freelancerOAuthConfigured,
+  freelancerImportReady,
+  freelancerImportJobs,
+}: {
+  initialAccounts: IntegrationAccountRow[];
+  freelancerOAuthConfigured: boolean;
+  freelancerImportReady: boolean;
+  freelancerImportJobs: FreelancerImportJobSummary[];
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<IntegrationProviderId | null>(null);
@@ -46,7 +62,7 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
         const def = INTEGRATION_PROVIDERS.find((p) => p.id === provider);
         if (status === "connected") {
           toast.success(`${def?.label ?? provider} reserved`, {
-            description: "OAuth is not enabled. A sync job was recorded; no marketplace data is imported yet.",
+            description: "A sync job was recorded; no marketplace data is imported until that provider ships.",
           });
         } else {
           toast.message(`${def?.label ?? provider} disconnected`);
@@ -61,8 +77,8 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
       <header className="space-y-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Integrations</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Connect marketplaces when you are ready. Clinq stores a secure link placeholder per platform—no passwords, no
-          headless browsing, and no job import until you enable a future module.
+          Freelancer.com can import real project listings via OAuth and the official REST API. Other platforms stay in
+          reserved slots until their modules ship—no scraping and no simulated OAuth.
         </p>
         <div className="rounded-xl border border-clinq-glass-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Onboarding:</span> finish your{" "}
@@ -73,8 +89,15 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
         </div>
       </header>
 
+      <FreelancerIntegrationCard
+        account={accountByProvider.get("freelancer")}
+        jobs={freelancerImportJobs}
+        oauthConfigured={freelancerOAuthConfigured}
+        importRuntimeReady={freelancerImportReady}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2">
-        {INTEGRATION_PROVIDERS.map((p) => {
+        {OTHER_PROVIDERS.map((p) => {
           const connected = statusByProvider.get(p.id) === "connected";
           const loading = pending && busy === p.id;
           const acc = accountByProvider.get(p.id);

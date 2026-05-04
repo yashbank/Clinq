@@ -2,13 +2,13 @@ import type { IntegrationProviderId } from "@/types/integrations";
 
 export type IntegrationSyncStatus = "idle" | "queued" | "running" | "succeeded" | "failed";
 
-export type IntegrationSyncJobType = "full_sync" | "profile" | "jobs_delta" | "leads_delta";
+export type IntegrationSyncJobType = "full_sync" | "profile" | "jobs_delta" | "leads_delta" | "lead_import";
 
 export type IntegrationSyncJobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 
 /** What the adapter can do today (honest flags — no fake OAuth). */
 export type IntegrationCapabilities = {
-  oauth: false;
+  oauth: boolean;
   /** When true, a future worker can pull jobs/leads via official APIs. */
   ingestionPlanned: boolean;
   /** Safe metadata import only (no headless login). */

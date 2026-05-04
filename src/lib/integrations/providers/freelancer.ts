@@ -5,22 +5,25 @@ export function createFreelancerProvider(): IntegrationProviderAdapter {
   return {
     id: "freelancer",
     capabilities: {
-      oauth: false,
+      oauth: true,
       ingestionPlanned: true,
       supportsProfileMetadataImport: false,
     },
     describe() {
-      return "Freelancer.com adapter (skeleton): OAuth + REST project endpoints not wired yet.";
+      return "Freelancer.com: OAuth2 + documented REST project search (active listings) → Clinq lead rows.";
     },
     buildIngestionPlan(): IngestionPlan {
       return {
         provider: "freelancer",
         steps: [
-          { id: "oauth_connect", description: "OAuth2 authorization for Freelancer API.", runnable: false },
-          { id: "sync_projects", description: "Fetch active projects / bids context.", runnable: false },
-          { id: "persist_leads", description: "Upsert normalized leads for Clinq scoring.", runnable: false },
+          { id: "oauth_connect", description: "OAuth2 authorization for Freelancer API (accounts.freelancer.com).", runnable: true },
+          { id: "sync_projects", description: "GET /api/projects/0.1/projects/active/ with user token (rate limits apply).", runnable: true },
+          { id: "persist_leads", description: "Normalize, dedupe, insert leads; run Clinq intelligence pipeline.", runnable: true },
         ],
-        notes: ["Use documented Freelancer APIs only; no credential stuffing or scraping."],
+        notes: [
+          "Official Freelancer REST API only — header Freelancer-OAuth-V1.",
+          "Respect platform rate limits; imports are bounded batches (see UI).",
+        ],
       };
     },
   };

@@ -488,6 +488,11 @@ export function AdvancedLeadsTable({
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium text-foreground">{lead.name}</p>
+                        {lead.sourceChannel === "freelancer" ? (
+                          <span className="rounded border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                            Freelancer
+                          </span>
+                        ) : null}
                         <TierBadge tier={lead.leadTier} />
                         <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
                           {lead.confidenceScore}% conf

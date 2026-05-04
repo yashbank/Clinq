@@ -4,7 +4,7 @@ import type { IntegrationCapabilities, IngestionPlan } from "./types";
 
 /**
  * Provider abstraction. Each marketplace module implements this surface.
- * No network I/O is required on the stub — real adapters add OAuth + API clients later.
+ * No network I/O is required on stubs — real adapters add OAuth + API clients.
  */
 export interface IntegrationProviderAdapter {
   readonly id: IntegrationProviderId;

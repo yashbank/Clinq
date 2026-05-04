@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { deleteFreelancerTokensForUser } from "@/lib/integrations/freelancer/token-store";
 import { recordStubSyncForManualConnect } from "@/lib/integrations/sync-orchestrator";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 import type { IntegrationProviderId, IntegrationStatus } from "@/types/integrations";
 
 const providerSchema = z.enum(["freelancer", "upwork", "fiverr", "contra"]);
@@ -27,6 +29,13 @@ export async function setIntegrationStatusAction(
     return { ok: false, error: "Invalid status" };
   }
 
+  if (p.data === "freelancer" && status === "connected") {
+    return {
+      ok: false,
+      error: "Freelancer connects through OAuth. Use “Connect with Freelancer” on the Freelancer card.",
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -43,7 +52,11 @@ export async function setIntegrationStatusAction(
           connection_kind: "manual_slot",
           note: "OAuth is not enabled. This row reserves the integration until provider modules ship.",
         }
-      : { disconnected_at: now, connection_kind: "disconnected" };
+      : {
+          disconnected_at: now,
+          connection_kind: "disconnected",
+          ...(p.data === "freelancer" ? { oauth_revoked_at: now } : {}),
+        };
 
   const credentials = status === "connected" ? defaultCredentials() : defaultCredentials();
 
@@ -84,6 +97,16 @@ export async function setIntegrationStatusAction(
     });
     if (error) {
       return { ok: false, error: error.message };
+    }
+  }
+
+  if (p.data === "freelancer" && status === "disconnected") {
+    try {
+      if (hasSupabaseServiceRoleKey()) {
+        await deleteFreelancerTokensForUser(user.id);
+      }
+    } catch {
+      // best-effort revoke local tokens
     }
   }
 

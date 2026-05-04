@@ -33,4 +33,6 @@ export interface Lead {
   proposalStatus: "none" | "draft" | "sent" | "viewed" | "accepted" | "rejected";
   competitorCount: number;
   winProbability: number;
+  /** Canonical lead source from metadata (e.g. freelancer) for compact badges. */
+  sourceChannel?: string | null;
 }

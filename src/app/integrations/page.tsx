@@ -1,10 +1,13 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { IntegrationHub } from "@/components/integrations/integration-hub";
+import { getFreelancerIntegrationEnv } from "@/lib/integrations/freelancer/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 import type { IntegrationAccountRow } from "@/types/integrations";
 
 export default async function IntegrationsPage() {
@@ -16,10 +19,23 @@ export default async function IntegrationsPage() {
     redirect("/login");
   }
 
-  const { data: rows, error } = await supabase
-    .from("integration_accounts")
-    .select("id, user_id, provider, status, meta, sync_status, last_sync_at, import_stats, credentials, created_at, updated_at")
-    .eq("user_id", user.id);
+  const freelancerOAuthConfigured = Boolean(getFreelancerIntegrationEnv());
+  const freelancerImportReady = freelancerOAuthConfigured && hasSupabaseServiceRoleKey();
+
+  const [{ data: rows, error }, { data: flJobs }] = await Promise.all([
+    supabase
+      .from("integration_accounts")
+      .select("id, user_id, provider, status, meta, sync_status, last_sync_at, import_stats, created_at, updated_at")
+      .eq("user_id", user.id),
+    supabase
+      .from("integration_sync_jobs")
+      .select("id, status, job_type, payload, result, error, scheduled_at, completed_at")
+      .eq("user_id", user.id)
+      .eq("provider", "freelancer")
+      .eq("job_type", "lead_import")
+      .order("scheduled_at", { ascending: false })
+      .limit(15),
+  ]);
 
   if (error) {
     return (
@@ -36,9 +52,18 @@ export default async function IntegrationsPage() {
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <TopNavbar title="Integrations" subtitle="Marketplace links · no automation yet" />
+        <TopNavbar title="Integrations" subtitle="Freelancer API import · other platforms reserved" />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <IntegrationHub initialAccounts={(rows ?? []) as IntegrationAccountRow[]} />
+          <Suspense
+            fallback={<div className="mx-auto max-w-4xl animate-pulse rounded-2xl border border-clinq-glass-border/60 bg-background/40 p-8 text-sm text-muted-foreground">Loading integrations…</div>}
+          >
+            <IntegrationHub
+              initialAccounts={(rows ?? []) as IntegrationAccountRow[]}
+              freelancerOAuthConfigured={freelancerOAuthConfigured}
+              freelancerImportReady={freelancerImportReady}
+              freelancerImportJobs={flJobs ?? []}
+            />
+          </Suspense>
         </main>
       </div>
       <FloatingAIOrb />

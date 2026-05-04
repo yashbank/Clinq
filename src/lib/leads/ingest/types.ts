@@ -1,4 +1,4 @@
-import type { CreateLeadInput } from "@/actions/leads";
+import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
 
 /** Future: Upwork / LinkedIn webhooks return RawLeadPayload → normalize → CreateLeadInput */
 export type RawLeadPayload = Record<string, unknown>;

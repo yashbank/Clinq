@@ -6,36 +6,12 @@ import { analyzeLead } from "@/lib/ai/lead-intelligence";
 import { buildLeadIntelligenceRecord } from "@/lib/ai/lead-intelligence-pipeline";
 import { deriveLeadWorkflowSignals } from "@/lib/ai/lead-workflow";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { normalizePlatformLabel, type LeadSource } from "@/lib/leads/platforms";
+import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
+import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
 
 import type { LeadRow, PipelineStage } from "@/types/database";
 
-export type CreateLeadInput = {
-  client_name: string;
-  project_title?: string;
-  project_url?: string;
-  source?: LeadSource;
-  platform?: string;
-  project_description?: string;
-  budget?: number;
-  email?: string;
-  phone?: string;
-  company?: string;
-  repeat_hire?: boolean;
-  competition_level?: number;
-  project_quality?: number;
-  client_history?: string;
-  proposal_match_notes?: string;
-};
-
-function briefQualityFromLength(description: string | null | undefined): number {
-  const len = (description ?? "").trim().length;
-  if (len > 400) return 5;
-  if (len > 200) return 4;
-  if (len > 80) return 3;
-  if (len > 30) return 2;
-  return 1;
-}
+export type { CreateLeadInput };
 
 export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: true; lead: LeadRow } | { ok: false; error: string }> {
   const supabase = await createSupabaseServerClient();
@@ -46,130 +22,7 @@ export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: tr
     return { ok: false, error: "Unauthorized" };
   }
 
-  const source = input.source ?? normalizePlatformLabel(input.platform);
-  const projectQuality =
-    input.project_quality !== undefined && input.project_quality !== null
-      ? Math.min(5, Math.max(1, input.project_quality))
-      : briefQualityFromLength(input.project_description);
-
-  const intel = analyzeLead({
-    budget: input.budget ?? null,
-    repeatHire: Boolean(input.repeat_hire),
-    competitionLevel: input.competition_level ?? 2,
-    projectQuality,
-    clientHistory: input.client_history ?? null,
-    proposalMatchNotes: input.proposal_match_notes ?? null,
-    projectTitle: input.project_title ?? null,
-    projectDescription: input.project_description ?? null,
-    projectUrl: input.project_url ?? null,
-    platform: input.platform ?? null,
-  });
-
-  const { data: prof } = await supabase
-    .from("profiles")
-    .select("tech_stack, niches, skills")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const profileSnap = {
-    tech_stack: Array.isArray(prof?.tech_stack) ? (prof!.tech_stack as string[]) : [],
-    niches: Array.isArray(prof?.niches) ? (prof!.niches as string[]) : [],
-    skills: Array.isArray(prof?.skills) ? (prof!.skills as string[]) : [],
-  };
-
-  const workflow = deriveLeadWorkflowSignals(
-    intel,
-    {
-      projectDescription: input.project_description ?? null,
-      budget: input.budget ?? null,
-      company: input.company ?? null,
-      repeatHire: Boolean(input.repeat_hire),
-    },
-    profileSnap,
-  );
-
-  const profileTokens = [
-    ...profileSnap.skills,
-    ...profileSnap.tech_stack,
-    ...profileSnap.niches,
-  ]
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 80);
-
-  const intelligence = buildLeadIntelligenceRecord({
-    intel,
-    workflow: {
-      scam_risk_score: workflow.scam_risk_score,
-      scam_risk_label: workflow.scam_risk_label,
-      seriousness_score: workflow.seriousness_score,
-      portfolio_angle_suggestion: workflow.portfolio_angle_suggestion,
-    },
-    scoreInput: {
-      budget: input.budget ?? null,
-      repeatHire: Boolean(input.repeat_hire),
-      competitionLevel: input.competition_level ?? 2,
-      projectQuality,
-      clientHistory: input.client_history ?? null,
-      proposalMatchNotes: input.proposal_match_notes ?? null,
-    },
-    projectTitle: input.project_title ?? null,
-    projectDescription: input.project_description ?? null,
-    projectUrl: input.project_url ?? null,
-    company: input.company ?? null,
-    profileTokens,
-  });
-
-  const metadata = {
-    project_title: input.project_title?.trim() || null,
-    project_url: input.project_url?.trim() || null,
-    source,
-    confidence: intel.confidence,
-    lead_tier: intel.tier,
-    flags: intel.flags,
-    proposal_strategy_hint: intel.proposalStrategyHint,
-    scam_risk_score: workflow.scam_risk_score,
-    scam_risk_label: workflow.scam_risk_label,
-    seriousness_score: workflow.seriousness_score,
-    portfolio_angle_suggestion: workflow.portfolio_angle_suggestion,
-  };
-
-  const row = {
-    user_id: user.id,
-    client_name: input.client_name.trim(),
-    platform: input.platform?.trim() || null,
-    project_description: input.project_description?.trim() || null,
-    budget: input.budget ?? null,
-    score: intel.score,
-    email: input.email?.trim() || null,
-    phone: input.phone?.trim() || null,
-    company: input.company?.trim() || null,
-    repeat_hire: Boolean(input.repeat_hire),
-    competition_level: input.competition_level ?? 2,
-    project_quality: projectQuality,
-    client_history: input.client_history?.trim() || null,
-    proposal_match_notes: input.proposal_match_notes?.trim() || null,
-    metadata,
-    intelligence: intelligence as unknown as Record<string, unknown>,
-  };
-
-  const { data, error } = await supabase.from("leads").insert(row).select("*").single();
-  if (error || !data) {
-    return { ok: false, error: error?.message ?? "Insert failed" };
-  }
-
-  await supabase.from("activities").insert({
-    user_id: user.id,
-    lead_id: data.id,
-    type: "lead_created",
-    description: `Lead created: ${input.client_name}`,
-    metadata: { score: intel.score, tier: intel.tier },
-  });
-
-  revalidatePath("/leads");
-  revalidatePath("/pipeline");
-  revalidatePath("/dashboard");
-  return { ok: true, lead: data as LeadRow };
+  return insertLeadWithIntelligence(supabase, user.id, input);
 }
 
 export async function updateLeadStageAction(

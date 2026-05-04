@@ -1,4 +1,4 @@
-import type { CreateLeadInput } from "@/actions/leads";
+import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
 import { normalizeManualLeadInput } from "@/lib/leads/normalize";
 import type { LeadIngestResult } from "@/lib/leads/ingest/types";
 import type { LeadSource } from "@/lib/leads/platforms";
