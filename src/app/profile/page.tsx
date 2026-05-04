@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { FreelancerProfileForm } from "@/components/profile/freelancer-profile-form";
+import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FreelancerProfileFields } from "@/types/profile";
 
@@ -19,7 +20,7 @@ export default async function ProfilePage() {
   const { data: row, error } = await supabase
     .from("profiles")
     .select(
-      "display_name, resume_text, resume_filename, skills, tech_stack, portfolio_links, linkedin_url, github_url, experience_level, niches, profile_onboarding_completed_at",
+      "display_name, bio, website_url, resume_text, resume_filename, skills, tech_stack, portfolio_links, linkedin_url, github_url, experience_level, niches, profile_onboarding_completed_at, profile_intelligence",
     )
     .eq("id", user.id)
     .single();
@@ -36,6 +37,8 @@ export default async function ProfilePage() {
 
   const initial: FreelancerProfileFields = {
     display_name: row.display_name ?? null,
+    bio: typeof row.bio === "string" ? row.bio : null,
+    website_url: typeof row.website_url === "string" ? row.website_url : null,
     resume_text: row.resume_text ?? null,
     resume_filename: row.resume_filename ?? null,
     skills: Array.isArray(row.skills) ? (row.skills as string[]) : [],
@@ -46,6 +49,7 @@ export default async function ProfilePage() {
     experience_level: row.experience_level ?? null,
     niches: Array.isArray(row.niches) ? (row.niches as string[]) : [],
     profile_onboarding_completed_at: row.profile_onboarding_completed_at ?? null,
+    profile_intelligence: parseStoredProfileIntelligence(row.profile_intelligence),
   };
 
   return (

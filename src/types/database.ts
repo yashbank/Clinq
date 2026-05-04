@@ -24,6 +24,8 @@ export type LeadRow = {
   client_history: string | null;
   proposal_match_notes: string | null;
   metadata: Record<string, unknown>;
+  /** Versioned lead intelligence pipeline output (see `lead-intelligence-pipeline`). */
+  intelligence?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 };
@@ -50,6 +52,7 @@ export type ProposalRow = {
   mode: "short" | "long";
   tone: string;
   model: string;
+  evaluation?: Record<string, unknown> | null;
   created_at: string;
 };
 

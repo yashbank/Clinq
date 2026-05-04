@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { buildProposalSystemPrompt, type ProposalTone } from "@/lib/ai/proposal-prompts";
+import { evaluateProposalWithOpenAi } from "@/lib/ai/evaluators/proposal-quality";
 import { buildFreelancerProfileContext } from "@/lib/profile/build-proposal-context";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -97,10 +98,16 @@ export async function POST(req: Request) {
       }
     }
 
+    const toneBoost =
+      profileRow?.profile_intelligence?.version === 1
+        ? `\n\nVoice / positioning guidance (from stored profile intelligence):\n${profileRow.profile_intelligence.proposalToneHint}\n${profileRow.profile_intelligence.positioningLine}`
+        : "";
+
     const userContent = [
       profileBlock ? `${profileBlock}\n` : "",
       leadContext ? `--- Opportunity ---\n${leadContext}\n` : "",
       `--- Job / RFP (primary) ---\n${jobDescription}`,
+      toneBoost,
     ]
       .filter((s) => s.trim().length > 0)
       .join("\n");
@@ -154,6 +161,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ text, warning: saveErr.message, saved: false });
     }
 
+    let evaluationPayload: Awaited<ReturnType<typeof evaluateProposalWithOpenAi>> = null;
+    if (saved?.id) {
+      evaluationPayload = await evaluateProposalWithOpenAi(openai, {
+        proposalBody: text,
+        jobDescription,
+        profileSummary: profileBlock || "(no profile block)",
+        leadSummary: leadContext || "(no lead context)",
+        mode,
+        tone: tone as ProposalTone,
+      });
+      if (evaluationPayload) {
+        const { error: evErr } = await supabase
+          .from("proposals")
+          .update({ evaluation: evaluationPayload as unknown as Record<string, unknown> })
+          .eq("id", saved.id)
+          .eq("user_id", user.id);
+        if (evErr) {
+          console.warn("proposal evaluation persist:", evErr.message);
+        }
+      }
+    }
+
     void supabase.from("analytics").insert({
       user_id: user.id,
       metric: "proposal_generated",
@@ -161,7 +190,12 @@ export async function POST(req: Request) {
       dimensions: { mode, tone, leadId: leadId ?? null },
     });
 
-    return NextResponse.json({ text, proposalId: saved?.id, saved: true });
+    return NextResponse.json({
+      text,
+      proposalId: saved?.id,
+      saved: true,
+      evaluation: evaluationPayload ?? undefined,
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Server error";
     return NextResponse.json({ error: "Unexpected error", detail: message }, { status: 500 });

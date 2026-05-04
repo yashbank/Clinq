@@ -3,13 +3,15 @@ import type { FreelancerProfileFields } from "@/types/profile";
 const MAX_RESUME_SNIPPET = 6_000;
 
 /**
- * Compact, factual block for the proposal model — no scraping, user-supplied only.
+ * Compact, factual block for the proposal model — user-supplied + stored intelligence only.
  */
 export function buildFreelancerProfileContext(p: FreelancerProfileFields | null): string {
   if (!p) return "";
 
   const lines: string[] = [];
   if (p.display_name?.trim()) lines.push(`Name / display: ${p.display_name.trim()}`);
+  if (p.bio?.trim()) lines.push(`Bio: ${p.bio.trim()}`);
+  if (p.website_url?.trim()) lines.push(`Website: ${p.website_url.trim()}`);
   if (p.experience_level?.trim()) lines.push(`Experience level (self-reported): ${p.experience_level.trim()}`);
   if (p.niches?.length) lines.push(`Focus niches: ${p.niches.slice(0, 12).join(", ")}`);
   if (p.skills?.length) lines.push(`Skills: ${p.skills.slice(0, 25).join(", ")}`);
@@ -24,10 +26,22 @@ export function buildFreelancerProfileContext(p: FreelancerProfileFields | null)
     lines.push(`Resume / CV excerpt:\n${snippet}${p.resume_text.length > MAX_RESUME_SNIPPET ? "\n…(truncated for token budget)" : ""}`);
   }
 
+  const intel = p.profile_intelligence;
+  if (intel?.version === 1) {
+    lines.push(
+      `Profile intelligence (machine summary, v${intel.version}): ${intel.positioningLine} — ${intel.idealProjectSummary}`,
+    );
+    lines.push(`Tone hint: ${intel.proposalToneHint}`);
+    if (intel.normalizedSkills.length) {
+      lines.push(`Normalized skill surface: ${intel.normalizedSkills.slice(0, 20).join(", ")}`);
+    }
+    lines.push(`Profile quality score (internal): ${intel.profileQualityScore}/100`);
+  }
+
   if (lines.length === 0) return "";
 
   return [
-    "--- Freelancer profile (user-provided facts only; do not invent employers or metrics beyond this) ---",
+    "--- Freelancer profile (user-provided facts + stored intelligence; do not invent employers or metrics beyond this) ---",
     ...lines,
     "--- End profile ---",
   ].join("\n");

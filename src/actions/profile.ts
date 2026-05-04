@@ -6,6 +6,8 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 const profileSchema = z.object({
   display_name: z.string().max(120).nullable().optional(),
+  bio: z.string().max(4_000).nullable().optional(),
+  website_url: z.string().max(2000).nullable().optional(),
   resume_text: z.string().max(48_000).nullable().optional(),
   resume_filename: z.string().max(255).nullable().optional(),
   skills: z.array(z.string().max(80)).max(80),
@@ -50,6 +52,8 @@ export async function updateFreelancerProfileAction(
 
   const patch: Record<string, unknown> = {
     display_name: v.display_name?.trim() || null,
+    bio: v.bio?.trim() || null,
+    website_url: v.website_url?.trim() || null,
     resume_text: v.resume_text?.trim() || null,
     resume_filename: v.resume_filename?.trim() || null,
     skills: v.skills.map((s) => s.trim()).filter(Boolean),

@@ -18,7 +18,7 @@ export default async function IntegrationsPage() {
 
   const { data: rows, error } = await supabase
     .from("integration_accounts")
-    .select("id, user_id, provider, status, meta, created_at, updated_at")
+    .select("id, user_id, provider, status, meta, sync_status, last_sync_at, import_stats, credentials, created_at, updated_at")
     .eq("user_id", user.id);
 
   if (error) {

@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
 
+import { refreshProfileIntelligenceAction } from "@/actions/profile-intelligence";
 import { updateFreelancerProfileAction } from "@/actions/profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,8 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(initial.display_name ?? "");
+  const [bio, setBio] = useState(initial.bio ?? "");
+  const [websiteUrl, setWebsiteUrl] = useState(initial.website_url ?? "");
   const [resumeText, setResumeText] = useState(initial.resume_text ?? "");
   const [resumeFilename, setResumeFilename] = useState(initial.resume_filename ?? "");
   const [skills, setSkills] = useState((initial.skills ?? []).join(", "));
@@ -45,8 +48,27 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
+    if (/\.pdf$/i.test(f.name)) {
+      try {
+        const fd = new FormData();
+        fd.append("file", f);
+        const res = await fetch("/api/profile/parse-resume", { method: "POST", body: fd });
+        const json = (await res.json().catch(() => null)) as { text?: string; error?: string } | null;
+        if (!res.ok) {
+          toast.error(json?.error ?? "Could not parse PDF");
+          return;
+        }
+        const text = (json?.text ?? "").slice(0, 48_000);
+        setResumeText(text);
+        setResumeFilename(f.name);
+        toast.success("PDF text extracted");
+      } catch {
+        toast.error("Could not read PDF");
+      }
+      return;
+    }
     if (!/\.(txt|md)$/i.test(f.name)) {
-      toast.error("For now upload plain text (.txt or .md). Paste PDF content below, or export to text.");
+      toast.error("Upload a .pdf, .txt, or .md file.");
       return;
     }
     try {
@@ -65,6 +87,8 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
       void (async () => {
         const res = await updateFreelancerProfileAction({
           display_name: displayName.trim() || null,
+          bio: bio.trim() || null,
+          website_url: websiteUrl.trim() || null,
           resume_text: resumeText.trim() || null,
           resume_filename: resumeFilename.trim() || null,
           skills: splitTags(skills),
@@ -100,6 +124,27 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="bio">Bio</Label>
+          <Textarea
+            id="bio"
+            value={bio}
+            onChange={(ev) => setBio(ev.target.value)}
+            placeholder="Short positioning statement for proposals and scoring."
+            rows={4}
+            className="min-h-[100px] resize-y"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="website">Website</Label>
+          <Input
+            id="website"
+            value={websiteUrl}
+            onChange={(ev) => setWebsiteUrl(ev.target.value)}
+            placeholder="https://…"
+            autoComplete="url"
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="experience">Experience level</Label>
           <select
             id="experience"
@@ -118,12 +163,20 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Resume</h2>
-        <p className="text-xs text-muted-foreground">Stored as text in your workspace (Supabase). No third-party parsing.</p>
+        <p className="text-xs text-muted-foreground">
+          PDFs are parsed on the server (text only). Text is stored in Supabase for proposals—never shared with marketplaces from this screen.
+        </p>
         <div className="flex flex-wrap items-center gap-2">
-          <input ref={fileRef} type="file" accept=".txt,.md,text/plain" className="hidden" onChange={onPickFile} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.txt,.md,application/pdf,text/plain"
+            className="hidden"
+            onChange={onPickFile}
+          />
           <Button type="button" variant="outline" size="sm" className="gap-2 border-clinq-glass-border" onClick={() => fileRef.current?.click()}>
             <Upload className="h-4 w-4" />
-            Upload .txt / .md
+            Upload PDF / .txt / .md
           </Button>
           {resumeFilename ? <span className="text-xs text-muted-foreground">{resumeFilename}</span> : null}
         </div>
@@ -194,7 +247,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
         </label>
       </section>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending} className="min-w-[8rem]">
           {pending ? (
             <>
@@ -204,6 +257,26 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
           ) : (
             "Save profile"
           )}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending}
+          className="border-clinq-glass-border"
+          onClick={() =>
+            startTransition(() => {
+              void (async () => {
+                const res = await refreshProfileIntelligenceAction();
+                if (!res.ok) {
+                  toast.error(res.error);
+                  return;
+                }
+                toast.success("Profile intelligence refreshed");
+              })();
+            })
+          }
+        >
+          Refresh intelligence
         </Button>
       </div>
     </form>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { analyzeLead } from "@/lib/ai/lead-intelligence";
+import { buildLeadIntelligenceRecord } from "@/lib/ai/lead-intelligence-pipeline";
 import { deriveLeadWorkflowSignals } from "@/lib/ai/lead-workflow";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizePlatformLabel, type LeadSource } from "@/lib/leads/platforms";
@@ -87,6 +88,38 @@ export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: tr
     profileSnap,
   );
 
+  const profileTokens = [
+    ...profileSnap.skills,
+    ...profileSnap.tech_stack,
+    ...profileSnap.niches,
+  ]
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 80);
+
+  const intelligence = buildLeadIntelligenceRecord({
+    intel,
+    workflow: {
+      scam_risk_score: workflow.scam_risk_score,
+      scam_risk_label: workflow.scam_risk_label,
+      seriousness_score: workflow.seriousness_score,
+      portfolio_angle_suggestion: workflow.portfolio_angle_suggestion,
+    },
+    scoreInput: {
+      budget: input.budget ?? null,
+      repeatHire: Boolean(input.repeat_hire),
+      competitionLevel: input.competition_level ?? 2,
+      projectQuality,
+      clientHistory: input.client_history ?? null,
+      proposalMatchNotes: input.proposal_match_notes ?? null,
+    },
+    projectTitle: input.project_title ?? null,
+    projectDescription: input.project_description ?? null,
+    projectUrl: input.project_url ?? null,
+    company: input.company ?? null,
+    profileTokens,
+  });
+
   const metadata = {
     project_title: input.project_title?.trim() || null,
     project_url: input.project_url?.trim() || null,
@@ -117,6 +150,7 @@ export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: tr
     client_history: input.client_history?.trim() || null,
     proposal_match_notes: input.proposal_match_notes?.trim() || null,
     metadata,
+    intelligence: intelligence as unknown as Record<string, unknown>,
   };
 
   const { data, error } = await supabase.from("leads").insert(row).select("*").single();
@@ -238,6 +272,38 @@ export async function recalculateLeadScoreAction(leadId: string): Promise<{ ok: 
     profileSnap,
   );
 
+  const profileTokens = [
+    ...profileSnap.skills,
+    ...profileSnap.tech_stack,
+    ...profileSnap.niches,
+  ]
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 80);
+
+  const intelligence = buildLeadIntelligenceRecord({
+    intel,
+    workflow: {
+      scam_risk_score: workflow.scam_risk_score,
+      scam_risk_label: workflow.scam_risk_label,
+      seriousness_score: workflow.seriousness_score,
+      portfolio_angle_suggestion: workflow.portfolio_angle_suggestion,
+    },
+    scoreInput: {
+      budget: lead.budget,
+      repeatHire: lead.repeat_hire,
+      competitionLevel: lead.competition_level,
+      projectQuality: lead.project_quality,
+      clientHistory: lead.client_history,
+      proposalMatchNotes: lead.proposal_match_notes,
+    },
+    projectTitle: typeof meta.project_title === "string" ? meta.project_title : null,
+    projectDescription: lead.project_description,
+    projectUrl: typeof meta.project_url === "string" ? meta.project_url : null,
+    company: lead.company,
+    profileTokens,
+  });
+
   const nextMetadata = {
     ...meta,
     confidence: intel.confidence,
@@ -252,7 +318,11 @@ export async function recalculateLeadScoreAction(leadId: string): Promise<{ ok: 
 
   const { data: updatedScore, error } = await supabase
     .from("leads")
-    .update({ score: intel.score, metadata: nextMetadata })
+    .update({
+      score: intel.score,
+      metadata: nextMetadata,
+      intelligence: intelligence as unknown as Record<string, unknown>,
+    })
     .eq("id", leadId)
     .eq("user_id", user.id)
     .select("id")

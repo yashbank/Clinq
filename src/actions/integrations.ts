@@ -3,10 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { recordStubSyncForManualConnect } from "@/lib/integrations/sync-orchestrator";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { IntegrationProviderId, IntegrationStatus } from "@/types/integrations";
 
 const providerSchema = z.enum(["freelancer", "upwork", "fiverr", "contra"]);
+
+const defaultCredentials = () => ({
+  version: 1 as const,
+  storage: "none" as const,
+  externalAccountId: null as string | null,
+});
 
 export async function setIntegrationStatusAction(
   provider: IntegrationProviderId,
@@ -32,11 +39,13 @@ export async function setIntegrationStatusAction(
   const meta =
     status === "connected"
       ? {
-          simulated_link: true,
-          connected_at: now,
-          note: "No scraping or automation is active. This row reserves the integration for future modules.",
+          reserved_at: now,
+          connection_kind: "manual_slot",
+          note: "OAuth is not enabled. This row reserves the integration until provider modules ship.",
         }
-      : { disconnected_at: now };
+      : { disconnected_at: now, connection_kind: "disconnected" };
+
+  const credentials = status === "connected" ? defaultCredentials() : defaultCredentials();
 
   const { data: existing, error: selErr } = await supabase
     .from("integration_accounts")
@@ -52,7 +61,13 @@ export async function setIntegrationStatusAction(
   if (existing?.id) {
     const { error } = await supabase
       .from("integration_accounts")
-      .update({ status, meta, updated_at: now })
+      .update({
+        status,
+        meta,
+        credentials,
+        sync_status: status === "connected" ? "idle" : "idle",
+        updated_at: now,
+      })
       .eq("id", existing.id)
       .eq("user_id", user.id);
     if (error) {
@@ -64,9 +79,18 @@ export async function setIntegrationStatusAction(
       provider: p.data,
       status,
       meta,
+      credentials,
+      sync_status: "idle",
     });
     if (error) {
       return { ok: false, error: error.message };
+    }
+  }
+
+  if (status === "connected") {
+    const stub = await recordStubSyncForManualConnect(supabase, user.id, p.data);
+    if (!stub.ok) {
+      return { ok: false, error: stub.error };
     }
   }
 

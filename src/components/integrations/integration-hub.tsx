@@ -25,6 +25,14 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
     return m;
   }, [initialAccounts]);
 
+  const accountByProvider = useMemo(() => {
+    const m = new Map<IntegrationProviderId, IntegrationAccountRow>();
+    for (const r of initialAccounts) {
+      m.set(r.provider, r);
+    }
+    return m;
+  }, [initialAccounts]);
+
   const run = (provider: IntegrationProviderId, status: "connected" | "disconnected") => {
     setBusy(provider);
     startTransition(() => {
@@ -37,8 +45,8 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
         }
         const def = INTEGRATION_PROVIDERS.find((p) => p.id === provider);
         if (status === "connected") {
-          toast.success(`${def?.label ?? provider} connected successfully`, {
-            description: "Secure link is simulated for now—no jobs are imported yet.",
+          toast.success(`${def?.label ?? provider} reserved`, {
+            description: "OAuth is not enabled. A sync job was recorded; no marketplace data is imported yet.",
           });
         } else {
           toast.message(`${def?.label ?? provider} disconnected`);
@@ -69,6 +77,7 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
         {INTEGRATION_PROVIDERS.map((p) => {
           const connected = statusByProvider.get(p.id) === "connected";
           const loading = pending && busy === p.id;
+          const acc = accountByProvider.get(p.id);
           return (
             <div
               key={p.id}
@@ -92,6 +101,12 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
                     </span>
                   </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.description}</p>
+                  {acc?.last_sync_at ? (
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Last sync recorded · {new Date(acc.last_sync_at).toLocaleString()}
+                      {acc.sync_status && acc.sync_status !== "idle" ? ` · ${acc.sync_status}` : null}
+                    </p>
+                  ) : null}
                   <p className="mt-3 font-mono text-[10px] text-muted-foreground/70">module · {p.moduleKey}</p>
                 </div>
               </div>
