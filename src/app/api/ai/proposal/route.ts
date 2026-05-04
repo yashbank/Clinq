@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { buildProposalSystemPrompt, type ProposalTone } from "@/lib/ai/proposal-prompts";
+import { inferProposalScenarios } from "@/lib/ai/proposal-scenario";
 import { evaluateProposalWithOpenAi } from "@/lib/ai/evaluators/proposal-quality";
 import { buildFreelancerProfileContext } from "@/lib/profile/build-proposal-context";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
@@ -53,14 +54,18 @@ export async function POST(req: Request) {
     const profileBlock = buildFreelancerProfileContext(profileRow);
 
     let leadContext = "";
+    let leadBudget: number | null = null;
+    let leadRepeat = false;
     if (leadId) {
       const { data: lead } = await supabase
         .from("leads")
-        .select("client_name, company, platform, project_description, budget, score, metadata, proposal_match_notes, client_history")
+        .select("client_name, company, platform, project_description, budget, score, repeat_hire, metadata, proposal_match_notes, client_history")
         .eq("id", leadId)
         .eq("user_id", user.id)
         .single();
       if (lead) {
+        leadBudget = lead.budget != null ? Number(lead.budget) : null;
+        leadRepeat = Boolean(lead.repeat_hire);
         const meta = (lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {}) as Record<
           string,
           unknown
@@ -112,6 +117,12 @@ export async function POST(req: Request) {
       .filter((s) => s.trim().length > 0)
       .join("\n");
 
+    const scenarioTags = inferProposalScenarios({
+      jobDescription,
+      leadBudget,
+      leadRepeatHire: leadRepeat,
+    });
+
     let openai: ReturnType<typeof getOpenAIClient>;
     try {
       openai = getOpenAIClient();
@@ -119,16 +130,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "AI is not configured" }, { status: 503 });
     }
 
+    const temperature = mode === "long" ? 0.58 : 0.62;
+
     let completion: OpenAI.Chat.Completions.ChatCompletion;
     try {
       completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        temperature: 0.65,
+        temperature,
         messages: [
-          { role: "system", content: buildProposalSystemPrompt(mode, tone as ProposalTone) },
+          { role: "system", content: buildProposalSystemPrompt(mode, tone as ProposalTone, scenarioTags) },
           {
             role: "user",
-            content: `Write the proposal for this opportunity. Personalize using the freelancer profile and opportunity sections when present; never invent employers, degrees, or metrics not implied there.\n\n${userContent}`,
+            content: `Write the proposal for this opportunity. Use profile + opportunity sections when present. Do not invent credentials, employers, or metrics. Prefer specificity over hype.\n\n${userContent}`,
           },
         ],
       });

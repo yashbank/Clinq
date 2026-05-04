@@ -14,6 +14,9 @@ const schema = z.object({
   proposalToneHint: z.string().max(600),
   idealProjectSummary: z.string().max(600),
   positioningLine: z.string().max(400),
+  missingSkillHints: z.array(z.string()).max(6).optional(),
+  proposalPositioningNotes: z.array(z.string()).max(5).optional(),
+  idealClientNotes: z.array(z.string()).max(4).optional(),
 });
 
 /**
@@ -23,7 +26,22 @@ const schema = z.object({
 export async function enrichProfileIntelligenceWithOpenAi(
   base: ProfileIntelligenceV1,
   profile: FreelancerProfileFields,
-): Promise<Partial<Pick<ProfileIntelligenceV1, "strengths" | "inferredNiches" | "proposalToneHint" | "idealProjectSummary" | "positioningLine">> | null> {
+): Promise<
+  | Partial<
+      Pick<
+        ProfileIntelligenceV1,
+        | "strengths"
+        | "inferredNiches"
+        | "proposalToneHint"
+        | "idealProjectSummary"
+        | "positioningLine"
+        | "missingSkillHints"
+        | "proposalPositioningNotes"
+        | "idealClientNotes"
+      >
+    >
+  | null
+> {
   let client: ReturnType<typeof getOpenAIClient>;
   try {
     client = getOpenAIClient();
@@ -53,11 +71,11 @@ export async function enrichProfileIntelligenceWithOpenAi(
         {
           role: "system",
           content:
-            "You refine freelancer positioning text for a proposal-writing product. Output strict JSON only. Do not invent employers, degrees, or client names. Keep claims grounded in the user text. If data is thin, say so conservatively.",
+            "You refine freelancer positioning for a proposal-writing product. Output strict JSON only. Do not invent employers, degrees, or client names. Avoid generic advice like 'learn React'. Prefer concrete, user-grounded notes. If data is thin, say so conservatively.",
         },
         {
           role: "user",
-          content: `Improve these fields as JSON with keys: strengths (array of short strings), inferredNiches (array), proposalToneHint (one string), idealProjectSummary (one string), positioningLine (one string).\n\n${userBlock}`,
+          content: `Improve JSON fields: strengths (array), inferredNiches (array), proposalToneHint (string), idealProjectSummary (string), positioningLine (string). Optionally add missingSkillHints, proposalPositioningNotes, idealClientNotes (arrays of short strings) only when grounded in the user text.\n\n${userBlock}`,
         },
       ],
     });

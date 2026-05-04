@@ -3,6 +3,8 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytics-cards";
+import { buildDashboardRecommendations, type DashboardRecommendation } from "@/lib/dashboard-recommendations";
+import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
 import type { PipelineStage } from "@/types/database";
 
 export type DashboardRecentLead = {
@@ -23,6 +25,7 @@ export type DashboardRecentProposal = {
   created_at: string;
   lead_id: string | null;
   lead_client_name: string | null;
+  evaluation?: unknown;
 };
 
 export type DashboardStageRow = {
@@ -40,6 +43,7 @@ export type DashboardPageData = {
   recentLeads: DashboardRecentLead[];
   recentProposals: DashboardRecentProposal[];
   stages: DashboardStageRow[];
+  recommendations: DashboardRecommendation[];
 };
 
 const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
@@ -120,7 +124,11 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     { data: recentProposalRows },
     { data: projects },
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name, profile_onboarding_completed_at").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("display_name, profile_onboarding_completed_at, profile_intelligence")
+      .eq("id", user.id)
+      .maybeSingle(),
     supabase.from("leads").select("score, budget, stage, repeat_hire"),
     supabase
       .from("leads")
@@ -128,7 +136,11 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
       .order("updated_at", { ascending: false })
       .limit(12),
     supabase.from("proposals").select("id", { count: "exact", head: true }),
-    supabase.from("proposals").select("id, title, created_at, lead_id").order("created_at", { ascending: false }).limit(6),
+    supabase
+      .from("proposals")
+      .select("id, title, created_at, lead_id, evaluation")
+      .order("created_at", { ascending: false })
+      .limit(6),
     supabase.from("projects").select("earnings, status"),
   ]);
 
@@ -151,7 +163,15 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     created_at: p.created_at,
     lead_id: p.lead_id,
     lead_client_name: p.lead_id ? leadNameById.get(p.lead_id) ?? null : null,
+    evaluation: p.evaluation ?? undefined,
   }));
+
+  const intel = parseStoredProfileIntelligence(profile?.profile_intelligence);
+  const recommendations = buildDashboardRecommendations({
+    recentLeads,
+    recentProposals,
+    profileQualityScore: intel?.profileQualityScore ?? null,
+  });
 
   return {
     displayName: profile?.display_name?.trim() || null,
@@ -160,5 +180,6 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     recentLeads,
     recentProposals,
     stages: buildStages(agg),
+    recommendations,
   };
 }

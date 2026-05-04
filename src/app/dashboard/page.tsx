@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const { snapshot, recentLeads, recentProposals, stages, displayName, needsProfileOnboarding } = data;
+  const { snapshot, recentLeads, recentProposals, stages, displayName, needsProfileOnboarding, recommendations } = data;
   if (needsProfileOnboarding) {
     redirect("/onboarding");
   }
@@ -63,7 +63,11 @@ export default async function DashboardPage() {
           </main>
         </div>
 
-        <AIInsightsSidebar recentLeads={recentLeads} proposalCount={snapshot.proposalsSent} />
+        <AIInsightsSidebar
+          recentLeads={recentLeads}
+          proposalCount={snapshot.proposalsSent}
+          recommendations={recommendations}
+        />
       </div>
 
       <FloatingAIOrb />

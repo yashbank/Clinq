@@ -18,6 +18,10 @@ export type LeadIntelligenceV1 = {
     repeatClientProbability: number;
     portfolioMatchScore: number;
     proposalSuccessProbability: number;
+    /** Higher = more competitive / harder to stand out (from saved competition + budget heuristics). */
+    competitionDifficultyScore?: number;
+    /** Higher = more drafting / discovery work implied by brief heuristics (not hours of labor). */
+    proposalEffortScore?: number;
   };
   explanations: string[];
 };
@@ -83,6 +87,27 @@ function portfolioMatchScore(description: string, profileTokens: string[]): numb
   return clamp(Math.round(ratio * 100));
 }
 
+function competitionDifficultyScore(competitionLevel: number, budget: number | null, combined: string): number {
+  const c = Math.min(5, Math.max(1, competitionLevel));
+  let s = c * 15;
+  const b = Math.max(0, Number(budget) || 0);
+  if (b >= 5000) s += 12;
+  if (/\b(enterprise|rfp|vendor|agency|shortlist)\b/i.test(combined)) s += 10;
+  return clamp(Math.round(s));
+}
+
+function proposalEffortScore(description: string, combined: string): number {
+  const len = description.trim().length;
+  let s = 18;
+  if (len > 500) s += 28;
+  else if (len > 200) s += 16;
+  if (/\b(migration|architecture|audit|multi[-\s]?tenant|compliance|security|kubernetes|data model)\b/i.test(combined)) {
+    s += 24;
+  }
+  if (/\b(mvp|landing|logo|one[-\s]?pager)\b/i.test(combined)) s = Math.max(12, s - 12);
+  return clamp(Math.round(s));
+}
+
 function proposalSuccessProbability(args: {
   leadScore: number;
   scamRisk: number;
@@ -121,6 +146,12 @@ export function buildLeadIntelligenceRecord(args: {
   const urgency = urgencyScore(combined);
   const repeatP = repeatClientProbability(args.scoreInput.repeatHire, args.company);
   const portfolioMatch = portfolioMatchScore(desc, args.profileTokens);
+  const competitionDifficulty = competitionDifficultyScore(
+    args.scoreInput.competitionLevel,
+    args.scoreInput.budget,
+    combined,
+  );
+  const effort = proposalEffortScore(args.projectDescription ?? "", combined);
   const proposalSuccess = proposalSuccessProbability({
     leadScore: args.intel.score,
     scamRisk: args.workflow.scam_risk_score,
@@ -131,11 +162,24 @@ export function buildLeadIntelligenceRecord(args: {
 
   const explanations: string[] = [];
   explanations.push(`Lead score ${args.intel.score} with tier ${args.intel.tier}.`);
-  explanations.push(`Scam heuristics: ${args.workflow.scam_risk_label} (${args.workflow.scam_risk_score}/100).`);
   if (vague >= 55) explanations.push("Brief looks thin or underspecified—ask clarifying questions before heavy work.");
   if (unrealistic >= 60) explanations.push("Budget may be misaligned with described scope.");
   if (portfolioMatch >= 45) explanations.push("Solid overlap between job language and your profile skills/niches.");
   if (urgency >= 60) explanations.push("Timeline language suggests elevated urgency.");
+  if (competitionDifficulty >= 62) explanations.push("Competition / procurement signals imply a harder win—sharpen differentiation.");
+  if (effort >= 62) explanations.push("Brief suggests heavier discovery or delivery surface—scope milestones tightly.");
+  explanations.push(
+    `Scam confidence heuristic: ${args.workflow.scam_risk_label} at ${args.workflow.scam_risk_score}/100 (rule-based, not a legal verdict).`,
+  );
+  explanations.push(
+    `Client seriousness heuristic: ${args.workflow.seriousness_score}/100 from budget, company string, brief length, and tier.`,
+  );
+  explanations.push(
+    `Portfolio alignment heuristic: ${portfolioMatch}/100 overlap between your saved skills/niches and brief language.`,
+  );
+  explanations.push(
+    `Conversion potential (heuristic blend of score, scam risk, clarity, budget fit): ${proposalSuccess}/100—not a prediction of revenue.`,
+  );
 
   return {
     version: 1,
@@ -155,6 +199,8 @@ export function buildLeadIntelligenceRecord(args: {
       repeatClientProbability: repeatP,
       portfolioMatchScore: portfolioMatch,
       proposalSuccessProbability: proposalSuccess,
+      competitionDifficultyScore: competitionDifficulty,
+      proposalEffortScore: effort,
     },
     explanations,
   };

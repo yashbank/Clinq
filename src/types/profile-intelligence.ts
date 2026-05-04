@@ -13,4 +13,10 @@ export type ProfileIntelligenceV1 = {
   idealProjectSummary: string;
   positioningLine: string;
   profileQualityScore: number;
+  /** Gaps between resume tokens and saved skills — only concrete tokens, no generic courses. */
+  missingSkillHints?: string[];
+  /** How to angle proposals given niches + seniority (short bullets). */
+  proposalPositioningNotes?: string[];
+  /** Ideal client sketch from stated niches and experience—conservative. */
+  idealClientNotes?: string[];
 };

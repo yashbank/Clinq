@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, KanbanSquare, FileText, Pin, PinOff, Users, PanelRight } from "lucide-react";
+import { Sparkles, ArrowRight, KanbanSquare, FileText, Pin, PinOff, Users, PanelRight, ChevronDown, Lightbulb } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import type { DashboardRecommendation } from "@/lib/dashboard-recommendations";
 import type { DashboardRecentLead } from "@/lib/dashboard-stats";
 
 const PIN_KEY = "clinq-insights-pinned";
@@ -13,10 +15,12 @@ const PIN_KEY = "clinq-insights-pinned";
 function InsightsPanelBody({
   recentLeads,
   proposalCount,
+  recommendations,
   className,
 }: {
   recentLeads: DashboardRecentLead[];
   proposalCount: number;
+  recommendations: DashboardRecommendation[];
   className?: string;
 }) {
   const top = [...recentLeads].sort((a, b) => b.score - a.score).slice(0, 3);
@@ -70,6 +74,33 @@ function InsightsPanelBody({
             </div>
           ) : null}
 
+          {recommendations.length > 0 ? (
+            <Collapsible className="group/rec border-t border-clinq-glass-border/60 pt-3">
+              <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 rounded-lg px-1 py-1.5 text-left transition-colors hover:bg-clinq-glass/20">
+                <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <Lightbulb className="h-3.5 w-3.5 text-primary" />
+                  Suggestions
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/rec:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ul className="mt-2 space-y-2">
+                  {recommendations.map((r) => (
+                    <li key={r.id}>
+                      <Link
+                        href={r.href}
+                        className="block rounded-lg border border-clinq-glass-border/40 bg-background/20 px-2.5 py-2 transition-colors hover:border-clinq-glass-border hover:bg-clinq-glass/25"
+                      >
+                        <p className="text-xs font-medium text-foreground">{r.title}</p>
+                        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{r.detail}</p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </Collapsible>
+          ) : null}
+
           <div className="mt-auto space-y-0.5 border-t border-clinq-glass-border/60 pt-2.5">
             <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Shortcuts</p>
             <Link
@@ -96,9 +127,11 @@ function InsightsPanelBody({
 export function AIInsightsSidebar({
   recentLeads,
   proposalCount,
+  recommendations = [],
 }: {
   recentLeads: DashboardRecentLead[];
   proposalCount: number;
+  recommendations?: DashboardRecommendation[];
 }) {
   const [pinned, setPinned] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -179,7 +212,7 @@ export function AIInsightsSidebar({
             "group-data-[expanded=true]/insights:pointer-events-auto group-data-[expanded=true]/insights:w-56 group-data-[expanded=true]/insights:border-clinq-glass-border/50 group-data-[expanded=true]/insights:opacity-100",
           )}
         >
-          <InsightsPanelBody recentLeads={recentLeads} proposalCount={proposalCount} />
+          <InsightsPanelBody recentLeads={recentLeads} proposalCount={proposalCount} recommendations={recommendations} />
         </div>
       </div>
 
@@ -198,7 +231,12 @@ export function AIInsightsSidebar({
           <SheetHeader className="sr-only">
             <SheetTitle>Insights</SheetTitle>
           </SheetHeader>
-          <InsightsPanelBody recentLeads={recentLeads} proposalCount={proposalCount} className="h-full" />
+          <InsightsPanelBody
+            recentLeads={recentLeads}
+            proposalCount={proposalCount}
+            recommendations={recommendations}
+            className="h-full"
+          />
         </SheetContent>
       </Sheet>
     </>

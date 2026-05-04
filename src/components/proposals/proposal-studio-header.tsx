@@ -27,13 +27,13 @@ export function ProposalStudioHeader({
               <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
                 AI Proposal Studio
               </h1>
-              <span className="hidden items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-medium text-primary sm:flex">
-                <Sparkles className="h-3 w-3" />
-                AI
+              <span className="hidden items-center gap-1 rounded-full bg-muted/30 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:flex">
+                <Sparkles className="h-3 w-3 text-primary" />
+                Workspace
               </span>
             </div>
             <p className="hidden text-xs text-muted-foreground sm:block sm:text-sm">
-              Craft winning proposals with AI intelligence
+              Draft from your RFP with profile-grounded generation and quality scoring.
             </p>
           </div>
         </div>

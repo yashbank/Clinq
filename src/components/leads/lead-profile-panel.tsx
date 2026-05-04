@@ -14,11 +14,14 @@ import {
   AlertTriangle,
   DollarSign,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
+import { parseStoredLeadIntelligence } from "@/lib/ai/parse-stored-lead-intelligence";
 import { LeadFreelancerMatchSection, type FreelancerMatchContext } from "@/components/leads/lead-freelancer-match-section";
 
 import type { LeadRow } from "@/types/database";
@@ -74,6 +77,89 @@ function CircularScore({ score, size = 52 }: { score: number; size?: number }) {
       <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
         {score}
       </span>
+    </div>
+  );
+}
+
+function LeadIntelligencePanel({ row }: { row: LeadRow }) {
+  const intel = parseStoredLeadIntelligence(row.intelligence);
+  if (!intel) {
+    return (
+      <div className="border-b border-clinq-glass-border p-5">
+        <p className="text-xs font-medium text-foreground">Pipeline intelligence</p>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          No stored intelligence blob yet. Re-save the lead or refresh scoring from your workflow to populate heuristics.
+        </p>
+      </div>
+    );
+  }
+
+  const s = intel.signals;
+  const compDiff =
+    typeof s.competitionDifficultyScore === "number"
+      ? s.competitionDifficultyScore
+      : Math.min(100, Math.round(row.competition_level * 18));
+  const effort =
+    typeof s.proposalEffortScore === "number"
+      ? s.proposalEffortScore
+      : Math.min(100, Math.round((row.project_description ?? "").trim().length / 6));
+  const wf = intel.workflow;
+
+  return (
+    <div className="border-b border-clinq-glass-border p-5">
+      <p className="text-xs font-medium text-foreground">Pipeline intelligence</p>
+      <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+        Rule-based read of text, budget, and your profile overlap—not legal or financial advice.
+      </p>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 text-[11px]">
+        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+          <p className="text-muted-foreground">Scam risk</p>
+          <p className="mt-0.5 font-semibold tabular-nums text-foreground">
+            {wf.scam_risk_label} · {wf.scam_risk_score}/100
+          </p>
+        </div>
+        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+          <p className="text-muted-foreground">Client seriousness</p>
+          <p className="mt-0.5 font-semibold tabular-nums text-foreground">{wf.seriousness_score}/100</p>
+        </div>
+        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+          <p className="text-muted-foreground">Urgency signal</p>
+          <p className="mt-0.5 font-semibold tabular-nums text-foreground">{s.urgencyScore}/100</p>
+        </div>
+        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+          <p className="text-muted-foreground">Portfolio overlap</p>
+          <p className="mt-0.5 font-semibold tabular-nums text-foreground">{s.portfolioMatchScore}/100</p>
+        </div>
+        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+          <p className="text-muted-foreground">Competition load</p>
+          <p className="mt-0.5 font-semibold tabular-nums text-foreground">{compDiff}/100</p>
+        </div>
+        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+          <p className="text-muted-foreground">Proposal effort (heuristic)</p>
+          <p className="mt-0.5 font-semibold tabular-nums text-foreground">{effort}/100</p>
+        </div>
+        <div className="col-span-2 rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+          <p className="text-muted-foreground">Conversion potential (heuristic blend)</p>
+          <p className="mt-0.5 font-semibold tabular-nums text-foreground">{s.proposalSuccessProbability}/100</p>
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{wf.portfolio_angle_suggestion}</p>
+
+      <Collapsible className="group/li mt-4">
+        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-clinq-glass-border/60 bg-background/30 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-clinq-glass/25">
+          Full reasoning
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]/li:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <ul className="mt-2 space-y-1.5 rounded-lg border border-clinq-glass-border/50 bg-background/25 p-3 text-[11px] leading-relaxed text-muted-foreground">
+            {intel.explanations.slice(0, 10).map((line, i) => (
+              <li key={i}>· {line}</li>
+            ))}
+          </ul>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
@@ -193,6 +279,8 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
         </div>
 
         <LeadFreelancerMatchSection row={row} freelancer={freelancerContext ?? null} />
+
+        <LeadIntelligencePanel row={row} />
 
         <div className="border-b border-clinq-glass-border p-5">
           <div className="mb-3 flex items-center gap-2">

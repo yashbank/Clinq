@@ -117,6 +117,51 @@ export function ProfileIntelligencePanel({ intelligence }: { intelligence: Profi
               </div>
             </CollapsibleContent>
           </Collapsible>
+
+          {(intelligence.missingSkillHints?.length ||
+            intelligence.proposalPositioningNotes?.length ||
+            intelligence.idealClientNotes?.length) ? (
+            <Collapsible className="group/c2 sm:col-span-2">
+              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-clinq-glass-border/60 bg-background/30 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/20">
+                Client fit &amp; gaps
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/c2:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 space-y-4 rounded-xl border border-clinq-glass-border/50 bg-background/25 p-4 sm:p-5">
+                  {intelligence.missingSkillHints?.length ? (
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Skill alignment</p>
+                      <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                        {intelligence.missingSkillHints.map((t, i) => (
+                          <li key={i}>· {t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {intelligence.proposalPositioningNotes?.length ? (
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Proposal angle</p>
+                      <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                        {intelligence.proposalPositioningNotes.map((t, i) => (
+                          <li key={i}>· {t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {intelligence.idealClientNotes?.length ? (
+                    <div>
+                      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Ideal client sketch</p>
+                      <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                        {intelligence.idealClientNotes.map((t, i) => (
+                          <li key={i}>· {t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ) : null}
         </div>
       )}
     </section>

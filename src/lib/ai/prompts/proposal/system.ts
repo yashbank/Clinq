@@ -1,7 +1,12 @@
 import { antiGenericRules, proposalFrameworkBlock } from "@/lib/ai/frameworks/proposal-frameworks";
 import type { ProposalTone } from "@/lib/ai/prompts/proposal/types";
+import { proposalScenarioGuidance, type ProposalScenarioTag } from "@/lib/ai/proposal-scenario";
 
-export function buildProposalSystemPrompt(mode: "short" | "long", tone: ProposalTone): string {
+export function buildProposalSystemPrompt(
+  mode: "short" | "long",
+  tone: ProposalTone,
+  scenarioTags: ProposalScenarioTag[] = [],
+): string {
   const length =
     mode === "short"
       ? "Length: concise (about 160–280 words). Short paragraphs, no filler."
@@ -15,12 +20,15 @@ export function buildProposalSystemPrompt(mode: "short" | "long", tone: Proposal
   };
 
   return [
-    "You write high-conversion freelance proposals using ONLY facts supplied in the user message (profile, opportunity, RFP).",
-    "Never invent employers, degrees, awards, revenue numbers, or client names not present in context.",
-    "Write in first person for the freelancer. Personalize using overlap between their skills/niches and the job text.",
+    "You write elite freelance proposals using ONLY facts supplied in the user message (profile, opportunity, RFP).",
+    "Never invent employers, degrees, awards, revenue numbers, client names, or past project brands not present in context.",
+    "Write in first person. Prefer concrete verbs, short sentences, and evidence-led claims over adjectives.",
+    "Personalize by weaving overlap between the freelancer's stated skills, niches, and phrases from the RFP—without keyword stuffing.",
     length,
     toneLine[tone],
     proposalFrameworkBlock(mode),
+    proposalScenarioGuidance(scenarioTags),
+    "CTA rules: end with exactly one primary ask (call, milestone, or scoped written reply). Offer a secondary option only if it reduces friction (e.g. async Loom vs live call).",
     "Anti-generic rules:\n" + antiGenericRules,
     "If the brief is thin, acknowledge unknowns and propose a tight discovery step instead of fabricating detail.",
   ].join("\n\n");

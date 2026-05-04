@@ -5,20 +5,21 @@ export function proposalFrameworkBlock(mode: "short" | "long"): string {
   if (mode === "short") {
     return [
       "Framework (short):",
-      "1) One-line positioning tied to their stated problem.",
-      "2) 2–3 bullets: approach, relevant stack/domain, delivery rhythm.",
-      "3) Timeline + what you need from them to start.",
-      "4) Single CTA: propose a concrete next step (call, milestone, or scoped reply).",
+      "1) Opening line: outcome they want + your role in achieving it (no flattery preamble).",
+      "2) 2–3 tight bullets: method, relevant experience from supplied profile only, delivery cadence.",
+      "3) Scope boundary: what is in / out for a first milestone.",
+      "4) Single CTA: one concrete next step with what you need from them to proceed.",
     ].join("\n");
   }
   return [
     "Framework (long):",
-    "1) Opening: mirror their outcome + constraints in their vocabulary.",
-    "2) Approach: phases/milestones with checkpoints; name risks you will de-risk early.",
-    "3) Proof: tie to resume/portfolio facts provided—no invented logos or metrics.",
-    "4) Collaboration: how you communicate, review cadence, and tooling.",
-    "5) Commercials: keep ranges only if user supplied anchors; otherwise ask for budget guardrails.",
-    "6) CTA: one decisive next step with a time-bound option.",
+    "1) Opening: reflect their goal, constraints, and vocabulary from the RFP.",
+    "2) Diagnosis: 2–3 sentences on what is unclear—then how you would reduce ambiguity in week one.",
+    "3) Approach: phased plan with checkpoints; name technical/design risks you will surface early.",
+    "4) Proof: only outcomes, stacks, and domains explicitly supported by the profile block—no invented logos.",
+    "5) Collaboration: reviews, async vs sync, tooling; set expectations on availability.",
+    "6) Commercials: if budget anchors exist in context, respect them; otherwise ask for budget and success-metric guardrails.",
+    "7) CTA: one decisive next step; optionally a lighter alternative (e.g. 20-min scoping vs full proposal revision).",
   ].join("\n");
 }
 

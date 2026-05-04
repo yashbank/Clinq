@@ -81,6 +81,7 @@ export function buildHeuristicProfileIntelligence(profile: FreelancerProfileFiel
     idealProjectSummary,
     positioningLine,
     profileQualityScore: qualityScore(profile, merged),
+    ...buildAdvisory(profile, merged, niches),
   };
 }
 
@@ -121,4 +122,48 @@ function inferSkillsFromResume(tokens: Set<string>): string[] {
     if (tokens.has(kw)) found.push(kw);
   }
   return found;
+}
+
+function buildAdvisory(profile: FreelancerProfileFields, merged: string[], niches: string[]) {
+  const missingSkillHints: string[] = [];
+  const resumeTok = tokenize(profile.resume_text ?? "");
+  const saved = new Set(
+    [...(profile.skills ?? []), ...(profile.tech_stack ?? [])].map((s) => s.trim().toLowerCase()).filter(Boolean),
+  );
+  for (const kw of TECH_KEYWORDS) {
+    if (resumeTok.has(kw) && !saved.has(kw) && missingSkillHints.length < 4) {
+      missingSkillHints.push(
+        `Your resume text mentions “${kw}” but it is not in saved skills/tech—add it if proposals should lean on that stack.`,
+      );
+    }
+  }
+
+  const proposalPositioningNotes: string[] = [];
+  if (niches.length >= 2) {
+    proposalPositioningNotes.push(
+      `Lead with ${niches.slice(0, 2).join(" + ")} outcomes—buyers in those lanes respond to proof in their vocabulary.`,
+    );
+  } else if (niches.length === 1) {
+    proposalPositioningNotes.push(`Anchor proposals to ${niches[0]} delivery patterns and typical procurement steps.`);
+  }
+  if ((profile.portfolio_links ?? []).filter(Boolean).length === 0 && merged.length >= 4) {
+    proposalPositioningNotes.push("Add at least one portfolio URL so proposals can cite shipped work without relying on prose alone.");
+  }
+
+  const idealClientNotes: string[] = [];
+  if (niches.length) {
+    idealClientNotes.push(`Teams hiring for: ${niches.slice(0, 4).join(", ")}.`);
+  }
+  if ((profile.experience_level ?? "").trim()) {
+    idealClientNotes.push(`Pitch depth should match your saved level (${profile.experience_level})—avoid over-selling or underselling scope.`);
+  }
+  if (merged.length < 5) {
+    idealClientNotes.push("Well-documented scopes with budgets and stakeholders—your profile signals are still thin for niche-matching.");
+  }
+
+  return {
+    ...(missingSkillHints.length ? { missingSkillHints } : {}),
+    ...(proposalPositioningNotes.length ? { proposalPositioningNotes } : {}),
+    ...(idealClientNotes.length ? { idealClientNotes } : {}),
+  };
 }

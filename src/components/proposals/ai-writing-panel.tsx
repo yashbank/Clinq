@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -21,6 +21,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useProposalStudio } from "@/context/proposal-studio";
+import { ProposalQualityPanel } from "@/components/proposals/proposal-quality-panel";
+import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
+import type { ProposalEvaluationRecord } from "@/lib/ai/evaluators/proposal-quality";
 import { CLINQ_PROPOSAL_COPY_FOR_SEND, CLINQ_PROPOSAL_SAVE_DRAFT } from "@/lib/proposal/studio-events";
 
 type WritingSection = "greeting" | "hook" | "experience" | "approach" | "closing";
@@ -65,12 +68,11 @@ const initialSections: Section[] = [
   },
 ];
 
-const aiSuggestions = [
-  "Add a specific metric from your past projects",
-  "Include a question to encourage dialogue",
-  "Reference their company name more naturally",
-  "Strengthen the value proposition",
-];
+const DEFAULT_EDITOR_TIPS = [
+  "Tie claims to phrases in the RFP—avoid generic superlatives.",
+  "Prefer one clear CTA over multiple competing asks.",
+  "State scope boundaries so buyers know what milestone one covers.",
+] as const;
 
 const followUpTemplates = [
   { label: "Gentle Reminder", timing: "3 days after" },
@@ -80,13 +82,14 @@ const followUpTemplates = [
 
 const DRAFT_KEY = "clinq_proposal_draft_v1";
 
-export function AIWritingPanel() {
+export const AIWritingPanel = memo(function AIWritingPanel() {
   const { mapModeToApi, tone, rfpText, setRfpText } = useProposalStudio();
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [activeSection, setActiveSection] = useState<WritingSection>("greeting");
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showFollowUps, setShowFollowUps] = useState(false);
+  const [lastEvaluation, setLastEvaluation] = useState<ProposalEvaluationRecord | null>(null);
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const sectionsRef = useRef(sections);
   sectionsRef.current = sections;
@@ -216,19 +219,20 @@ export function AIWritingPanel() {
           tone,
         }),
       });
-      const data = (await res.json()) as { text?: string; error?: string };
+      const data = (await res.json()) as { text?: string; error?: string; evaluation?: unknown };
       if (!res.ok) {
         throw new Error(data.error ?? "Generation failed");
       }
       if (!data.text) {
         throw new Error("Empty response");
       }
+      setLastEvaluation(data.evaluation ? parseProposalEvaluation(data.evaluation) ?? null : null);
       setSections((prev) => {
         const [, ...rest] = prev;
         return [{ ...prev[0], content: data.text as string, isGenerating: false }, ...rest.map((s) => ({ ...s, isGenerating: false }))];
       });
       setActiveSection("greeting");
-      toast.success("Proposal generated with GPT-4o mini");
+      toast.success("Draft ready — review before sending");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not generate");
     } finally {
@@ -253,6 +257,16 @@ export function AIWritingPanel() {
     (acc, s) => acc + s.content.split(/\s+/).filter(Boolean).length,
     0
   );
+
+  const sidebarTips = useMemo(() => {
+    if (lastEvaluation?.improvements?.length) {
+      return lastEvaluation.improvements.slice(0, 5);
+    }
+    if (lastEvaluation?.notes?.length) {
+      return lastEvaluation.notes.slice(0, 5);
+    }
+    return [...DEFAULT_EDITOR_TIPS];
+  }, [lastEvaluation]);
 
   return (
     <div className="flex h-full flex-col">
@@ -467,8 +481,8 @@ export function AIWritingPanel() {
                   <span className="text-sm font-medium text-foreground">
                     AI Follow-up Sequence
                   </span>
-                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-accent">
-                    Auto-Generated
+                  <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Manual drafts
                   </span>
                 </div>
                 <ChevronDown
@@ -511,62 +525,32 @@ export function AIWritingPanel() {
           </div>
         </div>
 
-        {/* AI Suggestions Sidebar */}
-        <div className="w-64 shrink-0 border-l border-clinq-glass-border bg-sidebar/30 p-4">
-          <div className="mb-4 flex items-center gap-2">
-            <Zap className="h-4 w-4 text-clinq-warning" />
-            <span className="text-xs font-medium text-foreground">
-              AI Suggestions
-            </span>
-          </div>
-          <div className="space-y-2">
-            {aiSuggestions.map((suggestion, i) => (
-              <button
-                key={i}
-                className="group flex w-full items-start gap-2 rounded-lg bg-clinq-glass/50 p-3 text-left transition-colors hover:bg-clinq-glass"
-              >
-                <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                <span className="text-xs text-muted-foreground group-hover:text-foreground">
-                  {suggestion}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-6">
-            <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Tone Check
+        {/* Quality + tips — no fabricated scores */}
+        <div className="w-64 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-sidebar/30 p-4">
+          {lastEvaluation ? (
+            <div className="mb-5">
+              <ProposalQualityPanel evaluation={lastEvaluation} />
+            </div>
+          ) : (
+            <p className="mb-4 text-[11px] leading-relaxed text-muted-foreground">
+              Run <span className="text-foreground">Generate full proposal</span> to score the draft against your RFP and profile context.
             </p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Professional</span>
-                <span className="text-clinq-success">Strong</span>
-              </div>
-              <div className="h-1.5 w-full rounded-full bg-clinq-glass">
-                <div className="h-full w-4/5 rounded-full bg-clinq-success" />
-              </div>
-            </div>
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Personalized</span>
-                <span className="text-primary">Good</span>
-              </div>
-              <div className="h-1.5 w-full rounded-full bg-clinq-glass">
-                <div className="h-full w-3/5 rounded-full bg-primary" />
-              </div>
-            </div>
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Persuasive</span>
-                <span className="text-accent">Moderate</span>
-              </div>
-              <div className="h-1.5 w-full rounded-full bg-clinq-glass">
-                <div className="h-full w-1/2 rounded-full bg-accent" />
-              </div>
-            </div>
+          )}
+
+          <div className="mb-3 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium text-foreground">Refinement cues</span>
           </div>
+          <ul className="space-y-2">
+            {sidebarTips.map((tip, i) => (
+              <li key={i} className="flex items-start gap-2 rounded-lg bg-clinq-glass/40 p-2.5 text-left">
+                <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="text-[11px] leading-snug text-muted-foreground">{tip}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
   );
-}
+});
