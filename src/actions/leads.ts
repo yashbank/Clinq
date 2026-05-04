@@ -11,8 +11,6 @@ import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
 
 import type { LeadRow, PipelineStage } from "@/types/database";
 
-export type { CreateLeadInput };
-
 export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: true; lead: LeadRow } | { ok: false; error: string }> {
   const supabase = await createSupabaseServerClient();
   const {
