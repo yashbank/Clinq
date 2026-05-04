@@ -1,15 +1,16 @@
 import { redirect } from "next/navigation";
 
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { TopNavbar } from "@/components/dashboard/top-navbar";
-import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
-import { FreelancerProfileForm } from "@/components/profile/freelancer-profile-form";
-import { ProfileIntelligencePanel } from "@/components/profile/profile-intelligence-panel";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FreelancerProfileFields } from "@/types/profile";
 
-export default async function ProfilePage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ force?: string }>;
+}) {
+  const sp = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -28,12 +29,16 @@ export default async function ProfilePage() {
 
   if (error || !row) {
     return (
-      <div className="gradient-mesh flex min-h-screen flex-col items-center justify-center p-8 text-center">
+      <div className="gradient-mesh flex min-h-[100dvh] flex-col items-center justify-center p-8 text-center">
         <p className="max-w-md text-sm text-muted-foreground">
-          Could not load profile ({error?.message ?? "unknown"}). Apply the Phase 2 migration adding profile columns, then refresh.
+          Could not load profile ({error?.message ?? "unknown"}).
         </p>
       </div>
     );
+  }
+
+  if (row.profile_onboarding_completed_at && sp.force !== "1") {
+    redirect("/dashboard");
   }
 
   const initial: FreelancerProfileFields = {
@@ -54,18 +59,8 @@ export default async function ProfilePage() {
   };
 
   return (
-    <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <TopNavbar title="Freelancer profile" subtitle="Feeds lead scoring and proposal personalization" />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="mx-auto max-w-2xl">
-            <ProfileIntelligencePanel intelligence={initial.profile_intelligence} />
-            <FreelancerProfileForm initial={initial} />
-          </div>
-        </main>
-      </div>
-      <FloatingAIOrb />
+    <div className="gradient-mesh min-h-[100dvh] bg-background">
+      <OnboardingWizard initial={initial} />
     </div>
   );
 }

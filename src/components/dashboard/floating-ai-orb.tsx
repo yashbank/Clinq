@@ -7,10 +7,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const shortcuts = [
-  { label: "Leads", href: "/leads", hint: "Capture & score" },
-  { label: "Proposals", href: "/proposals", hint: "RFP → AI draft" },
-  { label: "Pipeline", href: "/pipeline", hint: "Stages" },
-  { label: "Follow-ups", href: "/follow-ups", hint: "Nudges" },
+  { label: "Leads", href: "/leads", hint: "Save & score opportunities" },
+  { label: "Proposals", href: "/proposals", hint: "Draft from your RFP" },
+  { label: "Pipeline", href: "/pipeline", hint: "Stage updates" },
+  { label: "Follow-ups", href: "/follow-ups", hint: "Reminders" },
 ] as const;
 
 export function FloatingAIOrb() {
@@ -49,8 +49,8 @@ export function FloatingAIOrb() {
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Workspace</h3>
                 <div className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-clinq-success" />
-                  <span className="text-xs text-muted-foreground">Shortcuts</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+                  <span className="text-xs text-muted-foreground">Navigation</span>
                 </div>
               </div>
             </div>
@@ -67,9 +67,9 @@ export function FloatingAIOrb() {
           <div className="p-4">
             <div className="mb-3 rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/40 p-3.5">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Use <span className="font-medium text-foreground">Leads</span> to save an opportunity, then{" "}
-                <span className="font-medium text-foreground">Proposals</span> with the RFP on the left and AI in the center.
-                Update stages in <span className="font-medium text-foreground">Pipeline</span> after you submit off-platform.
+                Save work on <span className="font-medium text-foreground">Leads</span>, draft in{" "}
+                <span className="font-medium text-foreground">Proposals</span> with your profile context, then reflect outcomes in{" "}
+                <span className="font-medium text-foreground">Pipeline</span>.
               </p>
             </div>
 
@@ -99,12 +99,12 @@ export function FloatingAIOrb() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      toast.message("Use Proposal studio for AI on your RFP", {
-                        description: "Paste the job on Proposals → left column, then generate in the center.",
+                      toast.message("Open Proposals to draft", {
+                        description: "Paste the brief on the left, then run generate when you are ready.",
                       });
                     }
                   }}
-                  placeholder="Open Proposals for AI…"
+                  placeholder="Jump to Proposals…"
                   className="clinq-input h-10 w-full rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] pl-3.5 pr-10 text-sm text-foreground placeholder:text-muted-foreground"
                 />
                 <button
@@ -120,8 +120,8 @@ export function FloatingAIOrb() {
               <button
                 type="button"
                 onClick={() => {
-                  toast.message("Use Proposal studio for AI on your RFP", {
-                    description: "Open Proposals from the grid or sidebar.",
+                  toast.message("Proposal studio", {
+                    description: "Use the sidebar or grid link to open the drafting workspace.",
                   });
                 }}
                 className={cn(

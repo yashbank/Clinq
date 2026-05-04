@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
+import { LeadFreelancerMatchSection, type FreelancerMatchContext } from "@/components/leads/lead-freelancer-match-section";
 
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
@@ -28,6 +29,7 @@ export type LeadProfileDetail = { row: LeadRow; ui: Lead };
 interface LeadProfilePanelProps {
   detail: LeadProfileDetail;
   onClose: () => void;
+  freelancerContext?: FreelancerMatchContext | null;
 }
 
 function CircularScore({ score, size = 52 }: { score: number; size?: number }) {
@@ -76,7 +78,7 @@ function CircularScore({ score, size = 52 }: { score: number; size?: number }) {
   );
 }
 
-export function LeadProfilePanel({ detail, onClose }: LeadProfilePanelProps) {
+export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadProfilePanelProps) {
   const { row, ui } = detail;
   const high = isHighConversionScore(row.score);
 
@@ -178,20 +180,24 @@ export function LeadProfilePanel({ detail, onClose }: LeadProfilePanelProps) {
           <div className="rounded-xl bg-primary/10 p-4">
             <div className="flex items-center gap-2 text-primary">
               <Zap className="h-4 w-4" />
-              <span className="text-sm font-medium">Next action</span>
+              <span className="text-sm font-medium">Suggested next step</span>
             </div>
-            <p className="mt-2 font-semibold text-foreground">Draft a tailored proposal</p>
+            <p className="mt-2 text-sm font-medium leading-snug text-foreground">
+              Review the brief, then draft in Proposal studio with your saved profile context.
+            </p>
             <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {ui.bestTimeToBid}
+              Timing cue: {ui.bestTimeToBid}
             </div>
           </div>
         </div>
 
+        <LeadFreelancerMatchSection row={row} freelancer={freelancerContext ?? null} />
+
         <div className="border-b border-clinq-glass-border p-5">
           <div className="mb-3 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">AI insights</span>
+            <span className="text-sm font-medium text-foreground">Signals &amp; notes</span>
           </div>
           <div className="space-y-2">
             {insights.map((insight, i) => (

@@ -14,10 +14,10 @@ export default async function LeadsPage() {
     redirect("/login");
   }
 
-  const { data, error } = await supabase
-    .from("leads")
-    .select("*")
-    .order("updated_at", { ascending: false });
+  const [{ data, error }, { data: profileRow }] = await Promise.all([
+    supabase.from("leads").select("*").order("updated_at", { ascending: false }),
+    supabase.from("profiles").select("skills, tech_stack, niches").eq("id", user.id).maybeSingle(),
+  ]);
 
   if (error) {
     return (
@@ -27,5 +27,11 @@ export default async function LeadsPage() {
     );
   }
 
-  return <LeadsPageClient initialRows={(data ?? []) as LeadRow[]} />;
+  const freelancerContext = {
+    skills: Array.isArray(profileRow?.skills) ? (profileRow.skills as string[]) : [],
+    techStack: Array.isArray(profileRow?.tech_stack) ? (profileRow.tech_stack as string[]) : [],
+    niches: Array.isArray(profileRow?.niches) ? (profileRow.niches as string[]) : [],
+  };
+
+  return <LeadsPageClient initialRows={(data ?? []) as LeadRow[]} freelancerContext={freelancerContext} />;
 }

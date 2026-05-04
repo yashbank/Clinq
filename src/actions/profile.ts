@@ -65,7 +65,11 @@ export async function updateFreelancerProfileAction(
     niches: v.niches.map((s) => s.trim()).filter(Boolean),
   };
 
-  patch.profile_onboarding_completed_at = v.markComplete ? new Date().toISOString() : null;
+  if (v.markComplete === true) {
+    patch.profile_onboarding_completed_at = new Date().toISOString();
+  } else if (v.markComplete === false) {
+    patch.profile_onboarding_completed_at = null;
+  }
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
   if (error) {
@@ -74,7 +78,34 @@ export async function updateFreelancerProfileAction(
 
   revalidatePath("/profile");
   revalidatePath("/dashboard");
+  revalidatePath("/onboarding");
   revalidatePath("/proposals");
+  revalidatePath("/leads");
+  return { ok: true };
+}
+
+/** Sets onboarding timestamp only — does not change profile fields. */
+export async function markProfileOnboardingCompleteAction(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "Unauthorized" };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ profile_onboarding_completed_at: new Date().toISOString() })
+    .eq("id", user.id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+  revalidatePath("/onboarding");
   revalidatePath("/leads");
   return { ok: true };
 }

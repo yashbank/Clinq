@@ -49,7 +49,7 @@ export function DashboardOnboarding({
         {name ? `Hi ${name}` : "You’re in"}, let’s keep this workspace real
       </h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-        Clinq only surfaces what you save—leads, logged proposals, and pipeline stages. No demo revenue curves or fake insights on this screen.
+        This overview reflects what you save: leads, proposals you log, and pipeline stages. Tune your freelancer profile so scoring and drafts stay aligned with how you work.
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Link
@@ -69,6 +69,12 @@ export function DashboardOnboarding({
           className="inline-flex items-center justify-center rounded-lg border border-clinq-glass-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/40"
         >
           View pipeline
+        </Link>
+        <Link
+          href="/profile"
+          className="inline-flex items-center justify-center rounded-lg border border-clinq-glass-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/40"
+        >
+          Profile &amp; intelligence
         </Link>
       </div>
     </div>

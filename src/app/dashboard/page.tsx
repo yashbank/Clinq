@@ -26,7 +26,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const { snapshot, recentLeads, recentProposals, stages, displayName } = data;
+  const { snapshot, recentLeads, recentProposals, stages, displayName, needsProfileOnboarding } = data;
+  if (needsProfileOnboarding) {
+    redirect("/onboarding");
+  }
   const isFirstRun = snapshot.activeLeads === 0 && snapshot.proposalsSent === 0;
   const subtitle = displayName ? `Signed in · ${displayName}` : undefined;
 
@@ -39,7 +42,7 @@ export default async function DashboardPage() {
           <TopNavbar title="Overview" subtitle={subtitle} />
 
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
+            <div className="mx-auto max-w-6xl space-y-6">
               {isFirstRun ? (
                 <DashboardOnboarding show={isFirstRun} displayName={displayName} />
               ) : null}

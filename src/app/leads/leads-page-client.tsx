@@ -11,9 +11,16 @@ import { LeadIntelligenceHeader } from "@/components/leads/lead-intelligence-hea
 import { LeadProfilePanel } from "@/components/leads/lead-profile-panel";
 import { mapLeadRowToUiLead } from "@/lib/mappers/lead";
 
+import type { FreelancerMatchContext } from "@/components/leads/lead-freelancer-match-section";
 import type { LeadRow } from "@/types/database";
 
-export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[] }) {
+export default function LeadsPageClient({
+  initialRows,
+  freelancerContext,
+}: {
+  initialRows: LeadRow[];
+  freelancerContext: FreelancerMatchContext;
+}) {
   const { openCapture } = useLeadCapture();
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
   const [listSearch, setListSearch] = useState("");
@@ -65,7 +72,7 @@ export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[
           />
 
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-            <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
+            <div className="mx-auto max-w-7xl space-y-6">
               <LeadsWorkspaceHints />
 
               <AdvancedLeadsTable
@@ -78,7 +85,13 @@ export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[
           </main>
         </div>
 
-        {detail ? <LeadProfilePanel detail={detail} onClose={() => setSelectedLead(null)} /> : null}
+        {detail ? (
+          <LeadProfilePanel
+            detail={detail}
+            onClose={() => setSelectedLead(null)}
+            freelancerContext={freelancerContext}
+          />
+        ) : null}
       </div>
 
       <FloatingAIOrb />

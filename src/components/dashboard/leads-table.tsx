@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowUpRight, Search, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { DashboardRecentLead } from "@/lib/dashboard-stats";
 import type { PipelineStage } from "@/types/database";
 
@@ -59,18 +60,13 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
 
   if (leads.length === 0) {
     return (
-      <div className="glass-card flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-clinq-glass-border/60 px-6 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-          <Users className="h-6 w-6 text-primary" />
-        </div>
-        <h3 className="mt-5 text-base font-semibold text-foreground">No leads yet</h3>
-        <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Add your first opportunity so scores, stages, and pipeline reflect real work—not sample rows.
-        </p>
-        <Button className="mt-6" asChild>
-          <Link href="/leads">Go to Leads</Link>
-        </Button>
-      </div>
+      <PremiumEmpty
+        icon={Users}
+        title="No leads on the board"
+        description="Capture an opportunity on Leads so this snapshot shows scores and stages from your pipeline."
+        primary={{ label: "Open Leads", href: "/leads" }}
+        className="glass-card overflow-hidden rounded-2xl border-clinq-glass-border/60 py-16"
+      />
     );
   }
 

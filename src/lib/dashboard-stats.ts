@@ -34,6 +34,8 @@ export type DashboardStageRow = {
 
 export type DashboardPageData = {
   displayName: string | null;
+  /** True when profile wizard has not been completed or skipped. */
+  needsProfileOnboarding: boolean;
   snapshot: DashboardAnalyticsSnapshot;
   recentLeads: DashboardRecentLead[];
   recentProposals: DashboardRecentProposal[];
@@ -118,7 +120,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     { data: recentProposalRows },
     { data: projects },
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("display_name, profile_onboarding_completed_at").eq("id", user.id).maybeSingle(),
     supabase.from("leads").select("score, budget, stage, repeat_hire"),
     supabase
       .from("leads")
@@ -153,6 +155,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
 
   return {
     displayName: profile?.display_name?.trim() || null,
+    needsProfileOnboarding: !profile?.profile_onboarding_completed_at,
     snapshot,
     recentLeads,
     recentProposals,

@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { refreshProfileIntelligenceAction } from "@/actions/profile-intelligence";
 import { updateFreelancerProfileAction } from "@/actions/profile";
+import { ResumeUploadZone } from "@/components/profile/resume-upload-zone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +29,6 @@ function splitLines(s: string) {
 
 export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileFields }) {
   const [pending, startTransition] = useTransition();
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(initial.display_name ?? "");
   const [bio, setBio] = useState(initial.bio ?? "");
@@ -43,43 +43,6 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
   const [github, setGithub] = useState(initial.github_url ?? "");
   const [experience, setExperience] = useState(initial.experience_level ?? "");
   const [markComplete, setMarkComplete] = useState(Boolean(initial.profile_onboarding_completed_at));
-
-  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    if (/\.pdf$/i.test(f.name)) {
-      try {
-        const fd = new FormData();
-        fd.append("file", f);
-        const res = await fetch("/api/profile/parse-resume", { method: "POST", body: fd });
-        const json = (await res.json().catch(() => null)) as { text?: string; error?: string } | null;
-        if (!res.ok) {
-          toast.error(json?.error ?? "Could not parse PDF");
-          return;
-        }
-        const text = (json?.text ?? "").slice(0, 48_000);
-        setResumeText(text);
-        setResumeFilename(f.name);
-        toast.success("PDF text extracted");
-      } catch {
-        toast.error("Could not read PDF");
-      }
-      return;
-    }
-    if (!/\.(txt|md)$/i.test(f.name)) {
-      toast.error("Upload a .pdf, .txt, or .md file.");
-      return;
-    }
-    try {
-      const text = await f.text();
-      setResumeText(text.slice(0, 48_000));
-      setResumeFilename(f.name);
-      toast.success("Resume text loaded from file");
-    } catch {
-      toast.error("Could not read file");
-    }
-  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +73,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
   };
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-2xl space-y-10 pb-16">
+    <form onSubmit={onSubmit} className="space-y-10 pb-16">
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Identity</h2>
         <div className="space-y-2">
@@ -164,22 +127,16 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Resume</h2>
         <p className="text-xs text-muted-foreground">
-          PDFs are parsed on the server (text only). Text is stored in Supabase for proposals—never shared with marketplaces from this screen.
+          PDFs are parsed on the server (text only). Stored for proposals on this workspace only.
         </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.txt,.md,application/pdf,text/plain"
-            className="hidden"
-            onChange={onPickFile}
-          />
-          <Button type="button" variant="outline" size="sm" className="gap-2 border-clinq-glass-border" onClick={() => fileRef.current?.click()}>
-            <Upload className="h-4 w-4" />
-            Upload PDF / .txt / .md
-          </Button>
-          {resumeFilename ? <span className="text-xs text-muted-foreground">{resumeFilename}</span> : null}
-        </div>
+        <ResumeUploadZone
+          resumeText={resumeText}
+          resumeFilename={resumeFilename}
+          onExtracted={(text, fn) => {
+            setResumeText(text);
+            setResumeFilename(fn);
+          }}
+        />
         <div className="space-y-2">
           <Label htmlFor="resume">Resume / CV text</Label>
           <Textarea
@@ -271,12 +228,12 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
                   toast.error(res.error);
                   return;
                 }
-                toast.success("Profile intelligence refreshed");
+                toast.success("Intelligence recomputed from your profile");
               })();
             })
           }
         >
-          Refresh intelligence
+          Recompute intelligence
         </Button>
       </div>
     </form>

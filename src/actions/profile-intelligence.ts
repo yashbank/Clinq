@@ -24,6 +24,7 @@ export async function refreshProfileIntelligenceAction(
   }
 
   revalidatePath("/profile");
+  revalidatePath("/dashboard");
   revalidatePath("/proposals");
   revalidatePath("/leads");
   return { ok: true };

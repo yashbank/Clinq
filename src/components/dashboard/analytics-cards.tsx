@@ -1,6 +1,7 @@
 "use client";
 
 import { Users, DollarSign, Sparkles, Target } from "lucide-react";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import { cn } from "@/lib/utils";
 
 export type DashboardAnalyticsSnapshot = {
@@ -58,12 +59,14 @@ export function AnalyticsCards({ snapshot }: { snapshot: DashboardAnalyticsSnaps
 
   if (isEmpty) {
     return (
-      <div className="rounded-xl border border-clinq-glass-border/50 bg-background/35 px-5 py-4 sm:px-6">
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          <span className="font-medium text-foreground">Metrics</span> appear when you add leads and log proposals.
-          Nothing below is simulated.
-        </p>
-      </div>
+      <PremiumEmpty
+        icon={Target}
+        title="Metrics start at zero"
+        description="Add a lead and log a proposal to populate this row. Numbers are only from your workspace—nothing is fabricated."
+        primary={{ label: "Add a lead", href: "/leads" }}
+        secondary={{ label: "Proposal studio", href: "/proposals" }}
+        className="border-clinq-glass-border/50 bg-background/35 py-12"
+      />
     );
   }
 

@@ -10,6 +10,7 @@ export const PROTECTED_PATH_PREFIXES = [
   "/settings",
   "/integrations",
   "/profile",
+  "/onboarding",
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {

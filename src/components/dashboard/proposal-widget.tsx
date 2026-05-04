@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { FileText, Sparkles, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import type { DashboardRecentProposal } from "@/lib/dashboard-stats";
 
 export function ProposalWidget({ proposals }: { proposals: DashboardRecentProposal[] }) {
@@ -29,14 +30,13 @@ export function ProposalWidget({ proposals }: { proposals: DashboardRecentPropos
 
       <div className="p-4">
         {proposals.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-clinq-glass-border/80 bg-background/30 px-4 py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              Nothing logged yet. Generations from Proposal studio are stored here when the API save succeeds.
-            </p>
-            <Button variant="outline" size="sm" className="mt-4 border-clinq-glass-border" asChild>
-              <Link href="/proposals">Open Proposal studio</Link>
-            </Button>
-          </div>
+          <PremiumEmpty
+            icon={FileText}
+            title="No proposals logged"
+            description="When you generate and save from Proposal studio, drafts land here for quick access."
+            primary={{ label: "Open studio", href: "/proposals" }}
+            className="border-dashed border-clinq-glass-border/80 bg-background/30 py-10"
+          />
         ) : (
           <ul className="space-y-1">
             {proposals.map((p) => {
