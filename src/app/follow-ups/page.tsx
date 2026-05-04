@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -44,14 +45,11 @@ export default function FollowUpsPage() {
   };
 
   return (
-    <div className="gradient-mesh flex h-screen overflow-hidden">
+    <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <main className="flex flex-1 flex-col overflow-hidden">
-        <header className="shrink-0 border-b border-clinq-glass-border bg-background/85 px-4 py-3 sm:px-6 sm:py-4">
-          <h1 className="text-xl font-semibold text-foreground">Follow-ups</h1>
-          <p className="text-sm text-muted-foreground">GPT-4o mini drafts — edit before sending.</p>
-        </header>
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <TopNavbar title="Follow-ups" subtitle="AI drafts — you send on the platform" />
+        <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6">
           <div className="glass-card rounded-2xl border border-clinq-glass-border p-5">
             <Label htmlFor="ctx">Context</Label>
             <Textarea
@@ -94,8 +92,8 @@ export default function FollowUpsPage() {
               <pre className="whitespace-pre-wrap text-sm text-foreground">{out}</pre>
             </div>
           ) : null}
-        </div>
-      </main>
+        </main>
+      </div>
       <FloatingAIOrb />
     </div>
   );

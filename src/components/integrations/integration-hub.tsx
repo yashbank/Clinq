@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Plug2, Unplug } from "lucide-react";
 
 import { setIntegrationStatusAction } from "@/actions/integrations";
+import { IntegrationPlatformMark } from "@/components/integrations/integration-platform-mark";
 import { INTEGRATION_PROVIDERS } from "@/lib/integrations/registry";
 import { cn } from "@/lib/utils";
 import type { IntegrationAccountRow, IntegrationProviderId } from "@/types/integrations";
@@ -49,16 +50,19 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <header className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Phase 2</p>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Integrations</h1>
+      <header className="space-y-3">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Integrations</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Connect marketplaces to prepare Clinq for imports and bid context. Today this only records your intent—no
-          scraping, scripts, or credential storage beyond a simulated link flag.
+          Connect marketplaces when you are ready. Clinq stores a secure link placeholder per platform—no passwords, no
+          headless browsing, and no job import until you enable a future module.
         </p>
-        <Link href="/profile" className="inline-block text-sm font-medium text-primary hover:underline">
-          Enrich your freelancer profile →
-        </Link>
+        <div className="rounded-xl border border-clinq-glass-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Onboarding:</span> finish your{" "}
+          <Link href="/profile" className="font-medium text-primary underline-offset-4 hover:underline">
+            freelancer profile
+          </Link>{" "}
+          first so proposals and lead scoring stay personalized.
+        </div>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -70,23 +74,26 @@ export function IntegrationHub({ initialAccounts }: { initialAccounts: Integrati
               key={p.id}
               className={cn(
                 "flex flex-col rounded-2xl border bg-background/50 p-5 transition-colors",
-                connected ? "border-primary/30 shadow-sm shadow-primary/5" : "border-clinq-glass-border/80",
+                connected ? "border-primary/25" : "border-clinq-glass-border/80",
               )}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">{p.label}</h2>
+              <div className="flex items-start gap-3">
+                <IntegrationPlatformMark id={p.id} initial={p.initial} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <h2 className="text-base font-semibold text-foreground">{p.label}</h2>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+                        connected ? "bg-primary/12 text-primary" : "bg-muted/40 text-muted-foreground",
+                      )}
+                    >
+                      {connected ? "Connected" : "Disconnected"}
+                    </span>
+                  </div>
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.description}</p>
-                  <p className="mt-3 font-mono text-[10px] text-muted-foreground/80">module: {p.moduleKey}</p>
+                  <p className="mt-3 font-mono text-[10px] text-muted-foreground/70">module · {p.moduleKey}</p>
                 </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium",
-                    connected ? "bg-primary/15 text-primary" : "bg-muted/40 text-muted-foreground",
-                  )}
-                >
-                  {connected ? "Connected" : "Disconnected"}
-                </span>
               </div>
 
               <div className="mt-6 flex flex-wrap gap-2">

@@ -38,19 +38,36 @@ export async function setIntegrationStatusAction(
         }
       : { disconnected_at: now };
 
-  const { error } = await supabase.from("integration_accounts").upsert(
-    {
+  const { data: existing, error: selErr } = await supabase
+    .from("integration_accounts")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("provider", p.data)
+    .maybeSingle();
+
+  if (selErr) {
+    return { ok: false, error: selErr.message };
+  }
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("integration_accounts")
+      .update({ status, meta, updated_at: now })
+      .eq("id", existing.id)
+      .eq("user_id", user.id);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+  } else {
+    const { error } = await supabase.from("integration_accounts").insert({
       user_id: user.id,
       provider: p.data,
       status,
       meta,
-      updated_at: now,
-    },
-    { onConflict: "user_id,provider" },
-  );
-
-  if (error) {
-    return { ok: false, error: error.message };
+    });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
   }
 
   revalidatePath("/integrations");
