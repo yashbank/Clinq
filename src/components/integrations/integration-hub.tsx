@@ -77,8 +77,8 @@ export function IntegrationHub({
       <header className="space-y-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Integrations</h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Freelancer.com can import real project listings via OAuth and the official REST API. Other platforms stay in
-          reserved slots until their modules ship—no scraping and no simulated OAuth.
+          Freelancer.com can import real project listings via OAuth or a temporary personal access token (same REST API).
+          Other platforms stay in reserved slots until their modules ship—no scraping and no simulated OAuth.
         </p>
         <div className="rounded-xl border border-clinq-glass-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Onboarding:</span> finish your{" "}

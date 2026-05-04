@@ -32,3 +32,10 @@ export function getFreelancerRedirectUri(siteBaseUrl: string): string {
   const base = siteBaseUrl.replace(/\/$/, "");
   return `${base}/api/integrations/freelancer/callback`;
 }
+
+/** API origin for REST calls (OAuth, PAT, or defaults). Safe when OAuth env vars are unset. */
+export function getFreelancerApiBaseUrl(): string {
+  const cfg = getFreelancerIntegrationEnv();
+  if (cfg) return cfg.apiBaseUrl;
+  return (process.env.FREELANCER_API_BASE_URL ?? "https://www.freelancer.com").replace(/\/$/, "");
+}

@@ -4,11 +4,23 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Download, Loader2, Plug2, RefreshCw, Unplug } from "lucide-react";
+import { Download, KeyRound, Loader2, Plug2, RefreshCw, Unplug } from "lucide-react";
 
+import { connectFreelancerPersonalTokenAction, validateFreelancerPersonalTokenAction } from "@/actions/freelancer-personal-token";
 import { retryFreelancerImportJobAction, runFreelancerLeadImportAction } from "@/actions/freelancer-import";
 import { setIntegrationStatusAction } from "@/actions/integrations";
 import { IntegrationPlatformMark } from "@/components/integrations/integration-platform-mark";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { INTEGRATION_PROVIDERS } from "@/lib/integrations/registry";
 import { cn } from "@/lib/utils";
 import type { IntegrationAccountRow, IntegrationProviderId } from "@/types/integrations";
@@ -24,10 +36,16 @@ export type FreelancerImportJobSummary = {
   completed_at: string | null;
 };
 
+function connectionKindFromMeta(meta: Record<string, unknown> | undefined): "oauth2" | "personal_token" | null {
+  const k = meta?.connection_kind;
+  return k === "oauth2" || k === "personal_token" ? k : null;
+}
+
 type Props = {
   account: IntegrationAccountRow | undefined;
   jobs: FreelancerImportJobSummary[];
   oauthConfigured: boolean;
+  /** Service role present — token vault + imports (OAuth and/or personal token). */
   importRuntimeReady: boolean;
 };
 
@@ -40,7 +58,13 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(15);
 
+  const [patOpen, setPatOpen] = useState(false);
+  const [patToken, setPatToken] = useState("");
+  const [patAction, setPatAction] = useState<null | "validate" | "save">(null);
+
   const connected = account?.status === "connected";
+  const meta = account?.meta && typeof account.meta === "object" && !Array.isArray(account.meta) ? (account.meta as Record<string, unknown>) : undefined;
+  const connectionKind = connectionKindFromMeta(meta);
 
   useEffect(() => {
     const err = searchParams.get("freelancer_error");
@@ -72,7 +96,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
           toast.error(res.error);
           return;
         }
-        toast.message("Freelancer disconnected", { description: "OAuth tokens were removed from Clinq." });
+        toast.message("Freelancer disconnected", { description: "Credentials were removed from Clinq." });
         router.refresh();
       })();
     });
@@ -114,6 +138,49 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
     });
   };
 
+  const validatePat = () => {
+    if (!patToken.trim()) {
+      toast.error("Paste your token first");
+      return;
+    }
+    setPatAction("validate");
+    startTransition(() => {
+      void (async () => {
+        const res = await validateFreelancerPersonalTokenAction(patToken);
+        setPatAction(null);
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        toast.success("Token is valid", { description: "You can save it to connect." });
+      })();
+    });
+  };
+
+  const savePat = () => {
+    if (!patToken.trim()) {
+      toast.error("Paste your token first");
+      return;
+    }
+    setPatAction("save");
+    startTransition(() => {
+      void (async () => {
+        const res = await connectFreelancerPersonalTokenAction(patToken);
+        setPatAction(null);
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        setPatToken("");
+        setPatOpen(false);
+        toast.success("Freelancer connected", {
+          description: "Personal token saved. You can import when ready.",
+        });
+        router.refresh();
+      })();
+    });
+  };
+
   return (
     <div
       className={cn(
@@ -135,25 +202,35 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
               >
                 {connected ? "Connected" : "Disconnected"}
               </span>
+              {connected && connectionKind === "personal_token" ? (
+                <span className="shrink-0 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  Personal token
+                </span>
+              ) : null}
+              {connected && connectionKind === "oauth2" ? (
+                <span className="shrink-0 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  OAuth
+                </span>
+              ) : null}
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Official Freelancer.com REST API only (OAuth2, documented project endpoints). Imports are real marketplace
-              listings—not simulated data. Batches are capped to stay within rate limits; scoring runs automatically after each
-              insert.
+              Official Freelancer.com REST API only (OAuth2 or personal access token, documented endpoints). Imports are real
+              marketplace listings—not simulated data. Batches are capped to stay within rate limits; scoring runs automatically
+              after each insert.
             </p>
             {!oauthConfigured ? (
               <p className="mt-2 text-xs text-muted-foreground">
-                Set <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">FREELANCER_CLIENT_ID</code> and{" "}
-                <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">FREELANCER_CLIENT_SECRET</code> on the
-                server, register the redirect URL{" "}
-                <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">…/api/integrations/freelancer/callback</code>{" "}
-                in the Freelancer developer app, and restart Clinq.
+                OAuth app not configured on the server — use{" "}
+                <span className="font-medium text-foreground">Connect with Personal Token</span> if you have a PAT, or set{" "}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">FREELANCER_CLIENT_ID</code> /{" "}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">FREELANCER_CLIENT_SECRET</code> for OAuth
+                when your app is approved.
               </p>
             ) : null}
             {oauthConfigured && !importRuntimeReady ? (
               <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
                 Add <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">SUPABASE_SERVICE_ROLE_KEY</code> so
-                Clinq can store OAuth tokens outside the browser session.
+                Clinq can store tokens outside the browser session.
               </p>
             ) : null}
             {account?.last_sync_at ? (
@@ -174,14 +251,30 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
 
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
           {!connected ? (
-            oauthConfigured && importRuntimeReady ? (
-              <a
-                href="/api/integrations/freelancer/authorize"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-95"
-              >
-                <Plug2 className="h-4 w-4" />
-                Connect with Freelancer
-              </a>
+            importRuntimeReady ? (
+              <div className="flex flex-col gap-2 sm:items-end">
+                {oauthConfigured ? (
+                  <a
+                    href="/api/integrations/freelancer/authorize"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-95"
+                  >
+                    <Plug2 className="h-4 w-4" />
+                    Connect with Freelancer
+                  </a>
+                ) : null}
+                <Button
+                  type="button"
+                  variant={oauthConfigured ? "outline" : "default"}
+                  className={cn(
+                    "inline-flex items-center justify-center gap-2",
+                    !oauthConfigured && "bg-primary text-primary-foreground hover:bg-primary/90",
+                  )}
+                  onClick={() => setPatOpen(true)}
+                >
+                  <KeyRound className="h-4 w-4" />
+                  Connect with Personal Token
+                </Button>
+              </div>
             ) : (
               <button
                 type="button"
@@ -206,7 +299,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
         </div>
       </div>
 
-      {connected && oauthConfigured && importRuntimeReady ? (
+      {connected && importRuntimeReady ? (
         <div className="mt-6 space-y-4 border-t border-clinq-glass-border/60 pt-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="min-w-0 flex-1">
@@ -302,6 +395,58 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
           View leads
         </Link>
       </p>
+
+      <Dialog
+        open={patOpen}
+        onOpenChange={(o) => {
+          setPatOpen(o);
+          if (!o) {
+            setPatToken("");
+            setPatAction(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md border-clinq-glass-border bg-background/95 backdrop-blur-md">
+          <DialogHeader>
+            <DialogTitle>Freelancer personal access token</DialogTitle>
+            <DialogDescription>
+              Temporary fallback while OAuth app approval is pending. Create a token in your Freelancer developer account, paste
+              it once here, then validate before saving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <div className="space-y-2">
+              <Label htmlFor="freelancer-pat">Token</Label>
+              <Textarea
+                id="freelancer-pat"
+                name="freelancer-pat"
+                autoComplete="off"
+                rows={4}
+                placeholder="Paste token only in this dialog…"
+                value={patToken}
+                onChange={(e) => setPatToken(e.target.value)}
+                className="font-mono text-xs"
+              />
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Token is encrypted and stored server-side only. It is never returned to your browser after you connect.
+            </p>
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" disabled={patAction !== null} onClick={() => setPatOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="secondary" disabled={patAction !== null} onClick={validatePat} className="gap-2">
+              {patAction === "validate" ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : null}
+              Validate token
+            </Button>
+            <Button type="button" disabled={patAction !== null} onClick={savePat} className="gap-2">
+              {patAction === "save" ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : null}
+              Save &amp; connect
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

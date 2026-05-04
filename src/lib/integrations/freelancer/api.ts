@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getFreelancerIntegrationEnv } from "@/lib/integrations/freelancer/env";
+import { getFreelancerApiBaseUrl } from "@/lib/integrations/freelancer/env";
 
 const REQUEST_TIMEOUT_MS = 25_000;
 
@@ -20,8 +20,7 @@ export async function fetchFreelancerActiveProjects(args: {
   limit?: number;
   offset?: number;
 }): Promise<{ ok: true; data: FreelancerSearchProjectsResult } | { ok: false; error: string; status?: number }> {
-  const cfg = getFreelancerIntegrationEnv();
-  const base = cfg?.apiBaseUrl ?? "https://www.freelancer.com";
+  const base = getFreelancerApiBaseUrl();
   const limit = Math.min(50, Math.max(1, args.limit ?? 15));
   const offset = Math.max(0, args.offset ?? 0);
   const q = (args.query ?? "").trim();
@@ -73,6 +72,70 @@ export async function fetchFreelancerActiveProjects(args: {
     return { ok: true, data: { projects: projectsUnknown, raw: result } };
   } catch (e) {
     const msg = e instanceof Error && e.name === "AbortError" ? "Freelancer API request timed out" : (e instanceof Error ? e.message : "Request failed");
+    return { ok: false, error: msg };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const SELF_VALIDATE_TIMEOUT_MS = 15_000;
+
+/**
+ * Validates a Freelancer Personal Access Token (same `Freelancer-OAuth-V1` header as OAuth access tokens).
+ * GET https://www.freelancer.com/api/users/0.1/self/
+ */
+export async function validateFreelancerPersonalAccessToken(
+  accessToken: string,
+): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
+  const trimmed = accessToken.trim();
+  if (!trimmed) {
+    return { ok: false, error: "Token is required" };
+  }
+
+  const base = getFreelancerApiBaseUrl();
+  const url = `${base}/api/users/0.1/self/`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SELF_VALIDATE_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Freelancer-OAuth-V1": trimmed,
+        Accept: "application/json",
+        "User-Agent": "Clinq/1.0 (https://github.com) Freelancer API",
+      },
+      signal: controller.signal,
+    });
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = JSON.parse(text) as unknown;
+    } catch {
+      return { ok: false, error: `Freelancer API returned non-JSON (${res.status})`, status: res.status };
+    }
+
+    const body = json as Record<string, unknown>;
+    const apiStatus = body.status;
+    if (typeof apiStatus === "string" && apiStatus.toLowerCase() === "error") {
+      const msg =
+        typeof body.message === "string" && body.message.trim()
+          ? body.message
+          : "Freelancer rejected this token";
+      return { ok: false, error: msg, status: res.status };
+    }
+
+    if (!res.ok) {
+      const msg =
+        typeof body.message === "string" && body.message.trim()
+          ? body.message
+          : `Freelancer API error (${res.status})`;
+      return { ok: false, error: msg, status: res.status };
+    }
+
+    return { ok: true };
+  } catch (e) {
+    const msg =
+      e instanceof Error && e.name === "AbortError" ? "Validation request timed out" : e instanceof Error ? e.message : "Request failed";
     return { ok: false, error: msg };
   } finally {
     clearTimeout(timer);

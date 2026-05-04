@@ -47,7 +47,7 @@ export async function runFreelancerLeadImportAction(
 
   const tokens = await getFreelancerTokensForUser(user.id);
   if (!tokens?.access_token) {
-    return { ok: false, error: "Connect Freelancer first (OAuth)." };
+    return { ok: false, error: "Connect Freelancer first (OAuth or personal access token)." };
   }
 
   const limit = Math.min(30, Math.max(1, payload.limit ?? 15));

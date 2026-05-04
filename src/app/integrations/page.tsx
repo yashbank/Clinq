@@ -20,7 +20,8 @@ export default async function IntegrationsPage() {
   }
 
   const freelancerOAuthConfigured = Boolean(getFreelancerIntegrationEnv());
-  const freelancerImportReady = freelancerOAuthConfigured && hasSupabaseServiceRoleKey();
+  /** PAT + OAuth token storage and imports require the service role; OAuth app env is optional when using a personal token. */
+  const freelancerImportReady = hasSupabaseServiceRoleKey();
 
   const [{ data: rows, error }, { data: flJobs }] = await Promise.all([
     supabase
