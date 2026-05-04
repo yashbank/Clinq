@@ -8,6 +8,8 @@ export const PROTECTED_PATH_PREFIXES = [
   "/follow-ups",
   "/automations",
   "/settings",
+  "/integrations",
+  "/profile",
 ] as const;
 
 export function isProtectedPath(pathname: string): boolean {

@@ -552,7 +552,12 @@ export function AdvancedLeadsTable({
 
                 {/* Risk */}
                 <td className="px-4 py-4">
-                  <ScamRiskBadge risk={lead.scamRisk} />
+                  <div className="flex flex-col items-center gap-1">
+                    <ScamRiskBadge risk={lead.scamRisk} />
+                    <span className="text-[10px] tabular-nums text-muted-foreground">
+                      Serious {lead.seriousnessScore}
+                    </span>
+                  </div>
                 </td>
 
                 {/* Best Time to Bid */}

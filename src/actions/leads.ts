@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { analyzeLead } from "@/lib/ai/lead-intelligence";
+import { deriveLeadWorkflowSignals } from "@/lib/ai/lead-workflow";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizePlatformLabel, type LeadSource } from "@/lib/leads/platforms";
 
@@ -63,6 +64,29 @@ export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: tr
     platform: input.platform ?? null,
   });
 
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("tech_stack, niches, skills")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const profileSnap = {
+    tech_stack: Array.isArray(prof?.tech_stack) ? (prof!.tech_stack as string[]) : [],
+    niches: Array.isArray(prof?.niches) ? (prof!.niches as string[]) : [],
+    skills: Array.isArray(prof?.skills) ? (prof!.skills as string[]) : [],
+  };
+
+  const workflow = deriveLeadWorkflowSignals(
+    intel,
+    {
+      projectDescription: input.project_description ?? null,
+      budget: input.budget ?? null,
+      company: input.company ?? null,
+      repeatHire: Boolean(input.repeat_hire),
+    },
+    profileSnap,
+  );
+
   const metadata = {
     project_title: input.project_title?.trim() || null,
     project_url: input.project_url?.trim() || null,
@@ -71,6 +95,10 @@ export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: tr
     lead_tier: intel.tier,
     flags: intel.flags,
     proposal_strategy_hint: intel.proposalStrategyHint,
+    scam_risk_score: workflow.scam_risk_score,
+    scam_risk_label: workflow.scam_risk_label,
+    seriousness_score: workflow.seriousness_score,
+    portfolio_angle_suggestion: workflow.portfolio_angle_suggestion,
   };
 
   const row = {
@@ -187,12 +215,39 @@ export async function recalculateLeadScoreAction(leadId: string): Promise<{ ok: 
     platform: lead.platform,
   });
 
+  const { data: prof } = await supabase
+    .from("profiles")
+    .select("tech_stack, niches, skills")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const profileSnap = {
+    tech_stack: Array.isArray(prof?.tech_stack) ? (prof!.tech_stack as string[]) : [],
+    niches: Array.isArray(prof?.niches) ? (prof!.niches as string[]) : [],
+    skills: Array.isArray(prof?.skills) ? (prof!.skills as string[]) : [],
+  };
+
+  const workflow = deriveLeadWorkflowSignals(
+    intel,
+    {
+      projectDescription: lead.project_description,
+      budget: lead.budget,
+      company: lead.company,
+      repeatHire: lead.repeat_hire,
+    },
+    profileSnap,
+  );
+
   const nextMetadata = {
     ...meta,
     confidence: intel.confidence,
     lead_tier: intel.tier,
     flags: intel.flags,
     proposal_strategy_hint: intel.proposalStrategyHint,
+    scam_risk_score: workflow.scam_risk_score,
+    scam_risk_label: workflow.scam_risk_label,
+    seriousness_score: workflow.seriousness_score,
+    portfolio_angle_suggestion: workflow.portfolio_angle_suggestion,
   };
 
   const { data: updatedScore, error } = await supabase

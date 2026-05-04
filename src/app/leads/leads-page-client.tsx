@@ -6,8 +6,7 @@ import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { useLeadCapture } from "@/components/leads/lead-quick-capture-root";
 import { AdvancedLeadsTable } from "@/components/leads/advanced-leads-table";
-import { AIOpportunityInsights } from "@/components/leads/ai-opportunity-insights";
-import { CompetitorAnalysis } from "@/components/leads/competitor-analysis";
+import { LeadsWorkspaceHints } from "@/components/leads/leads-workspace-hints";
 import { LeadIntelligenceHeader } from "@/components/leads/lead-intelligence-header";
 import { LeadProfilePanel } from "@/components/leads/lead-profile-panel";
 import { mapLeadRowToUiLead } from "@/lib/mappers/lead";
@@ -45,10 +44,7 @@ export default function LeadsPageClient({ initialRows }: { initialRows: LeadRow[
 
           <main className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="mx-auto max-w-7xl space-y-5 sm:space-y-6">
-              <div className="grid gap-6 lg:grid-cols-3">
-                <AIOpportunityInsights />
-                <CompetitorAnalysis />
-              </div>
+              <LeadsWorkspaceHints />
 
               <AdvancedLeadsTable
                 leads={uiLeads}

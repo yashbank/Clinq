@@ -61,11 +61,26 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
       ? int.proposalStrategyHint
       : null;
 
+  const portfolioAngle =
+    typeof meta.portfolio_angle_suggestion === "string" && meta.portfolio_angle_suggestion.trim().length > 0
+      ? meta.portfolio_angle_suggestion.trim()
+      : null;
+
+  const scamFromMeta =
+    meta.scam_risk_label === "low" || meta.scam_risk_label === "medium" || meta.scam_risk_label === "high"
+      ? (meta.scam_risk_label as Lead["scamRisk"])
+      : null;
+
+  const seriousnessScore =
+    typeof meta.seriousness_score === "number" && Number.isFinite(meta.seriousness_score)
+      ? Math.min(100, Math.max(0, Math.round(meta.seriousness_score)))
+      : Math.min(100, Math.max(0, Math.round(score * 0.72 + (row.repeat_hire ? 8 : 0))));
+
   const aiInsight =
-    strategy ||
+    [strategy, portfolioAngle].filter(Boolean).join(" ") ||
     row.proposal_match_notes?.trim() ||
     (high
-      ? "High-conversion lead: strong fit vs. your pipeline. Prioritize a tailored proposal."
+      ? "Strong fit on score—tailor proof points to the brief and your saved profile."
       : "Review brief and competition. Add strategy notes when you research the buyer.");
 
   return {
@@ -84,7 +99,8 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
     aiScore: score,
     conversionScore: score,
     status: scoreToStatus(score),
-    scamRisk: competitionToScam(row.competition_level),
+    scamRisk: scamFromMeta ?? competitionToScam(row.competition_level),
+    seriousnessScore,
     lastContact: formatDistanceToNow(new Date(row.updated_at), { addSuffix: true }),
     aiInsight,
     bestTimeToBid,

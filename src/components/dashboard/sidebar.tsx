@@ -17,6 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Plug,
+  UserCircle2,
 } from "lucide-react";
 
 import { ClinqLogo } from "@/components/brand/clinq-logo";
@@ -27,8 +29,10 @@ const navItems = [
   { icon: Target, label: "Lead Intelligence", href: "/leads", badge: "AI" },
   { icon: FileText, label: "Proposals", href: "/proposals" },
   { icon: Users, label: "Pipeline", href: "/pipeline" },
+  { icon: UserCircle2, label: "Profile", href: "/profile" },
+  { icon: Plug, label: "Integrations", href: "/integrations" },
   { icon: BarChart3, label: "Analytics", href: "/analytics" },
-  { icon: MessageSquare, label: "Follow-ups", href: "/follow-ups", badge: "2" },
+  { icon: MessageSquare, label: "Follow-ups", href: "/follow-ups" },
   { icon: Zap, label: "Automations", href: "/automations" },
 ];
 

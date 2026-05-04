@@ -18,6 +18,8 @@ export interface Lead {
   conversionScore: number;
   status: "hot" | "warm" | "new" | "cold";
   scamRisk: "low" | "medium" | "high";
+  /** 0–100 from lead workflow signals (metadata); UI-only. */
+  seriousnessScore: number;
   lastContact: string;
   aiInsight: string;
   bestTimeToBid: string;

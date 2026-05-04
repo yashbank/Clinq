@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { buildProposalSystemPrompt, type ProposalTone } from "@/lib/ai/proposal-prompts";
+import { buildFreelancerProfileContext } from "@/lib/profile/build-proposal-context";
+import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOpenAIClient } from "@/services/ai/openai.server";
 
@@ -46,18 +48,62 @@ export async function POST(req: Request) {
 
     const { jobDescription, mode, tone, leadId, title } = parsed.data;
 
+    const profileRow = await loadFreelancerProfileForAi(supabase, user.id);
+    const profileBlock = buildFreelancerProfileContext(profileRow);
+
     let leadContext = "";
     if (leadId) {
       const { data: lead } = await supabase
         .from("leads")
-        .select("client_name, company, platform, project_description, budget, score")
+        .select("client_name, company, platform, project_description, budget, score, metadata, proposal_match_notes, client_history")
         .eq("id", leadId)
         .eq("user_id", user.id)
         .single();
       if (lead) {
-        leadContext = `\nClient: ${lead.client_name}${lead.company ? ` (${lead.company})` : ""}\nPlatform: ${lead.platform ?? "n/a"}\nBudget: ${lead.budget ?? "unknown"}\nScore: ${lead.score}\nBrief: ${lead.project_description ?? ""}\n`;
+        const meta = (lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {}) as Record<
+          string,
+          unknown
+        >;
+        const strat =
+          typeof meta.proposal_strategy_hint === "string" ? meta.proposal_strategy_hint.trim() : "";
+        const portfolio =
+          typeof meta.portfolio_angle_suggestion === "string" ? meta.portfolio_angle_suggestion.trim() : "";
+        const riskBits: string[] = [];
+        if (typeof meta.scam_risk_label === "string") {
+          if (typeof meta.scam_risk_score === "number") {
+            riskBits.push(`Scam risk: ${meta.scam_risk_label} (${meta.scam_risk_score}/100)`);
+          } else {
+            riskBits.push(`Scam risk: ${meta.scam_risk_label}`);
+          }
+        }
+        if (typeof meta.seriousness_score === "number") {
+          riskBits.push(`Seriousness: ${meta.seriousness_score}/100`);
+        }
+        const scam = riskBits.length ? `${riskBits.join(". ")}.` : "";
+        leadContext = [
+          `Client: ${lead.client_name}${lead.company ? ` (${lead.company})` : ""}`,
+          `Platform: ${lead.platform ?? "n/a"}`,
+          `Budget: ${lead.budget ?? "unknown"}`,
+          `Lead score: ${lead.score}`,
+          scam || null,
+          strat ? `Strategy hint: ${strat}` : null,
+          portfolio ? `Portfolio angle: ${portfolio}` : null,
+          lead.client_history ? `Stakeholder / history notes: ${lead.client_history}` : null,
+          lead.proposal_match_notes ? `Your match notes: ${lead.proposal_match_notes}` : null,
+          `Project brief:\n${lead.project_description ?? ""}`,
+        ]
+          .filter(Boolean)
+          .join("\n");
       }
     }
+
+    const userContent = [
+      profileBlock ? `${profileBlock}\n` : "",
+      leadContext ? `--- Opportunity ---\n${leadContext}\n` : "",
+      `--- Job / RFP (primary) ---\n${jobDescription}`,
+    ]
+      .filter((s) => s.trim().length > 0)
+      .join("\n");
 
     let openai: ReturnType<typeof getOpenAIClient>;
     try {
@@ -75,7 +121,7 @@ export async function POST(req: Request) {
           { role: "system", content: buildProposalSystemPrompt(mode, tone as ProposalTone) },
           {
             role: "user",
-            content: `Write the proposal for this opportunity.\n${leadContext}\nJob / RFP text:\n${jobDescription}`,
+            content: `Write the proposal for this opportunity. Personalize using the freelancer profile and opportunity sections when present; never invent employers, degrees, or metrics not implied there.\n\n${userContent}`,
           },
         ],
       });
