@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { parseResumeAdvanced } from "@/lib/profile/parse-resume-advanced";
 import { extractTextFromPdfBuffer } from "@/lib/parsing/pdf-resume";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -40,15 +41,30 @@ export async function POST(req: Request) {
     let text: string;
     let pages: number | null = null;
     if (isPdf) {
-      const extracted = await extractTextFromPdfBuffer(buf);
-      text = extracted.text;
-      pages = extracted.pages ?? null;
+      try {
+        const extracted = await extractTextFromPdfBuffer(buf);
+        text = extracted.text;
+        pages = extracted.pages ?? null;
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "PDF parse failed";
+        return NextResponse.json({ error: message }, { status: 422 });
+      }
     } else {
-      const mammoth = await import("mammoth");
-      const doc = await mammoth.extractRawText({ buffer: buf });
-      text = doc.value;
+      try {
+        const mammoth = await import("mammoth");
+        const doc = await mammoth.extractRawText({ buffer: buf });
+        text = doc.value;
+        if (Array.isArray(doc.messages) && doc.messages.some((m) => m.type === "error") && !String(text).trim()) {
+          return NextResponse.json({ error: "DOCX parse produced no readable text" }, { status: 422 });
+        }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "DOCX parse failed";
+        return NextResponse.json({ error: message }, { status: 422 });
+      }
     }
+
     const clipped = text.slice(0, 48_000);
+    const extraction = parseResumeAdvanced(clipped);
 
     const { error: logErr } = await supabase.from("profile_extractions").insert({
       user_id: user.id,
@@ -57,14 +73,15 @@ export async function POST(req: Request) {
       extracted: {
         pages: pages ?? null,
         charCount: clipped.length,
+        skills_found: extraction.skills.length,
+        tech_found: extraction.tech_stack.length,
       },
     });
     if (logErr) {
-      // Table may not exist until migration — still return text.
       console.warn("profile_extractions insert:", logErr.message);
     }
 
-    return NextResponse.json({ text: clipped, pages: pages ?? null });
+    return NextResponse.json({ text: clipped, pages: pages ?? null, extraction });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Parse failed";
     return NextResponse.json({ error: message }, { status: 500 });

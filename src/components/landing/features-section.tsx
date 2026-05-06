@@ -30,7 +30,7 @@ const items = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="border-t border-clinq-glass-border/50 px-6 py-24">
+    <section id="features" className="border-t border-border/50 px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-center text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
           Built for focus, not noise
@@ -43,7 +43,7 @@ export function FeaturesSection() {
           {items.map((item) => (
             <div
               key={item.title}
-              className="glass-card-hover rounded-2xl border border-clinq-glass-border p-6"
+              className="rounded-2xl border border-border bg-card/95 p-6 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md"
             >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
                 <item.icon className="h-5 w-5 text-primary" />

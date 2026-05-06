@@ -88,8 +88,8 @@ export function JobDescriptionInput() {
   };
 
   return (
-    <div className="glass-card rounded-xl">
-      <div className="flex items-center justify-between border-b border-clinq-glass-border p-4">
+    <div className="rounded-xl border border-border bg-card/95 shadow-sm">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
             <FileText className="h-4 w-4 text-primary" />
@@ -112,7 +112,7 @@ export function JobDescriptionInput() {
         ) : null}
       </div>
 
-      <div className="flex gap-1 border-b border-clinq-glass-border px-4 py-2">
+      <div className="flex gap-1 border-b border-border px-4 py-2">
         {(
           [
             { mode: "paste" as const, label: "Paste text", icon: FileText },
@@ -128,7 +128,7 @@ export function JobDescriptionInput() {
               "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors duration-200",
               inputMode === mode
                 ? "bg-primary/20 text-primary"
-                : "text-muted-foreground hover:bg-clinq-glass hover:text-foreground",
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <Icon className="h-3.5 w-3.5" />
@@ -145,7 +145,7 @@ export function JobDescriptionInput() {
                 value={rfpText}
                 onChange={(e) => setRfpText(e.target.value)}
                 placeholder="Paste the full job description here…"
-                className="h-40 w-full resize-none rounded-xl border border-clinq-glass-border bg-clinq-glass/50 p-4 text-sm text-foreground placeholder:text-muted-foreground transition-shadow duration-200 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-40 w-full resize-none rounded-xl border border-border bg-muted/50 p-4 text-sm text-foreground placeholder:text-muted-foreground transition-shadow duration-200 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             ) : null}
 
@@ -158,7 +158,7 @@ export function JobDescriptionInput() {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="https://…"
-                    className="h-11 w-full rounded-xl border border-clinq-glass-border bg-clinq-glass/50 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="h-11 w-full rounded-xl border border-border bg-muted/50 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -168,13 +168,13 @@ export function JobDescriptionInput() {
                   value={rfpText}
                   onChange={(e) => setRfpText(e.target.value)}
                   placeholder="Optional: paste job body under the URL…"
-                  className="h-28 w-full resize-none rounded-xl border border-clinq-glass-border bg-clinq-glass/50 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="h-28 w-full resize-none rounded-xl border border-border bg-muted/50 p-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             ) : null}
 
             {inputMode === "upload" ? (
-              <div className="flex h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-clinq-glass-border bg-clinq-glass/30">
+              <div className="flex h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/30">
                 <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Upload coming soon — use Paste for now</p>
               </div>
@@ -216,15 +216,15 @@ export function JobDescriptionInput() {
                 <div>
                   <h4 className="mb-2 text-sm font-medium text-foreground">{extractedData.title}</h4>
                   <div className="flex flex-wrap gap-2">
-                    <div className="flex items-center gap-1.5 rounded-lg bg-clinq-glass px-2.5 py-1 text-xs">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 text-xs">
                       <DollarSign className="h-3 w-3 text-clinq-success" />
                       <span className="text-foreground">{extractedData.budget}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-lg bg-clinq-glass px-2.5 py-1 text-xs">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 text-xs">
                       <Clock className="h-3 w-3 text-primary" />
                       <span className="text-foreground">{extractedData.deadline}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 rounded-lg bg-clinq-glass px-2.5 py-1 text-xs">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1 text-xs">
                       <MapPin className="h-3 w-3 text-accent" />
                       <span className="text-foreground">{extractedData.location}</span>
                     </div>

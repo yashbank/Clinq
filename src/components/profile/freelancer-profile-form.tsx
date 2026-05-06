@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { isSupportedDisplayCurrency } from "@/types/currency";
 import type { FreelancerProfileFields } from "@/types/profile";
 
 function splitTags(s: string) {
@@ -44,12 +45,16 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
   const [github, setGithub] = useState(initial.github_url ?? "");
   const [experience, setExperience] = useState(initial.experience_level ?? "");
   const [markComplete, setMarkComplete] = useState(Boolean(initial.profile_onboarding_completed_at));
+  const [preferredCurrency, setPreferredCurrency] = useState(() =>
+    isSupportedDisplayCurrency(initial.preferred_currency ?? "") ? (initial.preferred_currency as string) : "USD",
+  );
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(() => {
       void (async () => {
         const res = await updateFreelancerProfileAction({
+          preferred_currency: isSupportedDisplayCurrency(preferredCurrency) ? preferredCurrency : "USD",
           display_name: displayName.trim() || null,
           bio: bio.trim() || null,
           website_url: websiteUrl.trim() || null,
@@ -77,6 +82,22 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
     <form onSubmit={onSubmit} className="space-y-10 pb-16">
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Identity</h2>
+        <div className="space-y-2">
+          <Label htmlFor="preferred_currency">Preferred currency</Label>
+          <select
+            id="preferred_currency"
+            value={preferredCurrency}
+            onChange={(ev) => setPreferredCurrency(ev.target.value)}
+            className="flex h-10 w-full max-w-xs rounded-md border border-border bg-muted px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            {(["USD", "INR", "GBP", "CAD", "EUR"] as const).map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">Used when displaying imported lead budgets (converted from USD).</p>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="display_name">Display name</Label>
           <Input
@@ -133,15 +154,25 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
         <ResumeUploadZone
           resumeText={resumeText}
           resumeFilename={resumeFilename}
-          onExtracted={(text, fn) => {
+          onExtracted={(text, fn, extraction) => {
             setResumeText(text);
             setResumeFilename(fn);
-            const parsed = parseResumeAdvanced(text);
+            const parsed = extraction ?? parseResumeAdvanced(text);
+            const mergedParts: string[] = [];
             if (parsed.skills.length > 0) {
               const existing = splitTags(skills);
               const merged = [...new Set([...existing, ...parsed.skills])].slice(0, 48);
               setSkills(merged.join(", "));
-              toast.message("Detected skills merged into the skills field — review and save.");
+              mergedParts.push("skills");
+            }
+            if (parsed.tech_stack.length > 0) {
+              const existingTs = splitTags(techStack);
+              const mergedTs = [...new Set([...existingTs, ...parsed.tech_stack])].slice(0, 48);
+              setTechStack(mergedTs.join(", "));
+              mergedParts.push("tech stack");
+            }
+            if (mergedParts.length > 0) {
+              toast.message(`Resume merged into ${mergedParts.join(" & ")} — review and save.`);
             }
           }}
         />
@@ -199,7 +230,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
         </div>
       </section>
 
-      <section className="flex items-start gap-3 rounded-xl border border-clinq-glass-border/80 bg-background/40 p-4">
+      <section className="flex items-start gap-3 rounded-xl border border-border/80 bg-background/40 p-4">
         <input
           id="mark_complete"
           type="checkbox"
@@ -227,7 +258,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
           type="button"
           variant="outline"
           disabled={pending}
-          className="border-clinq-glass-border"
+          className="border-border"
           onClick={() =>
             startTransition(() => {
               void (async () => {

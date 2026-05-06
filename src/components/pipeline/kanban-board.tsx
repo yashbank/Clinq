@@ -14,7 +14,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { GripVertical } from "lucide-react";
+import { Briefcase, Clock, GripVertical } from "lucide-react";
 
 import type { PipelineStage } from "@/types/database";
 
@@ -29,17 +29,14 @@ const STAGES: { id: PipelineStage; label: string; tone: string }[] = [
 
 export type KanbanLead = {
   id: string;
-  name: string;
+  title: string;
+  summary: string;
   stage: PipelineStage;
   score: number;
-  budget: number | null;
+  budgetLabel: string;
+  showBudget: boolean;
+  budgetKind: "fixed" | "hourly" | "unknown";
 };
-
-function formatValue(budget: number | null) {
-  if (budget == null || Number.isNaN(budget)) return "—";
-  if (budget >= 1000) return `$${(budget / 1000).toFixed(0)}k`;
-  return `$${Math.round(budget)}`;
-}
 
 function DroppableColumn({
   id,
@@ -60,13 +57,13 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-64 shrink-0 flex-col rounded-xl border border-clinq-glass-border bg-background/40 backdrop-blur-sm transition-shadow",
+        "flex w-64 shrink-0 flex-col rounded-xl border border-border bg-card/50 backdrop-blur-sm transition-shadow",
         isOver && "ring-2 ring-primary/35 ring-offset-2 ring-offset-background",
       )}
     >
       <div
         className={cn(
-          "flex items-center justify-between border-b border-clinq-glass-border px-3 py-2.5",
+          "flex items-center justify-between border-b border-border px-3 py-2.5",
           tone,
         )}
       >
@@ -102,20 +99,36 @@ function LeadCard({
       {...attributes}
       onClick={onSelect}
       className={cn(
-        "glass-card-hover group rounded-lg border border-clinq-glass-border p-3 text-left transition-all",
+        "group rounded-lg border border-border bg-card/30 p-3 text-left shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md",
         selected && "ring-2 ring-primary/40 ai-glow-subtle",
         card.score >= 80 && "border-clinq-success/40 bg-clinq-success/5",
       )}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <p className="text-sm font-medium leading-snug text-foreground">{card.name}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold leading-snug text-foreground">{card.title}</p>
+          {card.summary ? (
+            <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">{card.summary}</p>
+          ) : null}
+        </div>
         <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
       <div className="flex items-center justify-between gap-2">
         <Badge variant="secondary" className="text-[10px]">
           Score {card.score}
         </Badge>
-        <span className="text-xs text-clinq-success">{formatValue(card.budget)}</span>
+        {card.showBudget ? (
+          <span className="inline-flex items-center gap-1 text-xs tabular-nums text-foreground">
+            {card.budgetKind === "hourly" ? (
+              <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            ) : card.budgetKind === "fixed" ? (
+              <Briefcase className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            ) : null}
+            {card.budgetLabel}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
       </div>
     </button>
   );

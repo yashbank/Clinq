@@ -40,6 +40,8 @@ export default async function DashboardPage() {
     insights,
     topPriorityLeads,
     dailyActions,
+    preferredCurrency,
+    usdToForeignRates,
   } = data;
   if (needsProfileOnboarding) {
     redirect("/onboarding");
@@ -73,7 +75,9 @@ export default async function DashboardPage() {
                 <PipelinePreview
                   stages={stages}
                   totalLeads={snapshot.activeLeads}
-                  totalPipelineValue={snapshot.pipelineValue}
+                  totalPipelineValueUsd={snapshot.pipelineValue}
+                  preferredCurrency={preferredCurrency}
+                  usdToForeignRates={usdToForeignRates}
                 />
                 <ProposalWidget proposals={recentProposals} />
               </div>

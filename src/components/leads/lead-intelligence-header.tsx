@@ -86,7 +86,7 @@ export function LeadIntelligenceHeader({
   const base = { ...parsedQuery };
 
   return (
-    <header className="shrink-0 border-b border-clinq-glass-border bg-background/90 backdrop-blur-md">
+    <header className="shrink-0 border-b border-border bg-background/90 backdrop-blur-md">
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <MobileAppNav />
@@ -151,13 +151,13 @@ export function LeadIntelligenceHeader({
               name="q"
               defaultValue={parsedQuery.q}
               placeholder="Search leads…"
-              className="clinq-input h-10 w-full min-w-0 rounded-lg border border-[var(--control-border)] bg-[var(--control-bg)] pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground sm:w-64"
+              className="clinq-input h-10 w-full min-w-0 rounded-lg border border-border bg-muted pl-10 pr-3 text-sm text-foreground placeholder:text-muted-foreground sm:w-64"
             />
           </form>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-clinq-glass-border/50 px-4 py-2.5 sm:px-6">
+      <div className="flex flex-col gap-2 border-t border-border/60 px-4 py-2.5 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">View</span>
           {(
@@ -280,7 +280,7 @@ export function LeadIntelligenceHeader({
         ) : null}
 
         {totalPages > 1 ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-clinq-glass-border/40 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2">
             <p className="text-[11px] text-muted-foreground">
               Page <span className="font-medium text-foreground">{currentPage}</span> of{" "}
               <span className="font-medium text-foreground">{totalPages}</span>
@@ -306,11 +306,11 @@ export function LeadIntelligenceHeader({
       </div>
 
       {leadCount > 0 ? (
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-clinq-glass-border/50 bg-sidebar/25 px-4 py-2 text-xs text-muted-foreground sm:px-6 sm:text-sm">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-border/60 bg-muted/20 px-4 py-2 text-xs text-muted-foreground sm:px-6 sm:text-sm">
           <span>
             Pipeline budgets (sum): <span className="font-medium text-foreground">{formatUsd(totalBudget)}</span>
           </span>
-          <span className="hidden h-3 w-px bg-clinq-glass-border sm:inline" />
+          <span className="hidden h-3 w-px bg-border sm:inline" />
           <span>
             Avg score: <span className="font-medium text-foreground">{avgScoreLabel}</span>
           </span>

@@ -28,7 +28,7 @@ export function DashboardOnboarding({
   const name = displayName?.split(/\s+/)[0];
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-clinq-glass-border/70 bg-background/60 px-5 py-5 sm:px-6 sm:py-6">
+    <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-background/60 px-5 py-5 sm:px-6 sm:py-6">
       <button
         type="button"
         onClick={() => {
@@ -60,19 +60,19 @@ export function DashboardOnboarding({
         </Link>
         <Link
           href="/proposals"
-          className="inline-flex items-center justify-center rounded-lg border border-clinq-glass-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/40"
+          className="inline-flex items-center justify-center rounded-lg border border-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
         >
           Open proposals
         </Link>
         <Link
           href="/pipeline"
-          className="inline-flex items-center justify-center rounded-lg border border-clinq-glass-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/40"
+          className="inline-flex items-center justify-center rounded-lg border border-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
         >
           View pipeline
         </Link>
         <Link
           href="/profile"
-          className="inline-flex items-center justify-center rounded-lg border border-clinq-glass-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/40"
+          className="inline-flex items-center justify-center rounded-lg border border-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
         >
           Profile &amp; intelligence
         </Link>

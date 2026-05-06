@@ -141,7 +141,7 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
       </header>
 
       {open ? (
-        <div className="rounded-2xl border border-clinq-glass-border/80 bg-background/50 p-5 sm:p-6">
+        <div className="rounded-2xl border border-border/80 bg-background/50 p-5 sm:p-6">
           <h2 className="text-sm font-semibold text-foreground">Create workflow</h2>
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
@@ -163,7 +163,7 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
                     }}
                     className={cn(
                       "rounded-xl border px-3 py-3 text-left text-sm transition-colors",
-                      type === t.id ? "border-primary/40 bg-primary/10 text-foreground" : "border-clinq-glass-border hover:bg-muted/20",
+                      type === t.id ? "border-primary/40 bg-primary/10 text-foreground" : "border-border hover:bg-muted/20",
                     )}
                   >
                     <span className="font-medium">{t.title}</span>
@@ -220,7 +220,7 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
 
       <div className="space-y-3">
         {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-clinq-glass-border/80 bg-background/30 px-6 py-14 text-center">
+          <div className="rounded-2xl border border-dashed border-border/80 bg-background/30 px-6 py-14 text-center">
             <Zap className="mx-auto h-8 w-8 text-primary/80" />
             <p className="mt-4 text-sm font-medium text-foreground">No workflows yet</p>
             <p className="mt-2 text-sm text-muted-foreground">Create a definition—execution ships in a later release.</p>
@@ -229,7 +229,7 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
           rows.map((row) => (
             <div
               key={row.id}
-              className="flex flex-col gap-4 rounded-2xl border border-clinq-glass-border/70 bg-background/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+              className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-background/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
             >
               <div className="min-w-0">
                 <p className="font-medium text-foreground">{row.name}</p>

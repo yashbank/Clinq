@@ -6,7 +6,12 @@ export type ParsedResumeAdvanced = {
   skills: string[];
   experience: string[];
   projects: string[];
+  /** Normalized technology tokens detected in the document (best-effort). */
+  tech_stack: string[];
 };
+
+const TECH_PATTERN =
+  /\b(JavaScript|TypeScript|React\.?js?|Next\.?js|Node\.?js|Python|Django|Flask|PostgreSQL|Postgres|MySQL|MongoDB|Redis|AWS|GCP|Azure|Docker|Kubernetes|K8s|Terraform|GraphQL|REST|gRPC|Go\b|Rust|Java\b|Spring|Kotlin|Swift|iOS|Android|React Native|Flutter|Ruby on Rails|Rails|PHP|Laravel|C\+\+|\.NET|C#|Tailwind|Figma|Webpack|Vite)\b/gi;
 
 function lines(text: string): string[] {
   return text
@@ -28,6 +33,18 @@ function takeBulletBlock(startIdx: number, all: string[], max: number): string[]
     else break;
   }
   return out.filter(Boolean);
+}
+
+function techStackFromText(text: string): string[] {
+  const found = new Set<string>();
+  const slice = text.slice(0, 80_000);
+  let m: RegExpExecArray | null;
+  const re = new RegExp(TECH_PATTERN.source, TECH_PATTERN.flags);
+  while ((m = re.exec(slice)) !== null) {
+    const v = m[0].replace(/\s+/g, " ").trim();
+    if (v.length > 1) found.add(v.replace(/\.js$/i, ".js"));
+  }
+  return [...found].slice(0, 40);
 }
 
 export function parseResumeAdvanced(text: string): ParsedResumeAdvanced {
@@ -63,9 +80,12 @@ export function parseResumeAdvanced(text: string): ParsedResumeAdvanced {
     }
   }
 
+  const tech_stack = dedupe(techStackFromText(text));
+
   return {
     skills: dedupe(skills),
     experience: dedupe(experience),
     projects: dedupe(projects),
+    tech_stack,
   };
 }

@@ -17,7 +17,7 @@ export function PlaceholderWorkspace({
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNavbar title={title} subtitle={description} />
         <main className="flex flex-1 flex-col items-center justify-center overflow-y-auto p-8 text-center">
-          <div className="glass-card max-w-md rounded-2xl border border-clinq-glass-border p-8">
+          <div className="max-w-md rounded-2xl border border-border bg-card/95 p-8 shadow-sm">
             <h1 className="text-xl font-semibold text-foreground">{title}</h1>
             <p className="mt-3 text-sm text-muted-foreground">{description}</p>
           </div>

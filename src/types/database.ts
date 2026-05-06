@@ -17,6 +17,11 @@ export type LeadRow = {
   /** Extractive or cached 1–2 line summary for list UI. */
   short_description?: string | null;
   budget: number | null;
+  budget_min?: number | null;
+  budget_max?: number | null;
+  budget_avg?: number | null;
+  currency_original?: string | null;
+  budget_usd?: number | null;
   score: number;
   stage: PipelineStage;
   email: string | null;

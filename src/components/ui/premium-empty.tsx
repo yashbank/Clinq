@@ -22,12 +22,12 @@ export function PremiumEmpty({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-2xl border border-clinq-glass-border/60 bg-background/[0.35] px-6 py-14 text-center transition-[border-color,background-color] duration-300",
+        "flex flex-col items-center justify-center rounded-2xl border border-border/60 bg-background/[0.35] px-6 py-14 text-center transition-[border-color,background-color] duration-300",
         className,
       )}
     >
       {Icon ? (
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-clinq-glass-border/70 bg-clinq-glass/30">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/70 bg-muted/30">
           <Icon className="h-6 w-6 text-primary" strokeWidth={1.5} />
         </div>
       ) : null}
@@ -56,7 +56,7 @@ export function PremiumEmpty({
           "href" in secondary ? (
             <Link
               href={secondary.href}
-              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-clinq-glass-border bg-background/60 px-4 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/40"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-background/60 px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
             >
               {secondary.label}
             </Link>
@@ -64,7 +64,7 @@ export function PremiumEmpty({
             <button
               type="button"
               onClick={secondary.onClick}
-              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-clinq-glass-border bg-background/60 px-4 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/40"
+              className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-background/60 px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
             >
               {secondary.label}
             </button>

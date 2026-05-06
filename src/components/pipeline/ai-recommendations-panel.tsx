@@ -25,7 +25,7 @@ const RECS = [
 export function AIRecommendationsPanel() {
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-clinq-glass-border px-4 py-3">
+      <div className="border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold text-foreground">AI recommendations</h2>
@@ -38,7 +38,7 @@ export function AIRecommendationsPanel() {
         {RECS.map((r) => (
           <div
             key={r.title}
-            className="glass-card-hover rounded-xl border border-clinq-glass-border p-3"
+            className="rounded-xl border border-border bg-card/95 p-3 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md"
           >
             <div className="mb-2 flex items-center gap-2">
               <r.icon className="h-3.5 w-3.5 text-primary" />

@@ -20,7 +20,7 @@ export function LeadFreelancerMatchSection({
 }) {
   if (!freelancer || (freelancer.skills.length === 0 && freelancer.niches.length === 0 && freelancer.techStack.length === 0)) {
     return (
-      <div className="border-b border-clinq-glass-border p-5">
+      <div className="border-b border-border p-5">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
           Fit vs your profile
@@ -37,7 +37,7 @@ export function LeadFreelancerMatchSection({
   const signals = m.warnings.filter((w) => !w.toLowerCase().startsWith("risk:"));
 
   return (
-    <div className="border-b border-clinq-glass-border p-5">
+    <div className="border-b border-border p-5">
       <div className="flex items-center gap-2 text-sm font-medium text-foreground">
         <Sparkles className="h-4 w-4 text-primary" />
         Fit vs your profile
@@ -108,7 +108,7 @@ export function LeadFreelancerMatchSection({
 
 function Metric({ icon: Icon, label, value }: { icon: typeof Wrench; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-clinq-glass-border/50 bg-clinq-glass/20 px-2.5 py-2.5 text-center">
+    <div className="rounded-xl border border-border/50 bg-muted/20 px-2.5 py-2.5 text-center">
       <Icon className="mx-auto h-3.5 w-3.5 text-primary opacity-90" />
       <p className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{value}</p>

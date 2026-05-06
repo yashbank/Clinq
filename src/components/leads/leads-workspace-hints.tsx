@@ -9,7 +9,7 @@ export function LeadsWorkspaceHints() {
     <div className="grid gap-3 sm:grid-cols-2">
       <Link
         href="/profile"
-        className="group flex items-center justify-between rounded-xl border border-clinq-glass-border/70 bg-background/40 px-4 py-3.5 transition-colors hover:border-primary/25 hover:bg-clinq-glass/30"
+        className="group flex items-center justify-between rounded-xl border border-border/70 bg-background/40 px-4 py-3.5 transition-colors hover:border-primary/25 hover:bg-muted/30"
       >
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -24,7 +24,7 @@ export function LeadsWorkspaceHints() {
       </Link>
       <Link
         href="/integrations"
-        className="group flex items-center justify-between rounded-xl border border-clinq-glass-border/70 bg-background/40 px-4 py-3.5 transition-colors hover:border-primary/25 hover:bg-clinq-glass/30"
+        className="group flex items-center justify-between rounded-xl border border-border/70 bg-background/40 px-4 py-3.5 transition-colors hover:border-primary/25 hover:bg-muted/30"
       >
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">

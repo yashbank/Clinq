@@ -127,9 +127,9 @@ export function SnippetsLibrary({ onClose }: SnippetsLibraryProps) {
       />
 
       {/* Panel */}
-      <div className="relative ml-auto flex h-full w-full max-w-2xl flex-col border-l border-clinq-glass-border bg-sidebar">
+      <div className="relative ml-auto flex h-full w-full max-w-2xl flex-col border-l border-border bg-sidebar">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-clinq-glass-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
               <BookOpen className="h-5 w-5 text-primary" />
@@ -154,7 +154,7 @@ export function SnippetsLibrary({ onClose }: SnippetsLibraryProps) {
         </div>
 
         {/* Search & Actions */}
-        <div className="flex items-center gap-3 border-b border-clinq-glass-border px-6 py-3">
+        <div className="flex items-center gap-3 border-b border-border px-6 py-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -162,7 +162,7 @@ export function SnippetsLibrary({ onClose }: SnippetsLibraryProps) {
               placeholder="Search snippets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-full rounded-xl border border-clinq-glass-border bg-clinq-glass pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded-xl border border-border bg-muted pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <Button className="gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90">
@@ -173,7 +173,7 @@ export function SnippetsLibrary({ onClose }: SnippetsLibraryProps) {
 
         <div className="flex flex-1 overflow-hidden">
           {/* Categories Sidebar */}
-          <div className="w-48 shrink-0 border-r border-clinq-glass-border p-4">
+          <div className="w-48 shrink-0 border-r border-border p-4">
             <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Categories
             </p>
@@ -186,7 +186,7 @@ export function SnippetsLibrary({ onClose }: SnippetsLibraryProps) {
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
                     activeCategory === cat.id
                       ? "bg-primary/20 text-primary"
-                      : "text-muted-foreground hover:bg-clinq-glass hover:text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   <span>{cat.label}</span>
@@ -211,7 +211,7 @@ export function SnippetsLibrary({ onClose }: SnippetsLibraryProps) {
               {filteredSnippets.map((snippet) => (
                 <div
                   key={snippet.id}
-                  className="group rounded-xl border border-clinq-glass-border bg-clinq-glass/30 p-4 transition-all hover:border-clinq-glass-border hover:bg-clinq-glass/50"
+                  className="group rounded-xl border border-border bg-muted/30 p-4 transition-all hover:border-border hover:bg-muted/50"
                 >
                   <div className="mb-2 flex items-start justify-between">
                     <div className="flex items-center gap-2">

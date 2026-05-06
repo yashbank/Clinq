@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { formatUsdTotalForDisplay } from "@/lib/currency/format-pipeline-budget";
 import { cn } from "@/lib/utils";
 import type { DashboardStageRow } from "@/lib/dashboard-stats";
 
@@ -17,19 +18,22 @@ const BAR_COLORS = [
 export function PipelinePreview({
   stages,
   totalLeads,
-  totalPipelineValue,
+  totalPipelineValueUsd,
+  preferredCurrency,
+  usdToForeignRates,
 }: {
   stages: DashboardStageRow[];
   totalLeads: number;
-  totalPipelineValue: number;
+  totalPipelineValueUsd: number;
+  preferredCurrency: string;
+  usdToForeignRates: Record<string, number> | null;
 }) {
   const maxCount = Math.max(1, ...stages.map((s) => s.count));
-  const fmt = (n: number) =>
-    n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : n > 0 ? `$${Math.round(n).toLocaleString()}` : "$0";
+  const fmt = (n: number) => formatUsdTotalForDisplay(n, preferredCurrency, usdToForeignRates);
 
   if (totalLeads === 0) {
     return (
-      <div className="glass-card flex flex-col justify-center overflow-hidden rounded-2xl border border-clinq-glass-border/60 p-8 text-center">
+      <div className="flex flex-col justify-center overflow-hidden rounded-2xl border border-border bg-card/95 p-8 text-center shadow-sm">
         <h3 className="text-sm font-semibold text-foreground">Pipeline</h3>
         <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
           Stages reflect your saved leads. Add one on <span className="text-foreground">Leads</span>, then move cards on{" "}
@@ -37,7 +41,7 @@ export function PipelinePreview({
         </p>
         <Link
           href="/leads"
-          className="mt-6 inline-flex items-center justify-center gap-2 self-center rounded-lg border border-clinq-glass-border bg-background/60 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-clinq-glass/50"
+          className="mt-6 inline-flex items-center justify-center gap-2 self-center rounded-lg border border-border bg-background/60 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:scale-[0.99]"
         >
           Add a lead
           <ArrowUpRight className="h-4 w-4 opacity-70" />
@@ -47,12 +51,12 @@ export function PipelinePreview({
   }
 
   return (
-    <div className="glass-card overflow-hidden rounded-2xl border border-clinq-glass-border/60">
-      <div className="flex items-center justify-between border-b border-clinq-glass-border px-5 py-4">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div>
           <h3 className="font-semibold text-foreground">Pipeline</h3>
           <p className="text-xs text-muted-foreground">
-            {totalLeads} lead{totalLeads !== 1 ? "s" : ""} · {fmt(totalPipelineValue)} in budgets
+            {totalLeads} lead{totalLeads !== 1 ? "s" : ""} · {fmt(totalPipelineValueUsd)} in budgets
           </p>
         </div>
         <Link

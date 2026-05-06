@@ -85,7 +85,7 @@ function LeadIntelligencePanel({ row }: { row: LeadRow }) {
   const intel = parseStoredLeadIntelligence(row.intelligence);
   if (!intel) {
     return (
-      <div className="border-b border-clinq-glass-border p-5">
+      <div className="border-b border-border p-5">
         <p className="text-xs font-medium text-foreground">Pipeline intelligence</p>
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           No stored intelligence blob yet. Re-save the lead or refresh scoring from your workflow to populate heuristics.
@@ -106,40 +106,40 @@ function LeadIntelligencePanel({ row }: { row: LeadRow }) {
   const wf = intel.workflow;
 
   return (
-    <div className="border-b border-clinq-glass-border p-5">
+    <div className="border-b border-border p-5">
       <p className="text-xs font-medium text-foreground">Pipeline intelligence</p>
       <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
         Rule-based read of text, budget, and your profile overlap—not legal or financial advice.
       </p>
 
       <div className="mt-4 grid grid-cols-2 gap-2 text-[11px]">
-        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
           <p className="text-muted-foreground">Scam risk</p>
           <p className="mt-0.5 font-semibold tabular-nums text-foreground">
             {wf.scam_risk_label} · {wf.scam_risk_score}/100
           </p>
         </div>
-        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
           <p className="text-muted-foreground">Client seriousness</p>
           <p className="mt-0.5 font-semibold tabular-nums text-foreground">{wf.seriousness_score}/100</p>
         </div>
-        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
           <p className="text-muted-foreground">Urgency signal</p>
           <p className="mt-0.5 font-semibold tabular-nums text-foreground">{s.urgencyScore}/100</p>
         </div>
-        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
           <p className="text-muted-foreground">Portfolio overlap</p>
           <p className="mt-0.5 font-semibold tabular-nums text-foreground">{s.portfolioMatchScore}/100</p>
         </div>
-        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
           <p className="text-muted-foreground">Competition load</p>
           <p className="mt-0.5 font-semibold tabular-nums text-foreground">{compDiff}/100</p>
         </div>
-        <div className="rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
           <p className="text-muted-foreground">Proposal effort (heuristic)</p>
           <p className="mt-0.5 font-semibold tabular-nums text-foreground">{effort}/100</p>
         </div>
-        <div className="col-span-2 rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-2.5 py-2">
+        <div className="col-span-2 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2">
           <p className="text-muted-foreground">Conversion potential (heuristic blend)</p>
           <p className="mt-0.5 font-semibold tabular-nums text-foreground">{s.proposalSuccessProbability}/100</p>
         </div>
@@ -148,12 +148,12 @@ function LeadIntelligencePanel({ row }: { row: LeadRow }) {
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{wf.portfolio_angle_suggestion}</p>
 
       <Collapsible className="group/li mt-4">
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-clinq-glass-border/60 bg-background/30 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-clinq-glass/25">
+        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-background/30 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-muted/25">
           Full reasoning
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]/li:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <ul className="mt-2 space-y-1.5 rounded-lg border border-clinq-glass-border/50 bg-background/25 p-3 text-[11px] leading-relaxed text-muted-foreground">
+          <ul className="mt-2 space-y-1.5 rounded-lg border border-border/50 bg-background/25 p-3 text-[11px] leading-relaxed text-muted-foreground">
             {intel.explanations.slice(0, 10).map((line, i) => (
               <li key={i}>· {line}</li>
             ))}
@@ -171,8 +171,8 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
   const insights = [ui.aiInsight, row.project_description].filter(Boolean) as string[];
 
   return (
-    <aside className="flex w-full max-w-[420px] shrink-0 flex-col border-l border-clinq-glass-border bg-background/90 backdrop-blur-md sm:w-[420px]">
-      <div className="flex items-center justify-between border-b border-clinq-glass-border p-4">
+    <aside className="flex w-full max-w-[420px] shrink-0 flex-col border-l border-border bg-background/90 backdrop-blur-md sm:w-[420px]">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <div>
           <p className="text-xs text-muted-foreground">Lead</p>
           <h3 className="text-lg font-semibold text-foreground">{row.client_name}</h3>
@@ -183,7 +183,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="border-b border-clinq-glass-border p-5">
+        <div className="border-b border-border p-5">
           <div className="flex items-start gap-4">
             <div className="relative">
               <div
@@ -214,13 +214,13 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
           </div>
 
           <div className="mt-4 flex gap-2">
-            <Button variant="ghost" size="sm" className="flex-1 gap-2 border border-clinq-glass-border" asChild>
+            <Button variant="ghost" size="sm" className="flex-1 gap-2 border border-border" asChild>
               <a href={row.email ? `mailto:${row.email}` : "#"} aria-disabled={!row.email}>
                 <Mail className="h-4 w-4" />
                 Email
               </a>
             </Button>
-            <Button variant="ghost" size="sm" className="flex-1 gap-2 border border-clinq-glass-border" asChild>
+            <Button variant="ghost" size="sm" className="flex-1 gap-2 border border-border" asChild>
               <a href={row.phone ? `tel:${row.phone}` : "#"} aria-disabled={!row.phone}>
                 <Phone className="h-4 w-4" />
                 Call
@@ -235,7 +235,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 border-b border-clinq-glass-border p-5">
+        <div className="grid grid-cols-3 gap-4 border-b border-border p-5">
           <div className="flex flex-col items-center">
             <CircularScore score={row.score} />
             <span className="mt-2 text-xs text-muted-foreground">AI score</span>
@@ -250,7 +250,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
           </div>
         </div>
 
-        <div className="border-b border-clinq-glass-border p-5">
+        <div className="border-b border-border p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-clinq-success" />
@@ -262,7 +262,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
           </div>
         </div>
 
-        <div className="border-b border-clinq-glass-border p-5">
+        <div className="border-b border-border p-5">
           <div className="rounded-xl bg-primary/10 p-4">
             <div className="flex items-center gap-2 text-primary">
               <Zap className="h-4 w-4" />
@@ -282,14 +282,14 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
 
         <LeadIntelligencePanel row={row} />
 
-        <div className="border-b border-clinq-glass-border p-5">
+        <div className="border-b border-border p-5">
           <div className="mb-3 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-foreground">Signals &amp; notes</span>
           </div>
           <div className="space-y-2">
             {insights.map((insight, i) => (
-              <div key={i} className="flex items-start gap-2 rounded-lg bg-clinq-glass/50 p-3">
+              <div key={i} className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
                 <Target className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
                 <span className="text-xs leading-relaxed text-muted-foreground">{insight}</span>
               </div>
@@ -297,7 +297,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
           </div>
         </div>
 
-        <div className="border-b border-clinq-glass-border p-5">
+        <div className="border-b border-border p-5">
           <span className="text-sm font-medium text-foreground">Contact</span>
           <div className="mt-3 space-y-3 text-sm">
             <div className="flex items-center gap-3">
@@ -315,13 +315,13 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
           </div>
         </div>
 
-        <div className="border-b border-clinq-glass-border p-5">
+        <div className="border-b border-border p-5">
           <span className="text-sm font-medium text-foreground">Signals</span>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-clinq-glass px-2.5 py-1 text-muted-foreground">
+            <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
               Competition {row.competition_level}/5
             </span>
-            <span className="rounded-full bg-clinq-glass px-2.5 py-1 text-muted-foreground">
+            <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
               Brief clarity {row.project_quality}/5
             </span>
             {ui.scamRisk === "low" ? (
@@ -344,7 +344,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
         </div>
       </div>
 
-      <div className="border-t border-clinq-glass-border p-4">
+      <div className="border-t border-border p-4">
         <Button className="w-full gap-2 bg-gradient-to-r from-primary to-accent text-primary-foreground" asChild>
           <a href="/proposals">
             <Sparkles className="h-4 w-4" />

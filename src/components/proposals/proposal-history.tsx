@@ -161,9 +161,9 @@ export function ProposalHistory({ onClose }: ProposalHistoryProps) {
       />
 
       {/* Panel */}
-      <div className="relative ml-auto flex h-full w-full max-w-3xl flex-col border-l border-clinq-glass-border bg-sidebar">
+      <div className="relative ml-auto flex h-full w-full max-w-3xl flex-col border-l border-border bg-sidebar">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-clinq-glass-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
               <History className="h-5 w-5 text-primary" />
@@ -188,7 +188,7 @@ export function ProposalHistory({ onClose }: ProposalHistoryProps) {
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-4 gap-4 border-b border-clinq-glass-border px-6 py-4">
+        <div className="grid grid-cols-4 gap-4 border-b border-border px-6 py-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-foreground">
               {stats.totalSent}
@@ -220,7 +220,7 @@ export function ProposalHistory({ onClose }: ProposalHistoryProps) {
         </div>
 
         {/* Search & Filters */}
-        <div className="flex items-center gap-3 border-b border-clinq-glass-border px-6 py-3">
+        <div className="flex items-center gap-3 border-b border-border px-6 py-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -228,7 +228,7 @@ export function ProposalHistory({ onClose }: ProposalHistoryProps) {
               placeholder="Search proposals..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-full rounded-xl border border-clinq-glass-border bg-clinq-glass pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded-xl border border-border bg-muted pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -241,7 +241,7 @@ export function ProposalHistory({ onClose }: ProposalHistoryProps) {
                     "rounded-lg px-3 py-1.5 text-xs font-medium transition-all",
                     statusFilter === status
                       ? "bg-primary/20 text-primary"
-                      : "text-muted-foreground hover:bg-clinq-glass hover:text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
@@ -259,11 +259,11 @@ export function ProposalHistory({ onClose }: ProposalHistoryProps) {
               return (
                 <div
                   key={proposal.id}
-                  className="group rounded-xl border border-clinq-glass-border bg-clinq-glass/30 p-4 transition-all hover:border-clinq-glass-border hover:bg-clinq-glass/50"
+                  className="group rounded-xl border border-border bg-muted/30 p-4 transition-all hover:border-border hover:bg-muted/50"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-clinq-glass">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                         <FileText className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
@@ -332,7 +332,7 @@ export function ProposalHistory({ onClose }: ProposalHistoryProps) {
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="rounded bg-clinq-glass px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                         {proposal.mode}
                       </span>
                     </div>

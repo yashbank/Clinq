@@ -18,6 +18,7 @@ import {
 } from "@/actions/profile";
 import { refreshProfileIntelligenceAction } from "@/actions/profile-intelligence";
 import type { FreelancerProfileFields } from "@/types/profile";
+import { isSupportedDisplayCurrency } from "@/types/currency";
 
 const STEP_KEY = "clinq_onboarding_step_v1";
 const TOTAL = 8;
@@ -85,6 +86,9 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
 
   const persist = useCallback(async () => {
     return updateFreelancerProfileAction({
+      preferred_currency: isSupportedDisplayCurrency(initial.preferred_currency ?? "")
+        ? (initial.preferred_currency as "USD" | "INR" | "GBP" | "CAD" | "EUR")
+        : "USD",
       display_name: displayName.trim() || null,
       bio: mergeGoalsIntoBio(bodyBio, focusGoals),
       website_url: websiteUrl.trim() || null,
@@ -104,6 +108,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
     experience,
     focusGoals,
     github,
+    initial.preferred_currency,
     initial.tech_stack,
     linkedin,
     nichesStr,
@@ -120,6 +125,9 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
       startTransition(() => {
         void (async () => {
           const res = await updateFreelancerProfileAction({
+            preferred_currency: isSupportedDisplayCurrency(initial.preferred_currency ?? "")
+              ? (initial.preferred_currency as "USD" | "INR" | "GBP" | "CAD" | "EUR")
+              : "USD",
             display_name: displayName.trim() || null,
             bio: mergeGoalsIntoBio(bodyBio, focusGoals),
             website_url: websiteUrl.trim() || null,
@@ -143,6 +151,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
     experience,
     focusGoals,
     github,
+    initial.preferred_currency,
     initial.tech_stack,
     linkedin,
     nichesStr,
@@ -180,6 +189,9 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
     startTransition(() => {
       void (async () => {
         const res = await updateFreelancerProfileAction({
+          preferred_currency: isSupportedDisplayCurrency(initial.preferred_currency ?? "")
+            ? (initial.preferred_currency as "USD" | "INR" | "GBP" | "CAD" | "EUR")
+            : "USD",
           display_name: displayName.trim() || null,
           bio: mergeGoalsIntoBio(bodyBio, focusGoals),
           website_url: websiteUrl.trim() || null,

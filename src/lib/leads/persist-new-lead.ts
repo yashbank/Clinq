@@ -8,6 +8,7 @@ import { analyzeLead } from "@/lib/ai/lead-intelligence";
 import { buildLeadIntelligenceRecord } from "@/lib/ai/lead-intelligence-pipeline";
 import { deriveLeadWorkflowSignals } from "@/lib/ai/lead-workflow";
 import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
+import { resolveLeadBudgetColumnsFromImportMetadata } from "@/lib/currency/lead-budget-columns";
 import { normalizePlatformLabel } from "@/lib/leads/platforms";
 
 import type { LeadRow } from "@/types/database";
@@ -61,8 +62,13 @@ export async function insertLeadWithIntelligence(
       ? Math.min(5, Math.max(1, input.project_quality))
       : briefQualityFromLength(input.project_description);
 
+  const budgetCols = await resolveLeadBudgetColumnsFromImportMetadata(
+    options?.metadataExtra as Record<string, unknown> | undefined,
+  );
+  const budgetForIntel = input.budget ?? budgetCols.budget_avg ?? null;
+
   const intel = analyzeLead({
-    budget: input.budget ?? null,
+    budget: budgetForIntel,
     repeatHire: Boolean(input.repeat_hire),
     competitionLevel: input.competition_level ?? 2,
     projectQuality,
@@ -80,7 +86,7 @@ export async function insertLeadWithIntelligence(
     intel,
     {
       projectDescription: input.project_description ?? null,
-      budget: input.budget ?? null,
+      budget: budgetForIntel,
       company: input.company ?? null,
       repeatHire: Boolean(input.repeat_hire),
     },
@@ -101,7 +107,7 @@ export async function insertLeadWithIntelligence(
       portfolio_angle_suggestion: workflow.portfolio_angle_suggestion,
     },
     scoreInput: {
-      budget: input.budget ?? null,
+      budget: budgetForIntel,
       repeatHire: Boolean(input.repeat_hire),
       competitionLevel: input.competition_level ?? 2,
       projectQuality,
@@ -133,13 +139,20 @@ export async function insertLeadWithIntelligence(
   const shortDescRaw = (options?.shortDescription?.trim() || generateShortLeadDescription(input.project_description ?? "")).trim();
   const short_description = shortDescRaw.length > 0 ? shortDescRaw : null;
 
+  const resolvedBudget = budgetForIntel;
+
   const row = {
     user_id: userId,
     client_name: input.client_name.trim(),
     platform: input.platform?.trim() || null,
     project_description: input.project_description?.trim() || null,
     short_description,
-    budget: input.budget ?? null,
+    budget: resolvedBudget,
+    budget_min: budgetCols.budget_min,
+    budget_max: budgetCols.budget_max,
+    budget_avg: budgetCols.budget_avg,
+    currency_original: budgetCols.currency_original,
+    budget_usd: budgetCols.budget_usd,
     score: intel.score,
     email: input.email?.trim() || null,
     phone: input.phone?.trim() || null,

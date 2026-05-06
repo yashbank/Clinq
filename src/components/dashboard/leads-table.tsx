@@ -10,11 +10,6 @@ import { cn } from "@/lib/utils";
 import type { DashboardRecentLead } from "@/lib/dashboard-stats";
 import type { PipelineStage } from "@/types/database";
 
-function formatBudget(n: number | null) {
-  if (n == null || Number.isNaN(n)) return "—";
-  return `$${Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-}
-
 function stageLabel(stage: PipelineStage) {
   const labels: Record<PipelineStage, string> = {
     saved: "Saved",
@@ -65,14 +60,14 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
         title="No leads on the board"
         description="Capture an opportunity on Leads so this snapshot shows scores and stages from your pipeline."
         primary={{ label: "Open Leads", href: "/leads" }}
-        className="glass-card overflow-hidden rounded-2xl border-clinq-glass-border/60 py-16"
+        className="overflow-hidden rounded-2xl border border-border bg-card/90 py-16 shadow-sm"
       />
     );
   }
 
   return (
-    <div className="glass-card overflow-hidden rounded-2xl border border-clinq-glass-border/60">
-      <div className="flex flex-col gap-4 border-b border-clinq-glass-border p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm">
+      <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold text-foreground">Recent leads</h3>
           <p className="text-sm text-muted-foreground">Latest updates from your workspace</p>
@@ -84,7 +79,7 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
             placeholder="Filter this list…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="h-9 w-full rounded-lg border border-clinq-glass-border bg-background/50 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20"
+            className="h-9 w-full rounded-lg border border-border bg-background/50 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/20"
           />
         </div>
       </div>
@@ -92,7 +87,7 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px]">
           <thead>
-            <tr className="border-b border-clinq-glass-border bg-muted/20">
+            <tr className="border-b border-border bg-muted/20">
               <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Client
               </th>
@@ -113,22 +108,22 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-clinq-glass-border/50">
+          <tbody className="divide-y divide-border/50">
             {filtered.map((lead) => {
               const hint = hintFromMetadata(lead.metadata);
               const updated = formatDistanceToNow(new Date(lead.updated_at), { addSuffix: true });
               return (
-                <tr key={lead.id} className="transition-colors hover:bg-muted/15">
+                <tr key={lead.id} className="transition-colors duration-150 hover:bg-muted/20">
                   <td className="px-5 py-3.5">
                     <p className="font-medium text-foreground">{lead.client_name}</p>
                     <p className="text-sm text-muted-foreground">{lead.company ?? "—"}</p>
                   </td>
-                  <td className="px-5 py-3.5 text-sm tabular-nums text-foreground">{formatBudget(lead.budget)}</td>
+                  <td className="px-5 py-3.5 text-sm tabular-nums text-foreground">{lead.budgetLabel}</td>
                   <td className="px-5 py-3.5 text-center">
                     <span className={cn("text-sm font-semibold tabular-nums", scoreTone(lead.score))}>{lead.score}</span>
                   </td>
                   <td className="px-5 py-3.5">
-                    <span className="rounded-md border border-clinq-glass-border bg-background/40 px-2 py-0.5 text-xs font-medium text-foreground">
+                    <span className="rounded-md border border-border bg-muted/25 px-2 py-0.5 text-xs font-medium text-foreground">
                       {stageLabel(lead.stage)}
                     </span>
                   </td>
@@ -141,7 +136,7 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
         </table>
       </div>
 
-      <div className="flex items-center justify-between border-t border-clinq-glass-border px-5 py-3">
+      <div className="flex items-center justify-between border-t border-border px-5 py-3">
         <p className="text-sm text-muted-foreground">
           Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
           <span className="font-medium text-foreground">{leads.length}</span> on dashboard

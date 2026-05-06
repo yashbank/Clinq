@@ -18,7 +18,7 @@ export function TestimonialsSection() {
         {quotes.map((q) => (
           <blockquote
             key={q.name}
-            className="glass-card rounded-2xl border border-clinq-glass-border p-8"
+            className="rounded-2xl border border-border bg-card/95 p-8 shadow-sm"
           >
             <p className="text-lg leading-relaxed text-foreground">&ldquo;{q.quote}&rdquo;</p>
             <footer className="mt-6 text-sm text-muted-foreground">

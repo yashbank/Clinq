@@ -93,9 +93,9 @@ export function ProposalSettings() {
   };
 
   return (
-    <div className="glass-card rounded-2xl">
+    <div className="rounded-2xl border border-border bg-card/95 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-clinq-glass-border p-4">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
             <Settings className="h-4 w-4 text-primary" />
@@ -110,7 +110,7 @@ export function ProposalSettings() {
       </div>
 
       {/* Proposal Mode */}
-      <div className="border-b border-clinq-glass-border p-4">
+      <div className="border-b border-border p-4">
         <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Proposal Mode
         </p>
@@ -123,7 +123,7 @@ export function ProposalSettings() {
                 "flex w-full items-start gap-3 rounded-xl p-3 text-left transition-all",
                 mode === m.id
                   ? "bg-primary/15 ring-1 ring-primary/30"
-                  : "bg-clinq-glass/50 hover:bg-clinq-glass"
+                  : "bg-muted/50 hover:bg-muted"
               )}
             >
               <div
@@ -131,7 +131,7 @@ export function ProposalSettings() {
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
                   mode === m.id
                     ? "bg-primary/20 text-primary"
-                    : "bg-clinq-glass text-muted-foreground"
+                    : "bg-muted text-muted-foreground"
                 )}
               >
                 <m.icon className="h-4 w-4" />
@@ -163,7 +163,7 @@ export function ProposalSettings() {
       </div>
 
       {/* Tone Selection */}
-      <div className="border-b border-clinq-glass-border p-4">
+      <div className="border-b border-border p-4">
         <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Tone & Voice
         </p>
@@ -176,7 +176,7 @@ export function ProposalSettings() {
                 "rounded-lg px-3 py-2 text-left transition-all",
                 tone === t.id
                   ? "bg-accent/15 ring-1 ring-accent/30"
-                  : "bg-clinq-glass/50 hover:bg-clinq-glass"
+                  : "bg-muted/50 hover:bg-muted"
               )}
             >
               <span
@@ -196,7 +196,7 @@ export function ProposalSettings() {
       </div>
 
       {/* Focus Areas */}
-      <div className="border-b border-clinq-glass-border p-4">
+      <div className="border-b border-border p-4">
         <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Focus Areas
         </p>
@@ -209,7 +209,7 @@ export function ProposalSettings() {
                 "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
                 selectedFocus.includes(area.id)
                   ? "bg-clinq-success/15 text-clinq-success ring-1 ring-clinq-success/30"
-                  : "bg-clinq-glass text-muted-foreground hover:text-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
               )}
             >
               <area.icon className="h-3 w-3" />
@@ -239,7 +239,7 @@ export function ProposalSettings() {
             >
               <span
                 className={cn(
-                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all",
+                  "absolute top-0.5 h-4 w-4 rounded-full border border-border bg-background shadow-sm transition-all",
                   includePortfolio ? "left-[18px]" : "left-0.5"
                 )}
               />
@@ -260,7 +260,7 @@ export function ProposalSettings() {
             >
               <span
                 className={cn(
-                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all",
+                  "absolute top-0.5 h-4 w-4 rounded-full border border-border bg-background shadow-sm transition-all",
                   includePricing ? "left-[18px]" : "left-0.5"
                 )}
               />
@@ -281,7 +281,7 @@ export function ProposalSettings() {
             >
               <span
                 className={cn(
-                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all",
+                  "absolute top-0.5 h-4 w-4 rounded-full border border-border bg-background shadow-sm transition-all",
                   includeTimeline ? "left-[18px]" : "left-0.5"
                 )}
               />

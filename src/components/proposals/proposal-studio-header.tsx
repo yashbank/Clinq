@@ -15,7 +15,7 @@ export function ProposalStudioHeader({
   onOpenHistory,
 }: ProposalStudioHeaderProps) {
   return (
-    <header className="shrink-0 border-b border-clinq-glass-border bg-background/90">
+    <header className="shrink-0 border-b border-border bg-background/90">
       <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <MobileAppNav />
@@ -62,14 +62,14 @@ export function ProposalStudioHeader({
             History
           </Button>
 
-          <div className="hidden h-5 w-px bg-clinq-glass-border sm:block" />
+          <div className="hidden h-5 w-px bg-muted-border sm:block" />
 
-          <div className="hidden items-center gap-1.5 rounded-md border border-clinq-glass-border/60 bg-background/40 px-2 py-1 sm:flex">
+          <div className="hidden items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 sm:flex">
             <span className="h-2 w-2 rounded-full bg-clinq-success" />
             <span className="text-[11px] text-muted-foreground">Ready</span>
           </div>
 
-          <div className="hidden h-5 w-px bg-clinq-glass-border md:block" />
+          <div className="hidden h-5 w-px bg-muted-border md:block" />
 
           <Button
             type="button"
@@ -95,7 +95,7 @@ export function ProposalStudioHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-clinq-glass-border/40 bg-background/50 px-4 py-2 text-xs sm:px-6 sm:text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/40 bg-background/50 px-4 py-2 text-xs sm:px-6 sm:text-sm">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Studio</span>
           <span className="text-muted-foreground">/</span>

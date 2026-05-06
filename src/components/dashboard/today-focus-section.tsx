@@ -67,13 +67,21 @@ export function TodayFocusSection({
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
                 {a.leadId ? (
-                  <Button variant="outline" size="sm" className="h-8" asChild>
+                  <Button variant="outline" size="sm" asChild>
                     <Link href={leadHref(a.leadId, clientName)}>Open lead</Link>
                   </Button>
                 ) : null}
                 {a.type === "improve_proposal" ? (
-                  <Button variant="default" size="sm" className="h-8" asChild>
-                    <Link href="/proposals">Open proposal</Link>
+                  <Button variant="default" size="sm" asChild>
+                    <Link
+                      href={
+                        a.leadId
+                          ? `/proposals?leadId=${encodeURIComponent(a.leadId)}`
+                          : "/proposals"
+                      }
+                    >
+                      Open proposals
+                    </Link>
                   </Button>
                 ) : null}
               </div>

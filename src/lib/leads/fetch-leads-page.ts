@@ -12,6 +12,9 @@ export type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } fr
 /** Max rows loaded for “Recommended” sort before in-memory priority ordering (server-only). */
 export const RECOMMENDED_SORT_CAP = 800;
 
+/** Max rows loaded for text search before relevance ordering (server-only). */
+export const SEARCH_RELEVANCE_CAP = 400;
+
 export type LeadsQueryParams = {
   page: number;
   pageSize?: number;
@@ -85,6 +88,96 @@ function combinedListSort(a: LeadRow, b: LeadRow, q: string, profileTokens: stri
   return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
 }
 
+/**
+ * Relevance score for active search: profile/skill overlap in title (highest), then title/query,
+ * then description; unrelated rows are heavily penalized.
+ */
+function searchRelevanceScore(row: LeadRow, q: string, profileTokens: string[]): number {
+  const qq = q.trim().toLowerCase();
+  if (!qq) return 0;
+
+  const meta =
+    row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? (row.metadata as Record<string, unknown>) : {};
+  const title = typeof meta.project_title === "string" ? meta.project_title.toLowerCase() : "";
+  const name = row.client_name.toLowerCase();
+  const desc = (row.project_description ?? "").toLowerCase();
+
+  let skillInTitle = 0;
+  let skillInDesc = 0;
+  for (const tok of profileTokens) {
+    const t = tok.toLowerCase().trim();
+    if (t.length < 2) continue;
+    if (title.includes(t) || name.includes(t)) skillInTitle += 200;
+    else if (desc.includes(t)) skillInDesc += 72;
+  }
+  const skillScore = Math.min(5200, skillInTitle + skillInDesc);
+
+  const words = [...new Set(qq.split(/\s+/).filter((w) => w.length > 1))];
+  let titleHits = 0;
+  let nameHits = 0;
+  let descHits = 0;
+  for (const w of words) {
+    if (title.includes(w)) titleHits += 260;
+    if (name.includes(w)) nameHits += 110;
+    if (desc.includes(w)) descHits += 48;
+  }
+  if (qq.length >= 3) {
+    if (title.includes(qq) || name.includes(qq)) titleHits += 420;
+    if (desc.includes(qq)) descHits += 140;
+  }
+
+  let raw = skillScore * 2.4 + titleHits + nameHits * 0.9 + descHits * 0.5;
+
+  if (words.length > 0) {
+    const anyWordHit = words.some((w) => title.includes(w) || name.includes(w) || desc.includes(w));
+    if (!anyWordHit) raw -= 72_000;
+  }
+
+  const sink = row.interest_status === "not_interested" ? -14_000 : 0;
+  return raw + sink + sortKey(row) * 0.06;
+}
+
+function buildFilteredLeadsQuery(supabase: SupabaseClient, params: LeadsQueryParams) {
+  const view = params.view ?? "main";
+  let query = supabase.from("leads").select("*", { count: "exact" });
+
+  if (view === "archived") {
+    query = query.not("archived_at", "is", null).is("deleted_at", null);
+  } else {
+    query = query.is("archived_at", null).is("deleted_at", null);
+    if (view === "high_potential") {
+      query = query.gte("score", 80);
+    }
+  }
+
+  const source = params.source ?? "all";
+  if (source === "imported") query = query.eq("is_imported_lead", true);
+  else if (source === "manual") query = query.eq("is_imported_lead", false);
+  else if (source === "freelancer") query = query.eq("is_freelancer_channel", true);
+
+  const platform = params.platform ?? "all";
+  if (platform === "freelancer") query = query.eq("is_freelancer_channel", true);
+  else if (platform === "manual") query = query.eq("is_freelancer_channel", false);
+
+  const scoreBand = params.scoreBand ?? "all";
+  if (scoreBand === "low") query = query.lte("score", 50);
+  else if (scoreBand === "mid") query = query.gte("score", 51).lte("score", 79);
+  else if (scoreBand === "high") query = query.gte("score", 80);
+
+  const stage = params.stage ?? "all";
+  if (stage !== "all") query = query.eq("stage", stage);
+
+  const q = (params.q ?? "").trim();
+  if (q) {
+    const like = `%${escapeIlike(q)}%`;
+    query = query.or(
+      `client_name.ilike.${like},company.ilike.${like},project_description.ilike.${like},metadata->>project_title.ilike.${like}`,
+    );
+  }
+
+  return query;
+}
+
 export type LeadsListSummary = {
   activeCount: number;
   highScore80Plus: number;
@@ -132,7 +225,6 @@ export async function fetchLeadsPage(
   const pageSize = Math.min(50, Math.max(1, params.pageSize ?? 20));
   const page = Math.max(1, params.page ?? 1);
   const offset = (page - 1) * pageSize;
-  const view = params.view ?? "main";
   const q = (params.q ?? "").trim();
   const sort = params.sort ?? "default";
   const profileSearchTokens = (params.profileSearchTokens ?? [])
@@ -140,40 +232,7 @@ export async function fetchLeadsPage(
     .filter((s) => s.length > 1)
     .slice(0, 80);
 
-  let query = supabase.from("leads").select("*", { count: "exact" });
-
-  if (view === "archived") {
-    query = query.not("archived_at", "is", null).is("deleted_at", null);
-  } else {
-    query = query.is("archived_at", null).is("deleted_at", null);
-    if (view === "high_potential") {
-      query = query.gte("score", 80);
-    }
-  }
-
-  const source = params.source ?? "all";
-  if (source === "imported") query = query.eq("is_imported_lead", true);
-  else if (source === "manual") query = query.eq("is_imported_lead", false);
-  else if (source === "freelancer") query = query.eq("is_freelancer_channel", true);
-
-  const platform = params.platform ?? "all";
-  if (platform === "freelancer") query = query.eq("is_freelancer_channel", true);
-  else if (platform === "manual") query = query.eq("is_freelancer_channel", false);
-
-  const scoreBand = params.scoreBand ?? "all";
-  if (scoreBand === "low") query = query.lte("score", 50);
-  else if (scoreBand === "mid") query = query.gte("score", 51).lte("score", 79);
-  else if (scoreBand === "high") query = query.gte("score", 80);
-
-  const stage = params.stage ?? "all";
-  if (stage !== "all") query = query.eq("stage", stage);
-
-  if (q) {
-    const like = `%${escapeIlike(q)}%`;
-    query = query.or(
-      `client_name.ilike.${like},company.ilike.${like},project_description.ilike.${like},metadata->>project_title.ilike.${like}`,
-    );
-  }
+  let query = buildFilteredLeadsQuery(supabase, params);
 
   if (sort === "recommended") {
     query = query.order("updated_at", { ascending: false });
@@ -185,8 +244,12 @@ export async function fetchLeadsPage(
     const fullCount = count ?? pool.length;
     const cappedTotal = Math.min(fullCount, RECOMMENDED_SORT_CAP);
     const sorted = [...pool].sort((a, b) => {
-      const pa = computeLeadPriorityScore(a) + searchRankBonus(a, q, profileSearchTokens) * 0.02;
-      const pb = computeLeadPriorityScore(b) + searchRankBonus(b, q, profileSearchTokens) * 0.02;
+      const pa =
+        computeLeadPriorityScore(a) * (q ? 0.82 : 1) +
+        (q ? searchRelevanceScore(a, q, profileSearchTokens) * 0.22 : searchRankBonus(a, q, profileSearchTokens) * 0.02);
+      const pb =
+        computeLeadPriorityScore(b) * (q ? 0.82 : 1) +
+        (q ? searchRelevanceScore(b, q, profileSearchTokens) * 0.22 : searchRankBonus(b, q, profileSearchTokens) * 0.02);
       if (pb !== pa) return pb - pa;
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
@@ -194,7 +257,28 @@ export async function fetchLeadsPage(
     return { rows, total: cappedTotal };
   }
 
-  query = query.order("sort_key", { ascending: false }).order("updated_at", { ascending: false });
+  if (q) {
+    const sq = buildFilteredLeadsQuery(supabase, params).order("updated_at", { ascending: false });
+    const { data: poolRows, error, count } = await sq.range(0, SEARCH_RELEVANCE_CAP - 1);
+    if (error) {
+      throw new Error(error.message);
+    }
+    const pool = (poolRows ?? []) as LeadRow[];
+    const fullCount = count ?? pool.length;
+    const cappedTotal = Math.min(fullCount, SEARCH_RELEVANCE_CAP);
+    const sorted = [...pool].sort((a, b) => {
+      const ra = searchRelevanceScore(a, q, profileSearchTokens);
+      const rb = searchRelevanceScore(b, q, profileSearchTokens);
+      if (rb !== ra) return rb - ra;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+    const rows = sorted.slice(offset, offset + pageSize);
+    return { rows, total: cappedTotal };
+  }
+
+  query = buildFilteredLeadsQuery(supabase, params)
+    .order("sort_key", { ascending: false })
+    .order("updated_at", { ascending: false });
 
   const { data: rawRows, error, count } = await query.range(offset, offset + pageSize - 1);
   if (error) {

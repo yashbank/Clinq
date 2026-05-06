@@ -21,7 +21,7 @@ export function IntegrationPlatformMark({
   return (
     <div
       className={cn(
-        "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold tracking-tight text-white shadow-sm",
+        "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold tracking-tight text-primary-foreground shadow-sm",
         STYLES[id],
         className,
       )}

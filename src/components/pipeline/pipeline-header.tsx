@@ -7,20 +7,13 @@ import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-function formatUsd(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  if (n > 0) return `$${Math.round(n).toLocaleString()}`;
-  return "$0";
-}
-
 interface PipelineHeaderProps {
   onToggleAI: () => void;
   onToggleTimeline: () => void;
   showAIPanel: boolean;
   showTimeline: boolean;
   leadCount: number;
-  totalBudget: number;
+  totalBudgetLabel: string;
 }
 
 export function PipelineHeader({
@@ -29,18 +22,18 @@ export function PipelineHeader({
   showAIPanel,
   showTimeline,
   leadCount,
-  totalBudget,
+  totalBudgetLabel,
 }: PipelineHeaderProps) {
   const stats = useMemo(
     () => [
       { label: "Leads on board", value: String(leadCount), icon: Users },
-      { label: "Budgets (sum)", value: formatUsd(totalBudget), icon: DollarSign },
+      { label: "Budgets (sum)", value: totalBudgetLabel, icon: DollarSign },
     ],
-    [leadCount, totalBudget],
+    [leadCount, totalBudgetLabel],
   );
 
   return (
-    <header className="shrink-0 border-b border-clinq-glass-border bg-background/90 backdrop-blur-md">
+    <header className="shrink-0 border-b border-border bg-background/95 backdrop-blur-md">
       <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3 sm:px-6 sm:py-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <MobileAppNav />
@@ -60,7 +53,10 @@ export function PipelineHeader({
             variant="ghost"
             size="sm"
             onClick={onToggleTimeline}
-            className={cn("shrink-0 gap-2", showTimeline && "bg-clinq-glass text-foreground")}
+            className={cn(
+              "shrink-0 gap-2 transition-colors duration-150",
+              showTimeline && "bg-muted text-foreground",
+            )}
           >
             <Activity className="h-4 w-4" />
             <span className="hidden sm:inline">Timeline</span>
@@ -70,7 +66,10 @@ export function PipelineHeader({
             variant="ghost"
             size="sm"
             onClick={onToggleAI}
-            className={cn("shrink-0 gap-2", showAIPanel && "bg-primary/10 text-primary")}
+            className={cn(
+              "shrink-0 gap-2 transition-colors duration-150 active:scale-[0.98]",
+              showAIPanel && "bg-primary/10 text-primary",
+            )}
           >
             <Brain className="h-4 w-4" />
             <span className="hidden sm:inline">Side panel</span>
@@ -78,7 +77,7 @@ export function PipelineHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-6 border-t border-clinq-glass-border/50 bg-sidebar/25 px-4 py-2.5 sm:px-6">
+      <div className="flex flex-wrap items-center gap-6 border-t border-border/60 bg-muted/15 px-4 py-2.5 sm:px-6">
         {stats.map((stat) => (
           <div key={stat.label} className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/30">

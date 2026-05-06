@@ -69,7 +69,7 @@ export function Sidebar() {
           "justify-center px-0 group-hover/sidebar:justify-start group-data-[expanded=true]/sidebar:justify-start",
           isActive
             ? "border border-primary/25 bg-primary/10 text-foreground"
-            : "border border-transparent text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+            : "border border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
         )}
       >
         <item.icon
@@ -99,11 +99,11 @@ export function Sidebar() {
     <aside
       data-expanded={pinned ? "true" : "false"}
       className={cn(
-        "group/sidebar relative hidden h-screen shrink-0 flex-col border-r border-clinq-glass-border bg-sidebar transition-[width] duration-300 ease-out md:flex",
+        "group/sidebar relative hidden h-screen shrink-0 flex-col border-r border-border bg-sidebar transition-[width] duration-300 ease-out md:flex",
         pinned ? "w-56" : "w-[4.25rem] hover:w-56",
       )}
     >
-      <div className="relative flex h-14 shrink-0 items-center border-b border-clinq-glass-border px-2 transition-[padding] duration-300 group-hover/sidebar:px-3 group-data-[expanded=true]/sidebar:px-3">
+      <div className="relative flex h-14 shrink-0 items-center border-b border-border px-2 transition-[padding] duration-300 group-hover/sidebar:px-3 group-data-[expanded=true]/sidebar:px-3">
         <Link
           href="/dashboard"
           className="flex min-w-0 flex-1 items-center justify-center gap-2 py-1 pr-8 group-hover/sidebar:justify-start group-hover/sidebar:pr-2 group-data-[expanded=true]/sidebar:justify-start group-data-[expanded=true]/sidebar:pr-2"
@@ -119,7 +119,7 @@ export function Sidebar() {
           type="button"
           onClick={togglePin}
           title={pinned ? "Unpin sidebar" : "Pin open"}
-          className="absolute right-1.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
+          className="absolute right-1.5 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
           aria-pressed={pinned}
         >
           {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
@@ -130,7 +130,7 @@ export function Sidebar() {
         {DASHBOARD_MAIN_NAV.map(renderLink)}
       </nav>
 
-      <div className="flex justify-center border-t border-clinq-glass-border p-2">
+      <div className="flex justify-center border-t border-border p-2">
         <button
           type="button"
           title={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
@@ -141,7 +141,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <div className="shrink-0 space-y-0.5 border-t border-clinq-glass-border p-2">
+      <div className="shrink-0 space-y-0.5 border-t border-border p-2">
         {DASHBOARD_BOTTOM_NAV.map((item) => (
           <Link
             key={item.href}
@@ -149,7 +149,7 @@ export function Sidebar() {
             title={item.label}
             className={cn(
               linkBase,
-              "justify-center px-0 text-muted-foreground hover:bg-white/[0.04] hover:text-foreground group-hover/sidebar:justify-start group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:justify-start group-data-[expanded=true]/sidebar:px-2.5",
+              "justify-center px-0 text-muted-foreground hover:bg-muted/60 hover:text-foreground group-hover/sidebar:justify-start group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:justify-start group-data-[expanded=true]/sidebar:px-2.5",
             )}
           >
             <item.icon className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover/nav:text-primary" />
@@ -158,7 +158,7 @@ export function Sidebar() {
         ))}
       </div>
 
-      <div className="shrink-0 border-t border-clinq-glass-border p-2">
+      <div className="shrink-0 border-t border-border p-2">
         <div
           className={cn(
             "flex items-center gap-0 rounded-md py-2 transition-[gap,padding] duration-300 group-hover/sidebar:gap-2.5 group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:gap-2.5 group-data-[expanded=true]/sidebar:px-2.5",
@@ -185,7 +185,7 @@ export function Sidebar() {
               await supabase.auth.signOut();
               router.push("/login");
             }}
-            className="flex w-full max-w-[2.25rem] items-center justify-center gap-2 rounded-md border border-clinq-glass-border py-2 text-muted-foreground transition-[max-width] duration-300 hover:bg-white/[0.04] hover:text-foreground group-hover/sidebar:max-w-none group-data-[expanded=true]/sidebar:max-w-none"
+            className="flex w-full max-w-[2.25rem] items-center justify-center gap-2 rounded-md border border-border py-2 text-muted-foreground transition-[max-width] duration-300 hover:bg-muted/60 hover:text-foreground group-hover/sidebar:max-w-none group-data-[expanded=true]/sidebar:max-w-none"
           >
             <LogOut className="h-4 w-4 shrink-0" />
             <span className={cn("hidden whitespace-nowrap text-xs font-medium group-hover/sidebar:inline group-data-[expanded=true]/sidebar:inline")}>

@@ -42,7 +42,7 @@ export function FollowUpAiDraft() {
   };
 
   return (
-    <div className="glass-card rounded-2xl border border-clinq-glass-border p-5">
+    <div className="rounded-2xl border border-border bg-card/95 p-5 shadow-sm">
       <Label htmlFor="fu-ctx">AI draft (optional)</Label>
       <Textarea
         id="fu-ctx"
@@ -61,7 +61,7 @@ export function FollowUpAiDraft() {
               type="button"
               onClick={() => setTone(t)}
               className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                tone === t ? "bg-primary/20 text-primary ring-1 ring-primary/40" : "bg-clinq-glass text-muted-foreground"
+                tone === t ? "bg-primary/20 text-primary ring-1 ring-primary/40" : "bg-muted text-muted-foreground"
               }`}
             >
               {t}
@@ -78,7 +78,7 @@ export function FollowUpAiDraft() {
         {loading ? "Generating…" : "Generate draft"}
       </Button>
       {out ? (
-        <div className="mt-4 rounded-xl border border-clinq-glass-border/70 bg-background/30 p-3">
+        <div className="mt-4 rounded-xl border border-border/70 bg-background/30 p-3">
           <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Draft</p>
           <pre className="max-h-48 overflow-y-auto whitespace-pre-wrap text-sm text-foreground">{out}</pre>
         </div>

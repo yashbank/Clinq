@@ -44,7 +44,7 @@ export function ProposalQualityPanel({ evaluation }: { evaluation: ProposalEvalu
   const trust = evaluation.trustSignalsIncluded ?? [];
 
   return (
-    <div className="rounded-xl border border-clinq-glass-border/70 bg-background/40 p-4">
+    <div className="rounded-xl border border-border/70 bg-background/40 p-4">
       <div className="flex items-start gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/12">
           <Gauge className="h-4 w-4 text-primary" />
@@ -80,12 +80,12 @@ export function ProposalQualityPanel({ evaluation }: { evaluation: ProposalEvalu
       ) : null}
 
       <Collapsible open={open} onOpenChange={setOpen} className="group/pq mt-4">
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-clinq-glass-border/60 bg-clinq-glass/20 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-clinq-glass/35">
+        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-muted/35">
           Reasoning &amp; actions
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/pq:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
-          <div className="mt-2 space-y-4 rounded-lg border border-clinq-glass-border/50 bg-background/30 p-3 text-xs">
+          <div className="mt-2 space-y-4 rounded-lg border border-border/50 bg-background/30 p-3 text-xs">
             {why.length > 0 ? (
               <div>
                 <p className="font-medium text-foreground">Why it works</p>

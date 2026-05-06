@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getFreelancerApiBaseUrl } from "@/lib/integrations/freelancer/env";
+import { logFreelancerTokenValidation } from "@/lib/logging/app-log";
 
 const REQUEST_TIMEOUT_MS = 25_000;
 
@@ -89,6 +90,7 @@ export async function validateFreelancerPersonalAccessToken(
 ): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
   const trimmed = accessToken.trim();
   if (!trimmed) {
+    logFreelancerTokenValidation("pat_empty", {}, "warn");
     return { ok: false, error: "Token is required" };
   }
 
@@ -111,6 +113,7 @@ export async function validateFreelancerPersonalAccessToken(
     try {
       json = JSON.parse(text) as unknown;
     } catch {
+      logFreelancerTokenValidation("pat_non_json", { status: res.status }, "error");
       return { ok: false, error: `Freelancer API returned non-JSON (${res.status})`, status: res.status };
     }
 
@@ -121,6 +124,7 @@ export async function validateFreelancerPersonalAccessToken(
         typeof body.message === "string" && body.message.trim()
           ? body.message
           : "Freelancer rejected this token";
+      logFreelancerTokenValidation("pat_api_error_body", { status: res.status, message: msg }, "warn");
       return { ok: false, error: msg, status: res.status };
     }
 
@@ -129,13 +133,16 @@ export async function validateFreelancerPersonalAccessToken(
         typeof body.message === "string" && body.message.trim()
           ? body.message
           : `Freelancer API error (${res.status})`;
+      logFreelancerTokenValidation("pat_http_error", { status: res.status, message: msg }, "warn");
       return { ok: false, error: msg, status: res.status };
     }
 
+    logFreelancerTokenValidation("pat_ok", {});
     return { ok: true };
   } catch (e) {
     const msg =
       e instanceof Error && e.name === "AbortError" ? "Validation request timed out" : e instanceof Error ? e.message : "Request failed";
+    logFreelancerTokenValidation("pat_exception", { message: msg }, "error");
     return { ok: false, error: msg };
   } finally {
     clearTimeout(timer);

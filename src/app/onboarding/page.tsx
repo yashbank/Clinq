@@ -22,7 +22,7 @@ export default async function OnboardingPage({
   const { data: row, error } = await supabase
     .from("profiles")
     .select(
-      "display_name, bio, website_url, resume_text, resume_filename, skills, tech_stack, portfolio_links, linkedin_url, github_url, experience_level, niches, profile_onboarding_completed_at, profile_intelligence",
+      "preferred_currency, display_name, bio, website_url, resume_text, resume_filename, skills, tech_stack, portfolio_links, linkedin_url, github_url, experience_level, niches, profile_onboarding_completed_at, profile_intelligence",
     )
     .eq("id", user.id)
     .single();
@@ -42,6 +42,7 @@ export default async function OnboardingPage({
   }
 
   const initial: FreelancerProfileFields = {
+    preferred_currency: typeof row.preferred_currency === "string" ? row.preferred_currency : "USD",
     display_name: row.display_name ?? null,
     bio: typeof row.bio === "string" ? row.bio : null,
     website_url: typeof row.website_url === "string" ? row.website_url : null,

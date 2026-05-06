@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
           <div className="space-y-4 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-foreground">
             <p>If an account exists for that email, you will receive a reset link shortly.</p>
             <p className="text-muted-foreground">Check spam, then return to sign in.</p>
-            <Button variant="outline" className="w-full border-clinq-glass-border" asChild>
+            <Button variant="outline" className="w-full border-border" asChild>
               <Link href="/login">Back to sign in</Link>
             </Button>
           </div>

@@ -3,7 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { generateShortLeadDescription } from "@/lib/ai/short-lead-description";
 import { intelligenceFromMetadata, type LeadTier } from "@/lib/ai/lead-intelligence";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
-import { leadBudgetDisplayFromMetadata, leadBudgetFallback } from "@/lib/leads/budget-display";
+import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { getLeadImportedAtIso, isFreelancerLeadRow, isImportedLeadRow } from "@/lib/leads/source-filters";
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
@@ -45,7 +45,14 @@ function defaultTier(score: number): LeadTier {
   return "standard";
 }
 
-export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lead["proposalStatus"] }): Lead {
+export function mapLeadRowToUiLead(
+  row: LeadRow,
+  extras?: {
+    proposalStatus?: Lead["proposalStatus"];
+    preferredCurrency?: string | null;
+    usdToForeignRates?: Record<string, number> | null;
+  },
+): Lead {
   const budget = Number(row.budget) || 0;
   const score = row.score;
   const { bidUrgency, bestTimeToBid } = scoreToUrgency(score, row.competition_level);
@@ -99,10 +106,11 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
     generateShortLeadDescription(projectTitle) ||
     "";
 
-  const budgetMeta = leadBudgetDisplayFromMetadata(meta);
-  const budgetFallback = leadBudgetFallback(row.budget, row.platform);
-  const budgetLine = budgetMeta.hide ? (budgetFallback.hide ? "" : budgetFallback.label) : budgetMeta.label;
-  const budgetKind = budgetMeta.hide ? budgetFallback.kind : budgetMeta.kind;
+  const { label: budgetLine, kind: budgetKind } = computeLeadBudgetUiLine(
+    row,
+    extras?.preferredCurrency ?? null,
+    extras?.usdToForeignRates ?? null,
+  );
 
   return {
     id: row.id,

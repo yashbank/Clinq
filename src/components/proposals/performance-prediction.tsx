@@ -73,9 +73,9 @@ const competitorInsight = {
 
 export function PerformancePrediction() {
   return (
-    <div className="glass-card rounded-2xl">
+    <div className="rounded-2xl border border-border bg-card/95 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-clinq-glass-border p-4">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-clinq-success/20">
             <TrendingUp className="h-4 w-4 text-primary" />
@@ -96,7 +96,7 @@ export function PerformancePrediction() {
       </div>
 
       {/* Main Prediction Circle */}
-      <div className="flex items-center justify-center border-b border-clinq-glass-border p-6">
+      <div className="flex items-center justify-center border-b border-border p-6">
         <div className="relative">
           {/* Outer ring */}
           <svg className="h-28 w-28 -rotate-90">
@@ -107,7 +107,7 @@ export function PerformancePrediction() {
               stroke="currentColor"
               strokeWidth="8"
               fill="none"
-              className="text-clinq-glass"
+              className="text-muted-foreground"
             />
             <circle
               cx="56"
@@ -135,11 +135,11 @@ export function PerformancePrediction() {
       </div>
 
       {/* Predictions Grid */}
-      <div className="grid grid-cols-2 gap-3 border-b border-clinq-glass-border p-4">
+      <div className="grid grid-cols-2 gap-3 border-b border-border p-4">
         {predictions.map((pred) => (
           <div
             key={pred.label}
-            className="rounded-xl bg-clinq-glass/50 p-3"
+            className="rounded-xl bg-muted/50 p-3"
           >
             <div className="flex items-center gap-2">
               <pred.icon
@@ -184,7 +184,7 @@ export function PerformancePrediction() {
       </div>
 
       {/* Strength Indicators */}
-      <div className="border-b border-clinq-glass-border p-4">
+      <div className="border-b border-border p-4">
         <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Proposal Strength
         </p>

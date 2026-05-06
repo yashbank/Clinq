@@ -24,7 +24,7 @@ function Stat({
   hint: string;
 }) {
   return (
-    <div className="rounded-xl border border-clinq-glass-border/70 bg-background/40 p-4 sm:p-5">
+    <div className="rounded-xl border border-border/70 bg-background/40 p-4 sm:p-5">
       <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-foreground">{value}</p>
       <p className="mt-1.5 text-xs leading-snug text-muted-foreground">{hint}</p>
@@ -64,7 +64,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
       </header>
 
       {empty ? (
-        <div className="rounded-2xl border border-dashed border-clinq-glass-border/80 bg-background/30 px-6 py-16 text-center">
+        <div className="rounded-2xl border border-dashed border-border/80 bg-background/30 px-6 py-16 text-center">
           <p className="text-sm font-medium text-foreground">Nothing to chart yet</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             Save leads and log proposals—this page will populate automatically.
@@ -79,7 +79,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
             </Link>
             <Link
               href="/proposals"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-clinq-glass-border px-4 py-2 text-sm font-medium text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground"
             >
               Proposals
               <ArrowUpRight className="h-4 w-4 opacity-80" />
@@ -135,7 +135,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
 
       {!empty ? (
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="rounded-2xl border border-clinq-glass-border/70 bg-background/40 p-4 sm:p-5">
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Pipeline distribution</h2>
             <p className="mt-1 text-xs text-muted-foreground">Counts by stage for all leads.</p>
             <div className="mt-4 h-[240px] w-full min-w-0">
@@ -163,7 +163,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-clinq-glass-border/70 bg-background/40 p-4 sm:p-5">
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Platform / source</h2>
             <p className="mt-1 text-xs text-muted-foreground">Grouped by platform field or lead source metadata.</p>
             <div className="mt-4 h-[240px] w-full min-w-0">
@@ -197,7 +197,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-clinq-glass-border/70 bg-background/40 p-4 sm:p-5">
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Score distribution</h2>
             <p className="mt-1 text-xs text-muted-foreground">Buckets from your lead scores only.</p>
             <div className="mt-4 h-[220px] w-full min-w-0">
@@ -220,7 +220,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-clinq-glass-border/70 bg-background/40 p-4 sm:p-5">
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Manual vs imported</h2>
             <p className="mt-1 text-xs text-muted-foreground">Based on import metadata on lead rows.</p>
             <div className="mt-4 h-[220px] w-full min-w-0">
@@ -243,7 +243,7 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-clinq-glass-border/70 bg-background/40 p-4 sm:p-5">
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground">Pipeline moves</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               Count of <span className="font-mono text-[10px]">stage_changed</span> activities (last ~35 days), grouped by week.

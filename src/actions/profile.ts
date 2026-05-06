@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isSupportedDisplayCurrency } from "@/types/currency";
+
 const profileSchema = z.object({
   display_name: z.string().max(120).nullable().optional(),
   bio: z.string().max(4_000).nullable().optional(),
@@ -26,6 +28,7 @@ const profileSchema = z.object({
       return null;
     }),
   niches: z.array(z.string().max(80)).max(40),
+  preferred_currency: z.enum(["USD", "INR", "GBP", "CAD", "EUR"]).default("USD"),
   markComplete: z.boolean().optional(),
 });
 
@@ -65,6 +68,8 @@ export async function updateFreelancerProfileAction(
     niches: v.niches.map((s) => s.trim()).filter(Boolean),
   };
 
+  patch.preferred_currency = v.preferred_currency;
+
   if (v.markComplete === true) {
     patch.profile_onboarding_completed_at = new Date().toISOString();
   } else if (v.markComplete === false) {
@@ -81,6 +86,35 @@ export async function updateFreelancerProfileAction(
   revalidatePath("/onboarding");
   revalidatePath("/proposals");
   revalidatePath("/leads");
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
+export async function updatePreferredCurrencyAction(
+  currency: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isSupportedDisplayCurrency(currency)) {
+    return { ok: false, error: "Unsupported currency" };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "Unauthorized" };
+  }
+
+  const { error } = await supabase.from("profiles").update({ preferred_currency: currency }).eq("id", user.id);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/profile");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+  revalidatePath("/pipeline");
   return { ok: true };
 }
 
@@ -107,5 +141,6 @@ export async function markProfileOnboardingCompleteAction(): Promise<{ ok: true 
   revalidatePath("/dashboard");
   revalidatePath("/onboarding");
   revalidatePath("/leads");
+  revalidatePath("/settings");
   return { ok: true };
 }

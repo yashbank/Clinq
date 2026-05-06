@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { fetchFreelancerActiveProjects } from "@/lib/integrations/freelancer/api";
+import { logFreelancerImport } from "@/lib/logging/app-log";
 import { getFreelancerTokensForUser } from "@/lib/integrations/freelancer/token-store";
 import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
 import { enqueueIntegrationSyncJob } from "@/lib/integrations/sync-queue";
@@ -53,6 +54,8 @@ export async function runFreelancerLeadImportAction(
   const limit = Math.min(30, Math.max(1, payload.limit ?? 15));
   const query = (payload.query ?? "").trim();
 
+  logFreelancerImport("job_start", { userId: user.id, limit, query: query || null });
+
   const syncPatch = await updateIntegrationAccountSyncFields(supabase, {
     userId: user.id,
     provider: "freelancer",
@@ -94,6 +97,11 @@ export async function runFreelancerLeadImportAction(
   });
 
   if (!api.ok) {
+    logFreelancerImport(
+      "api_fetch_failed",
+      { userId: user.id, jobId, status: api.status ?? null, error: api.error },
+      "error",
+    );
     await supabase
       .from("integration_sync_jobs")
       .update({
@@ -211,6 +219,14 @@ export async function runFreelancerLeadImportAction(
   }
   imported = proc.promoted;
 
+  logFreelancerImport("scraped_processed", {
+    userId: user.id,
+    jobId,
+    promoted: proc.promoted,
+    skipped: proc.skipped,
+    scrapeErrors: proc.errors.length,
+  });
+
   await supabase
     .from("integration_sync_jobs")
     .update({
@@ -253,6 +269,15 @@ export async function runFreelancerLeadImportAction(
   for (const p of ["/leads", "/pipeline", "/dashboard", "/integrations"]) {
     revalidatePath(p);
   }
+
+  logFreelancerImport("job_succeeded", {
+    userId: user.id,
+    jobId,
+    imported,
+    duplicates,
+    failed,
+    projectCount: api.data.projects.length,
+  });
 
   return { ok: true, jobId, imported, duplicates, failed, errors };
 }

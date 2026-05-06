@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import PipelinePageClient from "@/app/pipeline/pipeline-page-client";
+import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { LeadRow } from "@/types/database";
@@ -12,6 +13,19 @@ export default async function PipelinePage() {
   } = await supabase.auth.getUser();
   if (!user) {
     redirect("/login");
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle();
+  const preferredCurrency =
+    typeof profile?.preferred_currency === "string" && profile.preferred_currency.trim()
+      ? profile.preferred_currency.trim()
+      : "USD";
+
+  let usdToForeignRates: Record<string, number> | null = null;
+  try {
+    usdToForeignRates = await getUsdToForeignRates();
+  } catch {
+    usdToForeignRates = null;
   }
 
   const { data, error } = await supabase
@@ -29,5 +43,11 @@ export default async function PipelinePage() {
     );
   }
 
-  return <PipelinePageClient initialRows={(data ?? []) as LeadRow[]} />;
+  return (
+    <PipelinePageClient
+      initialRows={(data ?? []) as LeadRow[]}
+      preferredCurrency={preferredCurrency}
+      usdToForeignRates={usdToForeignRates}
+    />
+  );
 }

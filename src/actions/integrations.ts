@@ -101,12 +101,11 @@ export async function setIntegrationStatusAction(
   }
 
   if (p.data === "freelancer" && status === "disconnected") {
-    try {
-      if (hasSupabaseServiceRoleKey()) {
-        await deleteFreelancerTokensForUser(user.id);
+    if (hasSupabaseServiceRoleKey()) {
+      const del = await deleteFreelancerTokensForUser(user.id);
+      if (!del.ok) {
+        console.warn("[integrations] deleteFreelancerTokensForUser:", del.error);
       }
-    } catch {
-      // best-effort revoke local tokens
     }
   }
 

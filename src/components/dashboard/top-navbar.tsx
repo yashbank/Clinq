@@ -30,7 +30,7 @@ export function TopNavbar({
   );
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-clinq-glass-border bg-background/90 px-3 backdrop-blur-md sm:gap-4 sm:px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/90 px-3 backdrop-blur-md sm:gap-4 sm:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <MobileAppNav />
 
@@ -59,9 +59,9 @@ export function TopNavbar({
               }
             }}
             placeholder="Search on Leads page — Enter to open"
-            className="clinq-input h-9 w-full rounded-lg border border-clinq-glass-border bg-clinq-glass/80 pl-10 pr-20 text-sm text-foreground shadow-none placeholder:text-muted-foreground"
+            className="clinq-input h-9 w-full rounded-lg border border-border bg-muted/80 pl-10 pr-20 text-sm text-foreground shadow-none placeholder:text-muted-foreground"
           />
-          <div className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded border border-clinq-glass-border/80 bg-secondary/60 px-1.5 py-0.5">
+          <div className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded border border-border/80 bg-secondary/60 px-1.5 py-0.5">
             <Command className="h-2.5 w-2.5 text-muted-foreground" />
             <span className="text-[10px] text-muted-foreground">K</span>
           </div>
@@ -73,7 +73,7 @@ export function TopNavbar({
           type="button"
           variant="ghost"
           size="icon"
-          className="relative h-10 w-10 rounded-lg text-muted-foreground hover:bg-white/[0.05] hover:text-foreground sm:h-8 sm:w-8"
+          className="relative h-10 w-10 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground sm:h-10 sm:w-10"
           onClick={() =>
             toast.message("No notification feed yet", {
               description: "Follow-ups and pipeline changes stay in their pages for now.",

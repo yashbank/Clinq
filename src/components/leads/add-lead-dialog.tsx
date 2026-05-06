@@ -39,7 +39,7 @@ export function AddLeadDialog({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-clinq-glass-border bg-background/95 backdrop-blur-md sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-border bg-background/95 backdrop-blur-md sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add lead</DialogTitle>
           <DialogDescription>
@@ -150,7 +150,7 @@ export function AddLeadDialog({ open, onOpenChange, onCreated }: Props) {
               <Label htmlFor="company">Company</Label>
               <Input id="company" name="company" placeholder="Acme Inc" />
             </div>
-            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-clinq-glass-border px-3 py-2 sm:col-span-2">
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border px-3 py-2 sm:col-span-2">
               <input type="checkbox" name="repeat_hire" className="h-4 w-4 rounded border border-input" />
               <span>
                 <span className="text-sm font-medium">Repeat client</span>

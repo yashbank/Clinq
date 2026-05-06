@@ -12,29 +12,51 @@ import { ClientDetailPanel } from "@/components/pipeline/client-detail-panel";
 import { KanbanBoard, type KanbanLead } from "@/components/pipeline/kanban-board";
 import { PipelineHeader } from "@/components/pipeline/pipeline-header";
 
+import { formatUsdTotalForDisplay, leadBudgetAsUsd } from "@/lib/currency/format-pipeline-budget";
+import { leadKanbanBudgetLine, leadKanbanSummary, leadKanbanTitle } from "@/lib/leads/pipeline-display";
 import type { LeadRow } from "@/types/database";
 
-function toKanban(row: LeadRow): KanbanLead {
+function toKanban(
+  row: LeadRow,
+  currency: { preferredCurrency: string; usdToForeignRates: Record<string, number> | null },
+): KanbanLead {
+  const budget = leadKanbanBudgetLine(row, currency);
   return {
     id: row.id,
-    name: row.client_name,
+    title: leadKanbanTitle(row),
+    summary: leadKanbanSummary(row),
     stage: row.stage,
     score: row.score,
-    budget: row.budget != null ? Number(row.budget) : null,
+    budgetLabel: budget.label,
+    showBudget: budget.show,
+    budgetKind: budget.kind,
   };
 }
 
-export default function PipelinePageClient({ initialRows }: { initialRows: LeadRow[] }) {
+export default function PipelinePageClient({
+  initialRows,
+  preferredCurrency,
+  usdToForeignRates,
+}: {
+  initialRows: LeadRow[];
+  preferredCurrency: string;
+  usdToForeignRates: Record<string, number> | null;
+}) {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(true);
   const [showTimeline, setShowTimeline] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const kanbanLeads = useMemo(() => initialRows.map(toKanban), [initialRows]);
-  const totalBudget = useMemo(
-    () => initialRows.reduce((sum, r) => sum + (Number(r.budget) || 0), 0),
-    [initialRows],
+  const currency = useMemo(
+    () => ({ preferredCurrency, usdToForeignRates }),
+    [preferredCurrency, usdToForeignRates],
+  );
+  const kanbanLeads = useMemo(() => initialRows.map((r) => toKanban(r, currency)), [initialRows, currency]);
+  const totalBudgetUsd = useMemo(() => initialRows.reduce((sum, r) => sum + leadBudgetAsUsd(r), 0), [initialRows]);
+  const totalBudgetLabel = useMemo(
+    () => formatUsdTotalForDisplay(totalBudgetUsd, preferredCurrency, usdToForeignRates),
+    [totalBudgetUsd, preferredCurrency, usdToForeignRates],
   );
   const selectedSummary = useMemo(
     () => kanbanLeads.find((l) => l.id === selectedClient) ?? null,
@@ -62,11 +84,14 @@ export default function PipelinePageClient({ initialRows }: { initialRows: LeadR
             showAIPanel={showAIPanel}
             showTimeline={showTimeline}
             leadCount={initialRows.length}
-            totalBudget={totalBudget}
+            totalBudgetLabel={totalBudgetLabel}
           />
 
           <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 overflow-hidden opacity-100" style={{ opacity: pending ? 0.7 : 1 }}>
+            <div
+              className="flex-1 overflow-hidden transition-opacity duration-200"
+              style={{ opacity: pending ? 0.65 : 1 }}
+            >
               <KanbanBoard
                 leads={kanbanLeads}
                 onSelectClient={setSelectedClient}
@@ -76,7 +101,7 @@ export default function PipelinePageClient({ initialRows }: { initialRows: LeadR
             </div>
 
             {showTimeline ? (
-              <aside className="w-80 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-background/55 backdrop-blur-sm">
+              <aside className="w-80 shrink-0 overflow-y-auto border-l border-border bg-background/55 backdrop-blur-sm">
                 <ActivityTimeline />
               </aside>
             ) : null}
@@ -84,7 +109,7 @@ export default function PipelinePageClient({ initialRows }: { initialRows: LeadR
         </main>
 
         {showAIPanel ? (
-          <aside className="w-80 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-background/60 backdrop-blur-sm">
+          <aside className="w-80 shrink-0 overflow-y-auto border-l border-border bg-background/60 backdrop-blur-sm">
             <AIRecommendationsPanel />
           </aside>
         ) : null}

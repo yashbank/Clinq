@@ -1,18 +1,16 @@
 "use client";
 
-import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import {
   MoreHorizontal,
   Target,
-  ExternalLink,
   ThumbsUp,
   ThumbsDown,
   Archive,
   Trash2,
-  Banknote,
+  Briefcase,
   Clock,
 } from "lucide-react";
 
@@ -107,8 +105,8 @@ export function AdvancedLeadsTable({
   const highCount = leads.filter((l) => l.aiScore >= 80).length;
 
   return (
-    <div className="glass-card overflow-hidden rounded-2xl border border-border/70 shadow-sm transition-shadow duration-200">
-      <div className="flex flex-col gap-1 border-b border-clinq-glass-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card/40 shadow-sm transition-shadow duration-200">
+      <div className="flex flex-col gap-1 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
             <Target className="h-4 w-4 text-primary" />
@@ -128,20 +126,20 @@ export function AdvancedLeadsTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-0 table-fixed sm:min-w-[640px]">
+      <div className="-mx-0 overflow-x-auto px-0 sm:mx-0">
+        <table className="w-full min-w-[720px] table-fixed">
           <thead>
-            <tr className="border-b border-clinq-glass-border bg-muted/20 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <tr className="border-b border-border bg-muted/30 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-2.5 sm:px-4">Project</th>
               <th className="hidden w-[100px] px-2 py-2.5 sm:table-cell">Platform</th>
               <th className="hidden px-3 py-2.5 md:table-cell lg:w-[32%]">Summary</th>
               <th className="w-[72px] px-2 py-2.5 text-center sm:w-[88px]">Score</th>
               <th className="hidden w-[120px] px-2 py-2.5 sm:table-cell">Budget</th>
-              <th className="w-[100px] px-2 py-2.5 text-right sm:w-[120px]">Proposal</th>
+              <th className="w-[120px] px-2 py-2.5 text-right sm:w-[150px]">Proposal</th>
               <th className="w-12 px-1 py-2.5 text-right" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-clinq-glass-border/50">
+          <tbody className="divide-y divide-border/80">
             {leads.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-16 text-center">
@@ -170,23 +168,6 @@ export function AdvancedLeadsTable({
               >
                 <td className="px-3 py-3 sm:px-4">
                   <p className="line-clamp-2 font-medium text-foreground">{lead.projectTitle || lead.name}</p>
-                  {lead.isImported && lead.importedAt ? (
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                      {formatDistanceToNow(new Date(lead.importedAt), { addSuffix: true })}
-                    </p>
-                  ) : null}
-                  {lead.projectUrl ? (
-                    <a
-                      href={lead.projectUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-1 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      Open
-                    </a>
-                  ) : null}
                 </td>
                 <td className="hidden px-2 py-3 sm:table-cell">
                   {lead.sourceChannel === "freelancer" ? (
@@ -201,10 +182,14 @@ export function AdvancedLeadsTable({
                   <p className="line-clamp-2 leading-snug">{lead.shortSummary || "—"}</p>
                 </td>
                 <td className="px-2 py-3 text-center align-middle">
-                  <span className={cn("text-lg font-bold tabular-nums", getScoreColor(lead.aiScore))}>{lead.aiScore}</span>
-                  {lead.aiScore >= 80 ? (
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-clinq-success">High potential</p>
-                  ) : null}
+                  <span
+                    className={cn(
+                      "inline-flex min-w-[2.25rem] items-center justify-center rounded-md border border-border/60 px-1.5 py-0.5 text-lg font-bold tabular-nums",
+                      getScoreColor(lead.aiScore),
+                    )}
+                  >
+                    {lead.aiScore}
+                  </span>
                 </td>
                 <td className="hidden px-2 py-3 sm:table-cell">
                   {lead.budgetLine ? (
@@ -212,7 +197,7 @@ export function AdvancedLeadsTable({
                       {lead.budgetKind === "hourly" ? (
                         <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
                       ) : lead.budgetKind === "fixed" ? (
-                        <Banknote className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                        <Briefcase className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
                       ) : null}
                       <span className="tabular-nums">{lead.budgetLine}</span>
                     </span>
@@ -221,8 +206,8 @@ export function AdvancedLeadsTable({
                   )}
                 </td>
                 <td className="px-2 py-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
-                  <Button variant="secondary" size="sm" className="h-8 text-xs" asChild>
-                    <Link href={`/proposals?leadId=${encodeURIComponent(lead.id)}`}>Proposal</Link>
+                  <Button variant="secondary" size="sm" className="text-xs" asChild>
+                    <Link href={`/proposals?leadId=${encodeURIComponent(lead.id)}`}>Generate proposal</Link>
                   </Button>
                 </td>
                 <td className="px-1 py-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
@@ -232,7 +217,7 @@ export function AdvancedLeadsTable({
                         variant="ghost"
                         size="icon"
                         disabled={pending}
-                        className="h-8 w-8 text-muted-foreground"
+                        className="text-muted-foreground"
                         aria-label="Lead actions"
                       >
                         <MoreHorizontal className="h-4 w-4" />
@@ -264,7 +249,7 @@ export function AdvancedLeadsTable({
         </table>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-clinq-glass-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground sm:text-sm">
           <span className="font-medium text-foreground">{leads.length}</span> on this page
           {typeof total === "number" ? (

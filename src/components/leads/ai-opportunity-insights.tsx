@@ -98,9 +98,9 @@ function getTypeIcon(type: string) {
 
 export function AIOpportunityInsights() {
   return (
-    <div className="glass-card col-span-2 overflow-hidden rounded-2xl">
+    <div className="col-span-2 overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-clinq-glass-border p-5">
+      <div className="flex items-center justify-between border-b border-border p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -122,11 +122,11 @@ export function AIOpportunityInsights() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-4 border-b border-clinq-glass-border p-5">
+      <div className="grid grid-cols-4 gap-4 border-b border-border p-5">
         {quickStats.map((stat, i) => (
           <div
             key={i}
-            className="rounded-xl bg-clinq-glass/50 p-3 text-center"
+            className="rounded-xl bg-muted/50 p-3 text-center"
           >
             <div className="text-xl font-bold text-foreground">{stat.value}</div>
             <div className="mt-1 flex items-center justify-center gap-1">

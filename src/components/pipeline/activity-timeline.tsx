@@ -16,7 +16,7 @@ export function ActivityTimeline() {
       <ul className="space-y-4">
         {EVENTS.map((e) => (
           <li key={e.title + e.t} className="relative flex gap-3">
-            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-clinq-glass-border bg-clinq-glass">
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
               <Circle className="h-2 w-2 fill-primary text-primary" />
             </span>
             <div>

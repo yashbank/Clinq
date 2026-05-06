@@ -25,6 +25,8 @@ export default function LeadsPageClient({
   tabCounts,
   listSummary,
   freelancerContext,
+  preferredCurrency,
+  usdToForeignRates,
 }: {
   initialRows: LeadRow[];
   total: number;
@@ -33,6 +35,8 @@ export default function LeadsPageClient({
   tabCounts: LeadTabCounts;
   listSummary: LeadsListSummary;
   freelancerContext: FreelancerMatchContext;
+  preferredCurrency: string;
+  usdToForeignRates: Record<string, number> | null;
 }) {
   const { openCapture } = useLeadCapture();
   const router = useRouter();
@@ -45,14 +49,22 @@ export default function LeadsPageClient({
     router.push(mergeLeadsListHref(qs, patch));
   };
 
-  const filteredUiLeads = useMemo(() => initialRows.map((r) => mapLeadRowToUiLead(r)), [initialRows]);
+  const mapOpts = useMemo(
+    () => ({ preferredCurrency, usdToForeignRates }),
+    [preferredCurrency, usdToForeignRates],
+  );
+
+  const filteredUiLeads = useMemo(
+    () => initialRows.map((r) => mapLeadRowToUiLead(r, mapOpts)),
+    [initialRows, mapOpts],
+  );
 
   const detail = useMemo(() => {
     if (!selectedLead) return null;
     const row = initialRows.find((r) => r.id === selectedLead);
     if (!row) return null;
-    return { row, ui: mapLeadRowToUiLead(row) };
-  }, [initialRows, selectedLead]);
+    return { row, ui: mapLeadRowToUiLead(row, mapOpts) };
+  }, [initialRows, selectedLead, mapOpts]);
 
   const importSummaryLine =
     tabCounts.imported > 0 ? `${tabCounts.imported} imported lead${tabCounts.imported === 1 ? "" : "s"}` : null;

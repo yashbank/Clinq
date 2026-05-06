@@ -7,12 +7,9 @@ export function AppShellLoading({
 }) {
   return (
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
-      <aside
-        className="hidden h-screen w-14 shrink-0 border-r border-clinq-glass-border bg-sidebar md:block"
-        aria-hidden
-      />
+      <aside className="hidden h-screen w-14 shrink-0 border-r border-border bg-sidebar md:block" aria-hidden />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-clinq-glass-border bg-background/90 px-4 backdrop-blur-sm sm:px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-background/90 px-4 backdrop-blur-sm sm:px-6">
           <Skeleton className="h-5 w-44 rounded-md" />
           <div className="hidden items-center gap-2 lg:flex">
             <Skeleton className="h-9 max-w-lg flex-1 rounded-lg" />
@@ -22,7 +19,7 @@ export function AppShellLoading({
             <Skeleton className="h-8 w-20 rounded-md" />
           </div>
         </header>
-        <main className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 space-y-5 overflow-y-auto p-4 motion-safe:animate-fade-in sm:p-6">
           {variant === "dashboard" ? (
             <>
               <Skeleton className="h-16 w-full max-w-2xl rounded-xl" />
@@ -38,7 +35,25 @@ export function AppShellLoading({
               <Skeleton className="h-64 rounded-2xl" />
             </>
           ) : (
-            <Skeleton className="min-h-[min(420px,70vh)] w-full rounded-xl" />
+            <div className="space-y-3 rounded-2xl border border-border bg-card/40 p-4">
+              <div className="flex gap-3">
+                <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-48 rounded-md" />
+                  <Skeleton className="h-3 w-full max-w-md rounded-md" />
+                </div>
+              </div>
+              <div className="space-y-2 border-t border-border pt-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex flex-wrap items-center gap-3 border-b border-border/60 py-3 last:border-0">
+                    <Skeleton className="h-4 min-w-[40%] flex-1 rounded-md" />
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-4 w-24 rounded-md" />
+                    <Skeleton className="h-9 w-28 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </main>
       </div>

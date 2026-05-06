@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import LeadsPageClient from "@/app/leads/leads-page-client";
+import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { fetchLeadTabCounts, fetchLeadsListSummary, fetchLeadsPage } from "@/lib/leads/fetch-leads-page";
 import { parseLeadsSearchParams } from "@/lib/leads/leads-url-params";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -25,12 +26,27 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   let listSummary = { activeCount: 0, highScore80Plus: 0, repeatCount: 0, totalBudget: 0, avgScore: 0 };
   let loadError: string | null = null;
 
-  const { data: profileRow } = await supabase.from("profiles").select("skills, tech_stack, niches").eq("id", user.id).maybeSingle();
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("skills, tech_stack, niches, preferred_currency")
+    .eq("id", user.id)
+    .maybeSingle();
   const profileSearchTokens = [
     ...(Array.isArray(profileRow?.skills) ? (profileRow.skills as string[]) : []),
     ...(Array.isArray(profileRow?.tech_stack) ? (profileRow.tech_stack as string[]) : []),
     ...(Array.isArray(profileRow?.niches) ? (profileRow.niches as string[]) : []),
   ];
+
+  let usdToForeignRates: Record<string, number> | null = null;
+  try {
+    usdToForeignRates = await getUsdToForeignRates();
+  } catch {
+    usdToForeignRates = null;
+  }
+  const preferredCurrency =
+    typeof profileRow?.preferred_currency === "string" && profileRow.preferred_currency.trim()
+      ? profileRow.preferred_currency.trim()
+      : "USD";
 
   try {
     const [pageRes, counts, summary] = await Promise.all([
@@ -88,6 +104,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
       tabCounts={tabCounts}
       listSummary={listSummary}
       freelancerContext={freelancerContext}
+      preferredCurrency={preferredCurrency}
+      usdToForeignRates={usdToForeignRates}
     />
   );
 }

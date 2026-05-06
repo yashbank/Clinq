@@ -99,7 +99,7 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 lg:flex-row lg:items-start">
       <div className="min-w-0 flex-1 space-y-5">
-        <div className="rounded-2xl border border-clinq-glass-border/70 bg-background/35 p-4 sm:p-5">
+        <div className="rounded-2xl border border-border/70 bg-background/35 p-4 sm:p-5">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <Clock className="h-4 w-4 text-primary" />
             Reminders
@@ -108,7 +108,7 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
             Stored as your own activity rows — no outbound automation. Use for priorities and timing hints only.
           </p>
 
-          <div className="mt-4 space-y-3 border-t border-clinq-glass-border/50 pt-4">
+          <div className="mt-4 space-y-3 border-t border-border/50 pt-4">
             <div>
               <Label htmlFor="fu-title">Title</Label>
               <Input
@@ -153,17 +153,17 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
             icon={Sparkles}
             title="No open follow-ups"
             description="Add a reminder when you owe yourself a nudge. Done items appear in history below."
-            className="border-clinq-glass-border/60 bg-background/30 py-10"
+            className="border-border/60 bg-background/30 py-10"
           />
         ) : (
-          <ul className="relative space-y-0 border-l border-clinq-glass-border/60 pl-5">
+          <ul className="relative space-y-0 border-l border-border/60 pl-5">
             {openRows.map((r) => {
               const m = parseMeta(r);
               const pr = (m.priority ?? "normal").toLowerCase();
               return (
                 <li key={r.id} className="relative pb-6 last:pb-0">
                   <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background" />
-                  <div className="rounded-xl border border-clinq-glass-border/60 bg-background/40 p-3 sm:p-4">
+                  <div className="rounded-xl border border-border/60 bg-background/40 p-3 sm:p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="font-medium text-foreground">{r.description}</p>
@@ -215,13 +215,13 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
         )}
 
         {sorted.some((r) => parseMeta(r).status === "done") ? (
-          <div className="rounded-xl border border-clinq-glass-border/50 bg-background/25 p-4">
+          <div className="rounded-xl border border-border/50 bg-background/25 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">History</p>
             <ul className="mt-2 space-y-2 text-xs text-muted-foreground">
               {sorted
                 .filter((r) => parseMeta(r).status === "done")
                 .map((r) => (
-                  <li key={r.id} className="flex justify-between gap-2 border-b border-clinq-glass-border/30 py-1.5 last:border-0">
+                  <li key={r.id} className="flex justify-between gap-2 border-b border-border/30 py-1.5 last:border-0">
                     <span className="min-w-0 truncate text-foreground/90">{r.description}</span>
                     <span className="shrink-0 tabular-nums">{new Date(r.created_at).toLocaleDateString()}</span>
                   </li>

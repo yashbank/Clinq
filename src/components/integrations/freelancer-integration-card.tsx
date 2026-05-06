@@ -185,7 +185,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
     <div
       className={cn(
         "flex flex-col rounded-2xl border bg-background/50 p-5 transition-colors sm:col-span-2",
-        connected ? "border-primary/25" : "border-clinq-glass-border/80",
+        connected ? "border-primary/25" : "border-border/80",
       )}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -279,7 +279,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
               <button
                 type="button"
                 disabled
-                className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-clinq-glass-border bg-muted/20 px-4 py-2 text-sm font-medium text-muted-foreground"
+                className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-border bg-muted/20 px-4 py-2 text-sm font-medium text-muted-foreground"
               >
                 <Plug2 className="h-4 w-4" />
                 Connect (configure env)
@@ -290,7 +290,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
               type="button"
               disabled={busy || pending}
               onClick={disconnect}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-clinq-glass-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/30 disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/30 disabled:opacity-60"
             >
               {busy || pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
               Disconnect
@@ -300,7 +300,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
       </div>
 
       {connected && importRuntimeReady ? (
-        <div className="mt-6 space-y-4 border-t border-clinq-glass-border/60 pt-6">
+        <div className="mt-6 space-y-4 border-t border-border/60 pt-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="min-w-0 flex-1">
               <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Search query</label>
@@ -308,7 +308,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="e.g. react, figma, mobile app"
-                className="mt-1 w-full rounded-lg border border-clinq-glass-border bg-background/80 px-3 py-2 text-sm text-foreground outline-none ring-primary/30 focus:ring-2"
+                className="mt-1 w-full rounded-lg border border-border bg-background/80 px-3 py-2 text-sm text-foreground outline-none ring-primary/30 focus:ring-2"
               />
             </div>
             <div className="w-full sm:w-28">
@@ -319,7 +319,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
                 max={30}
                 value={limit}
                 onChange={(e) => setLimit(Math.min(30, Math.max(1, Number(e.target.value) || 15)))}
-                className="mt-1 w-full rounded-lg border border-clinq-glass-border bg-background/80 px-3 py-2 text-sm tabular-nums text-foreground outline-none ring-primary/30 focus:ring-2"
+                className="mt-1 w-full rounded-lg border border-border bg-background/80 px-3 py-2 text-sm tabular-nums text-foreground outline-none ring-primary/30 focus:ring-2"
               />
             </div>
             <button
@@ -339,11 +339,11 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
           </p>
 
           {jobs.length > 0 ? (
-            <div className="rounded-xl border border-clinq-glass-border/70 bg-background/40">
-              <div className="border-b border-clinq-glass-border/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="rounded-xl border border-border/70 bg-background/40">
+              <div className="border-b border-border/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Import history
               </div>
-              <ul className="max-h-48 divide-y divide-clinq-glass-border/40 overflow-y-auto text-xs">
+              <ul className="max-h-48 divide-y divide-border/40 overflow-y-auto text-xs">
                 {jobs.map((j) => {
                   const res = j.result && typeof j.result === "object" ? (j.result as Record<string, unknown>) : null;
                   const dup = res && typeof res.duplicates === "number" ? res.duplicates : null;
@@ -374,7 +374,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
                           type="button"
                           disabled={busy || pending}
                           onClick={() => retryJob(j.id)}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-clinq-glass-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted/30 disabled:opacity-50"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted/30 disabled:opacity-50"
                         >
                           <RefreshCw className="h-3 w-3" />
                           Retry
@@ -406,7 +406,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
           }
         }}
       >
-        <DialogContent className="max-w-md border-clinq-glass-border bg-background/95 backdrop-blur-md">
+        <DialogContent className="max-w-md border-border bg-background/95 backdrop-blur-md">
           <DialogHeader>
             <DialogTitle>Freelancer personal access token</DialogTitle>
             <DialogDescription>

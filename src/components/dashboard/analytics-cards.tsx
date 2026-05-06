@@ -9,6 +9,8 @@ export type DashboardAnalyticsSnapshot = {
   highConversionLeads: number;
   revenueMtd: number;
   pipelineValue: number;
+  /** Total pipeline in preferred currency (matches Leads). */
+  pipelineValueDisplay: string;
   proposalsSent: number;
   winRatePct: number;
 };
@@ -22,6 +24,7 @@ function formatUsd(n: number) {
 function buildStats(snapshot: DashboardAnalyticsSnapshot) {
   const s = snapshot;
   const hasLeads = s.activeLeads > 0;
+  const pipelineLabel = s.pipelineValueDisplay || formatUsd(s.pipelineValue);
   return [
     {
       label: "Leads",
@@ -40,7 +43,7 @@ function buildStats(snapshot: DashboardAnalyticsSnapshot) {
     {
       label: "Revenue (completed projects)",
       value: formatUsd(s.revenueMtd),
-      subValue: hasLeads ? `${formatUsd(s.pipelineValue)} in lead budgets` : "From Projects marked completed",
+      subValue: hasLeads ? `${pipelineLabel} in lead budgets` : "From Projects marked completed",
       icon: DollarSign,
       accentColor: "from-accent to-accent/50",
     },
@@ -65,7 +68,7 @@ export function AnalyticsCards({ snapshot }: { snapshot: DashboardAnalyticsSnaps
         description="Add a lead and log a proposal to populate this row. Numbers are only from your workspace—nothing is fabricated."
         primary={{ label: "Add a lead", href: "/leads" }}
         secondary={{ label: "Proposal studio", href: "/proposals" }}
-        className="border-clinq-glass-border/50 bg-background/35 py-12"
+        className="border-border/50 bg-background/35 py-12"
       />
     );
   }
@@ -77,7 +80,7 @@ export function AnalyticsCards({ snapshot }: { snapshot: DashboardAnalyticsSnaps
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="glass-card group relative overflow-hidden rounded-xl border border-clinq-glass-border/60 p-5"
+          className="group relative overflow-hidden rounded-xl border border-border bg-card/95 p-5 shadow-sm transition-shadow duration-200 hover:border-primary/15 hover:shadow-md"
         >
           <div
             className={cn(

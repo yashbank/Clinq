@@ -31,8 +31,8 @@ export function PricingSection() {
             key={t.name}
             className={
               t.highlight
-                ? "glass-card-hover relative rounded-2xl border border-primary/40 bg-primary/5 p-8 ai-glow-subtle"
-                : "glass-card-hover rounded-2xl border border-clinq-glass-border p-8"
+                ? "relative rounded-2xl border border-primary/40 bg-primary/5 p-8 shadow-sm transition-all duration-200 hover:shadow-md ai-glow-subtle"
+                : "rounded-2xl border border-border bg-card/95 p-8 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md"
             }
           >
             <h3 className="text-xl font-semibold text-foreground">{t.name}</h3>

@@ -80,7 +80,7 @@ export function IntegrationHub({
           Freelancer.com can import real project listings via OAuth or a temporary personal access token (same REST API).
           Other platforms stay in reserved slots until their modules ship—no scraping and no simulated OAuth.
         </p>
-        <div className="rounded-xl border border-clinq-glass-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Onboarding:</span> finish your{" "}
           <Link href="/profile" className="font-medium text-primary underline-offset-4 hover:underline">
             freelancer profile
@@ -106,7 +106,7 @@ export function IntegrationHub({
               key={p.id}
               className={cn(
                 "flex flex-col rounded-2xl border bg-background/50 p-5 transition-colors",
-                connected ? "border-primary/25" : "border-clinq-glass-border/80",
+                connected ? "border-primary/25" : "border-border/80",
               )}
             >
               <div className="flex items-start gap-3">
@@ -150,7 +150,7 @@ export function IntegrationHub({
                     type="button"
                     disabled={loading}
                     onClick={() => run(p.id, "disconnected")}
-                    className="inline-flex items-center gap-2 rounded-lg border border-clinq-glass-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/30 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/30 disabled:opacity-60"
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
                     Disconnect

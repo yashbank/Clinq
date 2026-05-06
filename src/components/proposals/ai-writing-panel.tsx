@@ -271,10 +271,10 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b border-clinq-glass-border bg-sidebar/50 px-5 py-3">
+      <div className="flex items-center justify-between border-b border-border bg-sidebar/50 px-5 py-3">
         <div className="flex items-center gap-2">
           {/* Formatting Tools */}
-          <div className="flex items-center gap-1 rounded-lg bg-clinq-glass p-1" title="Rich formatting is not applied in-app yet — paste from Docs if you need styles.">
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-1" title="Rich formatting is not applied in-app yet — paste from Docs if you need styles.">
             <button
               type="button"
               disabled
@@ -309,7 +309,7 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
             </button>
           </div>
 
-          <div className="h-6 w-px bg-clinq-glass-border" />
+          <div className="h-6 w-px bg-muted-border" />
 
           {/* Section Navigation */}
           <div className="flex items-center gap-1">
@@ -321,11 +321,11 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
                   "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all",
                   activeSection === section.id
                     ? "bg-primary/20 text-primary"
-                    : "text-muted-foreground hover:bg-clinq-glass hover:text-foreground",
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   section.content && "ring-1 ring-inset ring-clinq-success/30"
                 )}
               >
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-clinq-glass text-[10px]">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[10px]">
                   {i + 1}
                 </span>
                 {section.label}
@@ -392,11 +392,11 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
                 className={cn(
                   "group rounded-2xl border transition-all",
                   activeSection === section.id
-                    ? "border-primary/50 bg-clinq-glass shadow-lg shadow-primary/5"
-                    : "border-clinq-glass-border bg-clinq-glass/30 hover:border-clinq-glass-border hover:bg-clinq-glass/50"
+                    ? "border-primary/50 bg-muted shadow-lg shadow-primary/5"
+                    : "border-border bg-muted/30 hover:border-border hover:bg-muted/50"
                 )}
               >
-                <div className="flex items-center justify-between border-b border-clinq-glass-border/50 px-4 py-3">
+                <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-semibold text-primary">
                       {sections.findIndex((s) => s.id === section.id) + 1}
@@ -471,7 +471,7 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
             ))}
 
             {/* Follow-up Templates */}
-            <div className="rounded-2xl border border-clinq-glass-border bg-clinq-glass/30 p-4">
+            <div className="rounded-2xl border border-border bg-muted/30 p-4">
               <button
                 onClick={() => setShowFollowUps(!showFollowUps)}
                 className="flex w-full items-center justify-between"
@@ -498,7 +498,7 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
                   {followUpTemplates.map((template, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between rounded-lg bg-clinq-glass/50 px-4 py-3"
+                      className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-xs font-semibold text-accent">
@@ -526,7 +526,7 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
         </div>
 
         {/* Quality + tips — no fabricated scores */}
-        <div className="w-64 shrink-0 overflow-y-auto border-l border-clinq-glass-border bg-sidebar/30 p-4">
+        <div className="w-64 shrink-0 overflow-y-auto border-l border-border bg-sidebar/30 p-4">
           {lastEvaluation ? (
             <div className="mb-5">
               <ProposalQualityPanel evaluation={lastEvaluation} />
@@ -543,7 +543,7 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
           </div>
           <ul className="space-y-2">
             {sidebarTips.map((tip, i) => (
-              <li key={i} className="flex items-start gap-2 rounded-lg bg-clinq-glass/40 p-2.5 text-left">
+              <li key={i} className="flex items-start gap-2 rounded-lg bg-muted/40 p-2.5 text-left">
                 <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span className="text-[11px] leading-snug text-muted-foreground">{tip}</span>
               </li>

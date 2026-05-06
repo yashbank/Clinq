@@ -86,9 +86,9 @@ function getThreatStyles(threat: string) {
 
 export function CompetitorAnalysis() {
   return (
-    <div className="glass-card overflow-hidden rounded-2xl">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-clinq-glass-border p-5">
+      <div className="flex items-center justify-between border-b border-border p-5">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent/20 to-primary/20">
             <Users className="h-5 w-5 text-accent" />
@@ -103,14 +103,14 @@ export function CompetitorAnalysis() {
       </div>
 
       {/* Market Stats */}
-      <div className="grid grid-cols-2 gap-3 border-b border-clinq-glass-border p-4">
-        <div className="rounded-lg bg-clinq-glass/50 p-3 text-center">
+      <div className="grid grid-cols-2 gap-3 border-b border-border p-4">
+        <div className="rounded-lg bg-muted/50 p-3 text-center">
           <div className="text-2xl font-bold text-clinq-success">
             {marketStats.winRateVsComp}%
           </div>
           <div className="text-[10px] text-muted-foreground">Win Rate vs Competition</div>
         </div>
-        <div className="rounded-lg bg-clinq-glass/50 p-3 text-center">
+        <div className="rounded-lg bg-muted/50 p-3 text-center">
           <div className="text-2xl font-bold text-foreground">
             {marketStats.avgCompetitors}
           </div>
@@ -128,7 +128,7 @@ export function CompetitorAnalysis() {
             return (
               <div
                 key={i}
-                className="rounded-xl border border-clinq-glass-border bg-clinq-glass/30 p-3"
+                className="rounded-xl border border-border bg-muted/30 p-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

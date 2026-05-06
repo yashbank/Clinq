@@ -4,8 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { validateFreelancerPersonalAccessToken } from "@/lib/integrations/freelancer/api";
-import { upsertFreelancerTokensForUser } from "@/lib/integrations/freelancer/token-store";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { completeFreelancerConnection } from "@/lib/integrations/freelancer/complete-freelancer-connection";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 
@@ -61,38 +60,13 @@ export async function connectFreelancerPersonalTokenAction(
     return { ok: false, error: v.error };
   }
 
-  const tok = await upsertFreelancerTokensForUser(user.id, {
-    access_token: parsed.data,
-    refresh_token: undefined,
-    expires_in: undefined,
-  });
-  if (!tok.ok) {
-    return { ok: false, error: tok.error };
-  }
-
-  const admin = createSupabaseAdminClient();
-  const now = new Date().toISOString();
-  const { error: accErr } = await admin.from("integration_accounts").upsert(
-    {
-      user_id: user.id,
-      provider: "freelancer",
-      status: "connected",
-      meta: {
-        pat_connected_at: now,
-        connection_kind: "personal_token",
-      },
-      credentials: {
-        version: 1,
-        storage: "integration_oauth_tokens",
-      },
-      sync_status: "idle",
-      updated_at: now,
-    },
-    { onConflict: "user_id,provider" },
+  const conn = await completeFreelancerConnection(
+    user.id,
+    { access_token: parsed.data, refresh_token: undefined, expires_in: undefined },
+    { connectionKind: "personal_token" },
   );
-
-  if (accErr) {
-    return { ok: false, error: accErr.message };
+  if (!conn.ok) {
+    return { ok: false, error: conn.error };
   }
 
   revalidatePath("/integrations");

@@ -3,6 +3,9 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytics-cards";
+import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
+import { formatUsdTotalForDisplay, leadBudgetAsUsd } from "@/lib/currency/format-pipeline-budget";
+import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { buildDailyActions, type DailyAction } from "@/lib/ai/daily-actions";
 import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
 import { buildDashboardRecommendations, type DashboardRecommendation } from "@/lib/dashboard-recommendations";
@@ -16,6 +19,7 @@ export type DashboardRecentLead = {
   client_name: string;
   company: string | null;
   budget: number | null;
+  budgetLabel: string;
   score: number;
   stage: PipelineStage;
   repeat_hire: boolean;
@@ -36,6 +40,7 @@ export type DashboardStageRow = {
   stage: PipelineStage;
   label: string;
   count: number;
+  /** Sum of lead budgets in USD (for optional client-side formatting). */
   pipelineValue: number;
 };
 
@@ -56,6 +61,8 @@ export type DashboardPriorityLead = {
   id: string;
   title: string;
   budget: number | null;
+  /** Same display rules as Leads table / pipeline. */
+  budgetLabel: string;
   score: number;
   priorityScore: number;
   reason: string;
@@ -74,6 +81,8 @@ export type DashboardPageData = {
   insights: DashboardInsights;
   topPriorityLeads: DashboardPriorityLead[];
   dailyActions: DailyAction[];
+  preferredCurrency: string;
+  usdToForeignRates: Record<string, number> | null;
 };
 
 const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
@@ -86,14 +95,15 @@ const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
 ];
 
 function buildSnapshot(
-  leads: { score: number | null; budget: number | null; stage: string; repeat_hire: boolean | null }[],
+  leads: { score: number | null; budget: number | null; budget_usd?: number | null; stage: string; repeat_hire: boolean | null }[],
   proposalCount: number,
   projects: { earnings: number | null; status: string | null }[],
+  display: { preferredCurrency: string; usdToForeignRates: Record<string, number> | null },
 ): DashboardAnalyticsSnapshot {
   const list = leads ?? [];
   const activeLeads = list.length;
   const highConversionLeads = list.filter((l) => (l.score ?? 0) >= 80).length;
-  const pipelineValue = list.reduce((sum, l) => sum + (Number(l.budget) || 0), 0);
+  const pipelineValue = list.reduce((sum, l) => sum + leadBudgetAsUsd(l), 0);
 
   const proj = projects ?? [];
   const revenueMtd = proj
@@ -112,13 +122,14 @@ function buildSnapshot(
     highConversionLeads,
     revenueMtd,
     pipelineValue,
+    pipelineValueDisplay: formatUsdTotalForDisplay(pipelineValue, display.preferredCurrency, display.usdToForeignRates),
     proposalsSent,
     winRatePct,
   };
 }
 
 function buildStages(
-  leads: { stage: string; budget: number | null }[],
+  leads: { stage: string; budget: number | null; budget_usd?: number | null }[],
 ): DashboardStageRow[] {
   const counts = new Map<PipelineStage, { count: number; pipelineValue: number }>();
   for (const { stage } of STAGE_ORDER) {
@@ -129,7 +140,7 @@ function buildStages(
     if (!counts.has(key)) continue;
     const cur = counts.get(key)!;
     cur.count += 1;
-    cur.pipelineValue += Number(l.budget) || 0;
+    cur.pipelineValue += leadBudgetAsUsd(l);
   }
   return STAGE_ORDER.map(({ stage, label }) => {
     const c = counts.get(stage)!;
@@ -140,6 +151,7 @@ function buildStages(
 function buildTopPriorityLeads(
   rows: LeadRow[],
   freelancer: { skills: string[]; techStack: string[]; niches: string[] },
+  currency: { preferredCurrency: string; usdToForeignRates: Record<string, number> | null },
 ): DashboardPriorityLead[] {
   const ranked = rows.map((row) => {
     const match = computeLeadFreelancerMatch(row, freelancer);
@@ -149,7 +161,17 @@ function buildTopPriorityLeads(
     const projectTitle = typeof meta.project_title === "string" ? meta.project_title.trim() : "";
     const title = projectTitle.length > 0 ? projectTitle : row.client_name;
     const href = `/leads?sort=recommended&q=${encodeURIComponent(row.client_name)}`;
-    return { id: row.id, title, budget: row.budget, score: row.score, priorityScore, reason, href };
+    const budgetUi = computeLeadBudgetUiLine(row, currency.preferredCurrency, currency.usdToForeignRates);
+    return {
+      id: row.id,
+      title,
+      budget: row.budget,
+      budgetLabel: budgetUi.show ? budgetUi.label : "—",
+      score: row.score,
+      priorityScore,
+      reason,
+      href,
+    };
   });
   return ranked.sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 5);
 }
@@ -177,10 +199,10 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, profile_onboarding_completed_at, profile_intelligence, skills, tech_stack, niches")
+      .select("display_name, profile_onboarding_completed_at, profile_intelligence, skills, tech_stack, niches, preferred_currency")
       .eq("id", user.id)
       .maybeSingle(),
-    supabase.from("leads").select("score, budget, stage, repeat_hire").is("deleted_at", null).is("archived_at", null),
+    supabase.from("leads").select("score, budget, budget_usd, stage, repeat_hire").is("deleted_at", null).is("archived_at", null),
     supabase
       .from("leads")
       .select("*")
@@ -207,25 +229,43 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
 
   const agg = leadsAgg ?? [];
   const fullLeadRows = (recentLeadRows ?? []) as LeadRow[];
-  const recentLeads: DashboardRecentLead[] = fullLeadRows.map((r) => ({
-    id: r.id,
-    client_name: r.client_name,
-    company: r.company,
-    budget: r.budget,
-    score: r.score,
-    stage: r.stage,
-    repeat_hire: r.repeat_hire,
-    updated_at: r.updated_at,
-    metadata: (r.metadata && typeof r.metadata === "object" ? r.metadata : {}) as Record<string, unknown>,
-  }));
   const freelancerForPriority = {
     skills: Array.isArray(profile?.skills) ? (profile?.skills as string[]) : [],
     techStack: Array.isArray(profile?.tech_stack) ? (profile?.tech_stack as string[]) : [],
     niches: Array.isArray(profile?.niches) ? (profile?.niches as string[]) : [],
   };
-  const topPriorityLeads = buildTopPriorityLeads(fullLeadRows, freelancerForPriority);
+  let usdToForeignRates: Record<string, number> | null = null;
+  try {
+    usdToForeignRates = await getUsdToForeignRates();
+  } catch {
+    usdToForeignRates = null;
+  }
+  const preferredCurrency = typeof profile?.preferred_currency === "string" && profile.preferred_currency.trim()
+    ? profile.preferred_currency.trim()
+    : "USD";
+
+  const recentLeads: DashboardRecentLead[] = fullLeadRows.map((r) => {
+    const bl = computeLeadBudgetUiLine(r, preferredCurrency, usdToForeignRates);
+    return {
+      id: r.id,
+      client_name: r.client_name,
+      company: r.company,
+      budget: r.budget,
+      budgetLabel: bl.show ? bl.label : "—",
+      score: r.score,
+      stage: r.stage,
+      repeat_hire: r.repeat_hire,
+      updated_at: r.updated_at,
+      metadata: (r.metadata && typeof r.metadata === "object" ? r.metadata : {}) as Record<string, unknown>,
+    };
+  });
+
+  const topPriorityLeads = buildTopPriorityLeads(fullLeadRows, freelancerForPriority, {
+    preferredCurrency,
+    usdToForeignRates,
+  });
   const pc = proposalCount ?? 0;
-  const snapshot = buildSnapshot(agg, pc, projects ?? []);
+  const snapshot = buildSnapshot(agg, pc, projects ?? [], { preferredCurrency, usdToForeignRates });
 
   const proposalsBase = recentProposalRows ?? [];
   const leadIds = [...new Set(proposalsBase.map((p) => p.lead_id).filter(Boolean))] as string[];
@@ -327,5 +367,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     insights,
     topPriorityLeads,
     dailyActions,
+    preferredCurrency,
+    usdToForeignRates,
   };
 }

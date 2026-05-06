@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
+import { logLeadPromotion } from "@/lib/logging/app-log";
 import { normalizeFreelancerProject } from "@/lib/leads/ingest/freelancer-normalize";
 import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
@@ -13,6 +14,10 @@ type ProfileSnap = {
   niches: string[];
   tech_stack: string[];
 };
+
+const MIN_SKILL_MATCH_PCT = 35;
+/** Listing tags + profile terms must clear this aggregate score. */
+const MIN_KEYWORD_SCORE = 8;
 
 function syntheticLeadForMatch(input: CreateLeadInput, metadataExtra: Record<string, unknown>): LeadRow {
   const meta = {
@@ -44,34 +49,90 @@ function syntheticLeadForMatch(input: CreateLeadInput, metadataExtra: Record<str
   } as LeadRow;
 }
 
-/** 0–30 higher = healthier budget vs brief (deterministic). */
-function budgetSanityPoints(input: CreateLeadInput): number {
-  const b = Math.max(0, Number(input.budget) || 0);
-  const d = `${input.project_title ?? ""} ${input.project_description ?? ""}`.toLowerCase();
-  if (b > 0 && b < 250 && /(full|complete)\s*(app|website|platform|saas)/i.test(d)) return 12;
-  if (b > 0 && b < 500 && /(enterprise|multi-tenant|kubernetes)/i.test(d)) return 14;
-  if (b === 0 && d.length < 35) return 10;
-  if (b > 0 && b < 150 && d.length > 200) return 16;
-  return 28;
+function importTagsFromMetadata(metadataExtra: Record<string, unknown>): string[] {
+  const imp = metadataExtra.import;
+  if (!imp || typeof imp !== "object" || Array.isArray(imp)) return [];
+  const tags = (imp as Record<string, unknown>).tags;
+  if (!Array.isArray(tags)) return [];
+  return tags.filter((t): t is string => typeof t === "string" && t.trim().length > 0).map((t) => t.trim());
 }
 
-/**
- * 0–100 relevance for promoting a scraped row into `leads` (no LLM).
- */
-export function computeScrapedPromotionScore(
-  input: CreateLeadInput,
-  profile: ProfileSnap,
-  metadataExtra: Record<string, unknown>,
-): number {
-  const synth = syntheticLeadForMatch(input, metadataExtra);
+/** Weighted keyword / tag overlap (tags count more than generic profile tokens). */
+function keywordRelevanceScore(input: CreateLeadInput, profile: ProfileSnap, listingTags: string[]): number {
+  const hay = `${input.project_title ?? ""} ${input.project_description ?? ""}`.toLowerCase();
+  const profileKeys = [...profile.skills, ...profile.tech_stack, ...profile.niches]
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 2);
+  const tagKeys = listingTags.map((t) => t.trim().toLowerCase()).filter((t) => t.length > 1);
+
+  let score = 0;
+  for (const k of tagKeys) {
+    if (hay.includes(k)) score += 5;
+  }
+  const seen = new Set<string>();
+  for (const k of profileKeys) {
+    if (!hay.includes(k)) continue;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    score += k.length >= 6 ? 3 : 2;
+  }
+  return score;
+}
+
+function keywordMatchPass(input: CreateLeadInput, profile: ProfileSnap, listingTags: string[]): boolean {
+  return keywordRelevanceScore(input, profile, listingTags) >= MIN_KEYWORD_SCORE;
+}
+
+function skillMatchPass(synth: LeadRow, profile: ProfileSnap): boolean {
   const { skillMatchPct } = computeLeadFreelancerMatch(synth, {
     skills: profile.skills,
     niches: profile.niches,
     techStack: profile.tech_stack,
   });
-  const bSan = budgetSanityPoints(input);
-  const bPart = (bSan / 30) * 100;
-  return Math.round(Math.min(100, Math.max(0, 0.62 * skillMatchPct + 0.38 * bPart)));
+  return skillMatchPct >= MIN_SKILL_MATCH_PCT;
+}
+
+/** Stricter title alignment: multiple word hits or a substantive skill phrase in the title. */
+function titleRelevancePass(input: CreateLeadInput, profile: ProfileSnap): boolean {
+  const title = (input.project_title ?? "").toLowerCase().trim();
+  if (title.length < 8) return false;
+
+  const profileTerms = [...profile.skills, ...profile.niches, ...profile.tech_stack]
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.length > 2);
+
+  const profileWordSet = new Set(
+    profileTerms.flatMap((s) => s.split(/\W+/).filter((w) => w.length > 2)),
+  );
+  const titleWords = [...new Set(title.split(/\W+/).filter((w) => w.length > 2))];
+  let overlap = 0;
+  for (const w of titleWords) {
+    if (profileWordSet.has(w)) overlap += 1;
+  }
+  if (overlap >= 2) return true;
+
+  for (const sk of [...profile.skills, ...profile.tech_stack]) {
+    const s = sk.trim().toLowerCase();
+    if (s.length >= 4 && title.includes(s)) return true;
+  }
+  return false;
+}
+
+type GateResult =
+  | { ok: true }
+  | { ok: false; reason: "keyword" | "skill" | "title" };
+
+function evaluatePromotionGates(
+  input: CreateLeadInput,
+  profile: ProfileSnap,
+  metadataExtra: Record<string, unknown>,
+  synth: LeadRow,
+): GateResult {
+  const tags = importTagsFromMetadata(metadataExtra);
+  if (!keywordMatchPass(input, profile, tags)) return { ok: false, reason: "keyword" };
+  if (!skillMatchPass(synth, profile)) return { ok: false, reason: "skill" };
+  if (!titleRelevancePass(input, profile)) return { ok: false, reason: "title" };
+  return { ok: true };
 }
 
 type ScrapedRow = {
@@ -105,6 +166,7 @@ export async function processScrapedLeads(
     .limit(100);
 
   if (error) {
+    logLeadPromotion("batch_query_failed", { userId, message: error.message }, "error");
     return { promoted: 0, skipped: 0, errors: [error.message] };
   }
 
@@ -123,32 +185,50 @@ export async function processScrapedLeads(
         : null;
 
     if (!normalized) {
+      logLeadPromotion("skip_unnormalizable", { userId, scrapedId: row.id, source: row.source }, "warn");
       await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
       skipped += 1;
       continue;
     }
 
-    const rel = computeScrapedPromotionScore(normalized.input, profSnap, normalized.metadataExtra);
+    const synth = syntheticLeadForMatch(normalized.input, normalized.metadataExtra as Record<string, unknown>);
+    const gates = evaluatePromotionGates(normalized.input, profSnap, normalized.metadataExtra as Record<string, unknown>, synth);
 
-    if (rel >= 60) {
-      const ins = await insertLeadWithIntelligence(supabase, userId, normalized.input, {
-        profile: profSnap,
-        metadataExtra: normalized.metadataExtra,
-        revalidatePaths: [],
+    if (!gates.ok) {
+      logLeadPromotion("skip_gate", {
+        userId,
+        scrapedId: row.id,
+        reason: gates.reason,
+        client: normalized.input.client_name,
+        keywordScore: keywordRelevanceScore(
+          normalized.input,
+          profSnap,
+          importTagsFromMetadata(normalized.metadataExtra as Record<string, unknown>),
+        ),
       });
-      if (!ins.ok) {
-        errors.push(ins.error);
-        await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
-        skipped += 1;
-        continue;
-      }
-      promoted += 1;
-    } else {
       skipped += 1;
+      await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
+      continue;
     }
 
+    const ins = await insertLeadWithIntelligence(supabase, userId, normalized.input, {
+      profile: profSnap,
+      metadataExtra: normalized.metadataExtra,
+      revalidatePaths: [],
+    });
+    if (!ins.ok) {
+      logLeadPromotion("insert_failed", { userId, scrapedId: row.id, error: ins.error, client: normalized.input.client_name }, "error");
+      errors.push(ins.error);
+      await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
+      skipped += 1;
+      continue;
+    }
+
+    promoted += 1;
+    logLeadPromotion("promoted", { userId, scrapedId: row.id, leadId: ins.lead.id, client: normalized.input.client_name });
     await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
   }
 
+  logLeadPromotion("batch_complete", { userId, promoted, skipped, errorCount: errors.length });
   return { promoted, skipped, errors };
 }

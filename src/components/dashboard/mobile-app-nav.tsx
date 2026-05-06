@@ -19,7 +19,7 @@ export function MobileAppNav() {
     const active = pathname === href || (href !== "/" && pathname.startsWith(href));
     return cn(
       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-      active ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+      active ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
     );
   };
 
@@ -30,14 +30,14 @@ export function MobileAppNav() {
           type="button"
           variant="ghost"
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-lg text-muted-foreground hover:bg-white/[0.05] hover:text-foreground md:hidden"
+          className="h-10 w-10 shrink-0 rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground md:hidden"
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[min(100%,18rem)] border-clinq-glass-border p-0 sm:max-w-xs">
-        <SheetHeader className="border-b border-clinq-glass-border px-4 py-4 text-left">
+      <SheetContent side="left" className="w-[min(100%,18rem)] border-border bg-card p-0 sm:max-w-xs">
+        <SheetHeader className="border-b border-border bg-card px-4 py-4 text-left">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <Link href="/dashboard" onClick={() => setOpen(false)} className="inline-block">
             <ClinqLogo variant="wordmark" className="h-7 w-auto max-w-[7.5rem]" priority />

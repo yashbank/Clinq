@@ -82,9 +82,9 @@ const painPoints = [
 
 export function ClientPsychologyAnalysis() {
   return (
-    <div className="glass-card rounded-2xl">
+    <div className="rounded-2xl border border-border bg-card/95 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-clinq-glass-border p-4">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-accent/20 to-primary/20">
             <Brain className="h-4 w-4 text-accent" />
@@ -103,7 +103,7 @@ export function ClientPsychologyAnalysis() {
       </div>
 
       {/* Psychology Traits */}
-      <div className="border-b border-clinq-glass-border p-4">
+      <div className="border-b border-border p-4">
         <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Decision Drivers
         </p>
@@ -121,7 +121,7 @@ export function ClientPsychologyAnalysis() {
                   {trait.value}%
                 </span>
               </div>
-              <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-clinq-glass">
+              <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
@@ -142,7 +142,7 @@ export function ClientPsychologyAnalysis() {
       </div>
 
       {/* Communication Style */}
-      <div className="border-b border-clinq-glass-border p-4">
+      <div className="border-b border-border p-4">
         <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Communication Style
         </p>
@@ -187,7 +187,7 @@ export function ClientPsychologyAnalysis() {
           {painPoints.map((pain, i) => (
             <div
               key={i}
-              className="group rounded-lg bg-clinq-glass/50 p-3 transition-colors hover:bg-clinq-glass"
+              className="group rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted"
             >
               <div className="flex items-start gap-2">
                 <div
