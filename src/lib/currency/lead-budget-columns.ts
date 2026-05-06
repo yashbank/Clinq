@@ -1,6 +1,7 @@
 import "server-only";
 
-import { averageBudgetAmount, convertAmountToUsd } from "@/lib/currency/exchange-rates";
+import { averageBudgetAmount } from "@/lib/currency/budget-math";
+import { convertAmountToUsd } from "@/lib/currency/exchange-rates";
 
 export type LeadBudgetColumns = {
   budget_min: number | null;

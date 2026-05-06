@@ -87,6 +87,8 @@ export async function updateFreelancerProfileAction(
   revalidatePath("/proposals");
   revalidatePath("/leads");
   revalidatePath("/settings");
+  revalidatePath("/pipeline");
+  revalidatePath("/analytics");
   return { ok: true };
 }
 
@@ -118,6 +120,7 @@ export async function updatePreferredCurrencyAction(
   revalidatePath("/integrations");
   revalidatePath("/integrations/scraped");
   revalidatePath("/proposals");
+  revalidatePath("/analytics");
   return { ok: true };
 }
 

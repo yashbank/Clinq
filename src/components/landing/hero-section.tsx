@@ -11,14 +11,14 @@ export function HeroSection() {
           videoSrc="/background/bg-video.mp4"
           poster="/background/bg-image.png"
           fallbackImageSrc="/background/bg-image.png"
-          videoClassName="opacity-[0.22] sm:opacity-[0.26]"
+          videoClassName="opacity-[0.14] sm:opacity-[0.18] dark:opacity-[0.22] dark:sm:opacity-[0.26] scale-105 blur-[1px] dark:blur-0 dark:scale-100"
         />
-        <div className="absolute inset-0 bg-background/75" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/70 to-background" />
+        <div className="absolute inset-0 bg-background/82 backdrop-blur-[2px] dark:bg-background/75 dark:backdrop-blur-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/[0.97] via-background/75 to-background dark:from-background/95 dark:via-background/70" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-background/55 px-3 py-1 text-xs text-muted-foreground">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-sm dark:border-white/[0.06] dark:bg-background/55 dark:shadow-none">
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           AI operating system for elite freelancers
         </div>

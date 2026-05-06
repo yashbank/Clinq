@@ -1,5 +1,9 @@
 import "server-only";
 
+import { averageBudgetAmount } from "@/lib/currency/budget-math";
+
+export { averageBudgetAmount };
+
 type FrankfurterLatest = {
   amount: number;
   base: string;
@@ -31,16 +35,6 @@ export async function getUsdToForeignRates(): Promise<Record<string, number>> {
   const rates = json.rates && typeof json.rates === "object" ? { ...json.rates } : {};
   cache = { expires: now + TTL_MS, rates };
   return rates;
-}
-
-/** Average of min and max when both exist; otherwise whichever exists. */
-export function averageBudgetAmount(min: number | null, max: number | null): number | null {
-  if (min != null && max != null && Number.isFinite(min) && Number.isFinite(max)) {
-    return Math.round(((min + max) / 2) * 100) / 100;
-  }
-  if (min != null && Number.isFinite(min)) return Math.round(min * 100) / 100;
-  if (max != null && Number.isFinite(max)) return Math.round(max * 100) / 100;
-  return null;
 }
 
 /**

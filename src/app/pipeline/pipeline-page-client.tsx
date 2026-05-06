@@ -53,7 +53,10 @@ export default function PipelinePageClient({
     [preferredCurrency, usdToForeignRates],
   );
   const kanbanLeads = useMemo(() => initialRows.map((r) => toKanban(r, currency)), [initialRows, currency]);
-  const totalBudgetUsd = useMemo(() => initialRows.reduce((sum, r) => sum + leadBudgetAsUsd(r), 0), [initialRows]);
+  const totalBudgetUsd = useMemo(
+    () => initialRows.reduce((sum, r) => sum + leadBudgetAsUsd(r, usdToForeignRates), 0),
+    [initialRows, usdToForeignRates],
+  );
   const totalBudgetLabel = useMemo(
     () => formatUsdTotalForDisplay(totalBudgetUsd, preferredCurrency, usdToForeignRates),
     [totalBudgetUsd, preferredCurrency, usdToForeignRates],

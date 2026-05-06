@@ -5,6 +5,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
 import type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
 import type { LeadSourceFilter } from "@/lib/leads/source-filters";
+import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
+import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import type { LeadRow, PipelineStage } from "@/types/database";
 
 export type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
@@ -189,18 +191,24 @@ export type LeadsListSummary = {
 export async function fetchLeadsListSummary(supabase: SupabaseClient): Promise<LeadsListSummary> {
   const { data, error } = await supabase
     .from("leads")
-    .select("score, budget, repeat_hire")
+    .select("score, budget, budget_usd, budget_avg, budget_min, budget_max, currency_original, metadata, repeat_hire")
     .is("deleted_at", null)
     .is("archived_at", null);
   if (error) {
     throw new Error(error.message);
   }
-  const list = data ?? [];
+  let usdToForeignRates: Record<string, number> | null = null;
+  try {
+    usdToForeignRates = await getUsdToForeignRates();
+  } catch {
+    usdToForeignRates = null;
+  }
+  const list = (data ?? []) as LeadRow[];
   const activeCount = list.length;
-  const highScore80Plus = list.filter((r) => (r as { score: number }).score >= 80).length;
-  const repeatCount = list.filter((r) => (r as { repeat_hire?: boolean }).repeat_hire).length;
-  const totalBudget = list.reduce((s, r) => s + (Number((r as { budget?: number | null }).budget) || 0), 0);
-  const avgScore = activeCount ? list.reduce((s, r) => s + (r as { score: number }).score, 0) / activeCount : 0;
+  const highScore80Plus = list.filter((r) => r.score >= 80).length;
+  const repeatCount = list.filter((r) => r.repeat_hire).length;
+  const totalBudget = list.reduce((s, r) => s + (resolveEffectiveBudgetUsd(r, usdToForeignRates) ?? 0), 0);
+  const avgScore = activeCount ? list.reduce((s, r) => s + r.score, 0) / activeCount : 0;
   return { activeCount, highScore80Plus, repeatCount, totalBudget, avgScore };
 }
 

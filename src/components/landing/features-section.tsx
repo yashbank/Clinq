@@ -36,14 +36,13 @@ export function FeaturesSection() {
           Built for focus, not noise
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-          Design language inspired by deep-space glass UI—see{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">design_system_docs</code>.
+          Calm surfaces, sharp typography, and motion only where it carries meaning—built to feel fast and trustworthy.
         </p>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <div
               key={item.title}
-              className="rounded-2xl border border-border bg-card/95 p-6 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md"
+              className="rounded-2xl border border-border bg-card/95 p-6 shadow-sm ring-1 ring-black/[0.04] transition-all duration-200 hover:border-primary/20 hover:shadow-md dark:ring-0"
             >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15">
                 <item.icon className="h-5 w-5 text-primary" />

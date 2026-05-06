@@ -1,12 +1,14 @@
 import { convertUsdToDisplayCurrency, formatCurrencyAmount } from "@/lib/currency/display-currency";
+import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
+import type { LeadRow } from "@/types/database";
 
-/** Sum stored USD amounts for pipeline metrics (falls back to legacy `budget`). */
-export function leadBudgetAsUsd(row: { budget: number | null; budget_usd?: number | null }): number {
-  if (typeof row.budget_usd === "number" && Number.isFinite(row.budget_usd)) {
-    return row.budget_usd;
-  }
-  return Number(row.budget) || 0;
+/** Sum canonical USD for pipeline / dashboard totals (uses FX when needed). */
+export function leadBudgetAsUsd(
+  row: Pick<LeadRow, "budget" | "budget_usd" | "budget_avg" | "budget_min" | "budget_max" | "currency_original" | "metadata">,
+  usdToForeignRates?: Record<string, number> | null,
+): number {
+  return resolveEffectiveBudgetUsd(row, usdToForeignRates ?? null) ?? 0;
 }
 
 export function formatUsdTotalForDisplay(

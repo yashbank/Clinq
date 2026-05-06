@@ -54,7 +54,7 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
   const id = num(p.id) ?? num(p.project_id);
   if (id === null || id <= 0) return null;
 
-  const title = str(p.title, 500) ?? `Project #${id}`;
+  const title = str(p.title, 500) ?? "Untitled listing";
   const preview = str(p.preview_description, 8000);
   const full = str(p.description, 8000);
   const descriptionRaw = full ?? preview ?? "";

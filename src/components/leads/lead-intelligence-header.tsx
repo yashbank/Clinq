@@ -9,17 +9,11 @@ import { Search, Target } from "lucide-react";
 import { keepOnlyPotentialLeadsAction } from "@/actions/leads";
 import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 import { Button } from "@/components/ui/button";
+import { formatUsdTotalForDisplay } from "@/lib/currency/format-pipeline-budget";
 import { cn } from "@/lib/utils";
 import type { LeadSourceFilter } from "@/lib/leads/source-filters";
 import { leadsPathFromParams, type ParsedLeadsSearchParams } from "@/lib/leads/leads-url-params";
 import type { PipelineStage } from "@/types/database";
-
-function formatUsd(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  if (n > 0) return `$${Math.round(n).toLocaleString()}`;
-  return "$0";
-}
 
 const SCORE_OPTIONS: { value: ParsedLeadsSearchParams["scoreBand"]; label: string }[] = [
   { value: "all", label: "All scores" },
@@ -56,6 +50,8 @@ export function LeadIntelligenceHeader({
   repeatCount = 0,
   totalBudget = 0,
   avgScore = 0,
+  preferredCurrency = "USD",
+  usdToForeignRates = null,
   sourceFilter = "all",
   sourceCounts,
   importSummaryLine,
@@ -69,8 +65,11 @@ export function LeadIntelligenceHeader({
   leadCount?: number;
   highScoreCount?: number;
   repeatCount?: number;
+  /** Sum of canonical USD across active leads (for FX display). */
   totalBudget?: number;
   avgScore?: number;
+  preferredCurrency?: string;
+  usdToForeignRates?: Record<string, number> | null;
   sourceFilter?: LeadSourceFilter;
   sourceCounts?: { all: number; imported: number; manual: number; freelancer: number };
   importSummaryLine?: string | null;
@@ -308,7 +307,10 @@ export function LeadIntelligenceHeader({
       {leadCount > 0 ? (
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-border/60 bg-muted/20 px-4 py-2 text-xs text-muted-foreground sm:px-6 sm:text-sm">
           <span>
-            Pipeline budgets (sum): <span className="font-medium text-foreground">{formatUsd(totalBudget)}</span>
+            Pipeline budgets (sum):{" "}
+            <span className="font-medium text-foreground">
+              {formatUsdTotalForDisplay(totalBudget, preferredCurrency, usdToForeignRates)}
+            </span>
           </span>
           <span className="hidden h-3 w-px bg-border sm:inline" />
           <span>

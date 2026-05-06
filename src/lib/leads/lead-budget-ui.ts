@@ -1,5 +1,6 @@
 import { formatBudgetUsdForDisplay } from "@/lib/currency/format-display-budget";
 import { leadBudgetDisplayFromMetadata, leadBudgetFallback, type BudgetType } from "@/lib/leads/budget-display";
+import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
 import type { LeadRow } from "@/types/database";
 
@@ -27,12 +28,7 @@ export function computeLeadBudgetUiLine(
   const pref: SupportedDisplayCurrency = isSupportedDisplayCurrency(prefRaw) ? prefRaw : "USD";
   const rates = usdToForeignRates;
 
-  const usd =
-    typeof row.budget_usd === "number" && Number.isFinite(row.budget_usd) && row.budget_usd > 0
-      ? row.budget_usd
-      : Number(row.budget) > 0 && Number.isFinite(Number(row.budget))
-        ? Number(row.budget)
-        : null;
+  const usd = resolveEffectiveBudgetUsd(row, rates);
 
   if (usd !== null && rates && Object.keys(rates).length > 0) {
     const fd = formatBudgetUsdForDisplay(usd, pref, rates, kind === "hourly" ? "hourly" : "fixed");

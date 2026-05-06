@@ -23,6 +23,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { isHighConversionScore } from "@/lib/ai/lead-score";
 import { parseStoredLeadIntelligence } from "@/lib/ai/parse-stored-lead-intelligence";
 import { LeadFreelancerMatchSection, type FreelancerMatchContext } from "@/components/leads/lead-freelancer-match-section";
+import { canonicalProposalHref } from "@/lib/leads/canonical-lead-display";
 
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
@@ -175,7 +176,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
       <div className="flex items-center justify-between border-b border-border p-4">
         <div>
           <p className="text-xs text-muted-foreground">Lead</p>
-          <h3 className="text-lg font-semibold text-foreground">{row.client_name}</h3>
+          <h3 className="text-lg font-semibold text-foreground">{ui.projectTitle}</h3>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
           <X className="h-4 w-4" />
@@ -202,7 +203,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
             </div>
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm text-muted-foreground">{row.company || row.platform || "—"}</p>
+                <p className="text-sm text-muted-foreground">{row.company?.trim() || ui.company}</p>
                 {high ? (
                   <span className="rounded-full bg-clinq-success/15 px-2 py-0.5 text-[10px] font-semibold text-clinq-success">
                     High conversion (80+)
@@ -227,7 +228,7 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
               </a>
             </Button>
             <Button size="sm" className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-              <a href="/proposals">
+              <a href={canonicalProposalHref(row.id)}>
                 <FileText className="h-4 w-4" />
                 Proposal
               </a>
@@ -256,8 +257,8 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
               <DollarSign className="h-4 w-4 text-clinq-success" />
               <span className="text-sm text-muted-foreground">Budget</span>
             </div>
-            <span className="text-2xl font-bold text-foreground">
-              {row.budget != null ? `$${Number(row.budget).toLocaleString()}` : "—"}
+            <span className="text-2xl font-bold tabular-nums text-foreground">
+              {ui.budgetLine?.trim() ? ui.budgetLine : "—"}
             </span>
           </div>
         </div>

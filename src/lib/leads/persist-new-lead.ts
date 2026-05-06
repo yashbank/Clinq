@@ -67,6 +67,22 @@ export async function insertLeadWithIntelligence(
   );
   const budgetForIntel = input.budget ?? budgetCols.budget_avg ?? null;
 
+  let mergedBudgetCols = { ...budgetCols };
+  if (
+    mergedBudgetCols.budget_usd == null &&
+    budgetForIntel != null &&
+    Number.isFinite(budgetForIntel) &&
+    budgetForIntel > 0
+  ) {
+    const n = Math.round(budgetForIntel * 100) / 100;
+    mergedBudgetCols = {
+      ...mergedBudgetCols,
+      budget_usd: n,
+      currency_original: mergedBudgetCols.currency_original ?? "USD",
+      budget_avg: mergedBudgetCols.budget_avg ?? n,
+    };
+  }
+
   const intel = analyzeLead({
     budget: budgetForIntel,
     repeatHire: Boolean(input.repeat_hire),
@@ -148,11 +164,11 @@ export async function insertLeadWithIntelligence(
     project_description: input.project_description?.trim() || null,
     short_description,
     budget: resolvedBudget,
-    budget_min: budgetCols.budget_min,
-    budget_max: budgetCols.budget_max,
-    budget_avg: budgetCols.budget_avg,
-    currency_original: budgetCols.currency_original,
-    budget_usd: budgetCols.budget_usd,
+    budget_min: mergedBudgetCols.budget_min,
+    budget_max: mergedBudgetCols.budget_max,
+    budget_avg: mergedBudgetCols.budget_avg,
+    currency_original: mergedBudgetCols.currency_original,
+    budget_usd: mergedBudgetCols.budget_usd,
     score: intel.score,
     email: input.email?.trim() || null,
     phone: input.phone?.trim() || null,

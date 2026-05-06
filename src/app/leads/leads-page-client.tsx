@@ -81,6 +81,8 @@ export default function LeadsPageClient({
             highScoreCount={listSummary.highScore80Plus}
             repeatCount={listSummary.repeatCount}
             totalBudget={listSummary.totalBudget}
+            preferredCurrency={preferredCurrency}
+            usdToForeignRates={usdToForeignRates}
             avgScore={listSummary.avgScore}
             sourceFilter={parsedQuery.source}
             sourceCounts={{

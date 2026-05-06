@@ -16,16 +16,23 @@ export default async function AnalyticsPage() {
     redirect("/login");
   }
 
-  const snapshot = await getAnalyticsSnapshot();
+  const [{ data: profRow }, snapshot] = await Promise.all([
+    supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
+    getAnalyticsSnapshot(),
+  ]);
   if (!snapshot) {
     redirect("/login");
   }
+  const displayCurrency =
+    typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
+      ? profRow.preferred_currency.trim()
+      : "USD";
 
   return (
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <TopNavbar title="Analytics" subtitle="From your workspace data only" />
+        <TopNavbar title="Analytics" subtitle="From your workspace data only" displayCurrency={displayCurrency} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <AnalyticsDashboard data={snapshot} />
         </main>
