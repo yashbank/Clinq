@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { validateFreelancerPersonalAccessToken } from "@/lib/integrations/freelancer/api";
 import { completeFreelancerConnection } from "@/lib/integrations/freelancer/complete-freelancer-connection";
+import { mapTokenPersistenceErrorForUser } from "@/lib/integrations/freelancer/save-freelancer-token-server-side";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 
@@ -66,7 +67,7 @@ export async function connectFreelancerPersonalTokenAction(
     { connectionKind: "personal_token" },
   );
   if (!conn.ok) {
-    return { ok: false, error: conn.error };
+    return { ok: false, error: mapTokenPersistenceErrorForUser(conn.error) };
   }
 
   revalidatePath("/integrations");

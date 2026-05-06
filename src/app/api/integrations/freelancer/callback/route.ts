@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { completeFreelancerConnection } from "@/lib/integrations/freelancer/complete-freelancer-connection";
+import { mapTokenPersistenceErrorForUser } from "@/lib/integrations/freelancer/save-freelancer-token-server-side";
 import { exchangeFreelancerAuthorizationCode } from "@/lib/integrations/freelancer/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
@@ -63,7 +64,9 @@ export async function GET(request: Request) {
 
   const conn = await completeFreelancerConnection(user.id, exchanged.tokens, { connectionKind: "oauth2" });
   if (!conn.ok) {
-    const r = NextResponse.redirect(new URL(`/integrations?freelancer_error=${encodeURIComponent(conn.error)}`, request.url));
+    const r = NextResponse.redirect(
+      new URL(`/integrations?freelancer_error=${encodeURIComponent(mapTokenPersistenceErrorForUser(conn.error))}`, request.url),
+    );
     r.cookies.delete(STATE_COOKIE);
     return r;
   }
