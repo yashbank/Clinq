@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         supabase
           .from("leads")
           .select(
-            "client_name, company, platform, short_description, project_description, budget, score, repeat_hire, metadata, proposal_match_notes, client_history",
+            "client_name, company, platform, short_description, project_description, budget, budget_usd, budget_avg, budget_min, budget_max, currency_original, score, repeat_hire, metadata, proposal_match_notes, client_history",
           )
           .eq("id", leadId)
           .eq("user_id", user.id)

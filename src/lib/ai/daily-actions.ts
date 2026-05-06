@@ -1,4 +1,8 @@
 import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
+import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
+import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
+import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
+import type { FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
 import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
 import type { LeadRow } from "@/types/database";
 
@@ -86,10 +90,17 @@ export function buildDailyActions(args: {
   proposals: ProposalInput[];
   activities: ActivityInput[];
   leadIdsWithProposal: Set<string>;
+  feedbackSummary?: FeedbackSignalsSummary | null;
+  freelancerProfile?: { skills: string[]; techStack: string[]; niches: string[] } | null;
+  usdToForeignRates?: Record<string, number> | null;
 }): DailyAction[] {
-  const { leads, proposals, activities, leadIdsWithProposal } = args;
+  const { leads, proposals, activities, leadIdsWithProposal, feedbackSummary, freelancerProfile, usdToForeignRates } = args;
   const now = Date.now();
   const activityLatestByLead = buildActivityLatestMap(activities);
+  const mergedFx = mergeUsdToForeignRates(usdToForeignRates ?? null);
+  const rankingTokens = freelancerProfile
+    ? [...new Set([...freelancerProfile.skills, ...freelancerProfile.techStack, ...freelancerProfile.niches].map((s) => String(s).trim().toLowerCase()).filter((s) => s.length > 1))].slice(0, 80)
+    : [];
 
   const leadScoped: ScoredAction[] = [];
 
@@ -97,7 +108,24 @@ export function buildDailyActions(args: {
     if (lead.deleted_at || lead.archived_at) continue;
 
     const hasProposal = leadIdsWithProposal.has(lead.id);
-    const priorityScore = computeLeadPriorityScore(lead);
+    let matchSkill: number | undefined;
+    let matchNiche: number | undefined;
+    if (freelancerProfile) {
+      const m = computeLeadFreelancerMatch(lead, freelancerProfile);
+      matchSkill = m.skillMatchPct;
+      matchNiche = m.nicheMatchPct;
+    }
+    const effectiveUsd = resolveEffectiveBudgetUsd(lead, mergedFx);
+    const openFu = feedbackSummary?.openFollowUpsByLeadId.get(lead.id) ?? 0;
+    const priorityScore = computeLeadPriorityScore(lead, {
+      feedbackSummary: feedbackSummary ?? undefined,
+      openFollowUpCount: openFu,
+      skillMatchPct: matchSkill,
+      nicheMatchPct: matchNiche,
+      effectiveBudgetUsd: effectiveUsd,
+      profileTokens: rankingTokens.length > 0 ? rankingTokens : undefined,
+      hasProposal,
+    });
     const lastTouch = lastTouchMs(lead, activityLatestByLead);
     const staleForFollowUp = now - lastTouch >= FOLLOW_UP_STALE_MS;
     const staleForMissed = now - lastTouch >= MISSED_STALE_MS;

@@ -58,6 +58,23 @@ export function ProposalQualityPanel({ evaluation }: { evaluation: ProposalEvalu
             Overall {evaluation.overall}
             <span className={cn("ml-2 text-xs font-medium", overallBand.className)}>{overallBand.label}</span>
           </p>
+          {evaluation.qualitySummary ? (
+            <p className="mt-2 text-xs leading-snug text-muted-foreground">{evaluation.qualitySummary}</p>
+          ) : evaluation.strengthSummary ? (
+            <p className="mt-2 text-xs leading-snug text-muted-foreground">{evaluation.strengthSummary}</p>
+          ) : null}
+          {evaluation.trustFitNote ? (
+            <p className="mt-2 text-[11px] leading-snug text-muted-foreground/95">
+              <span className="font-medium text-foreground">Trust / fit:</span> {evaluation.trustFitNote}
+            </p>
+          ) : null}
+          {evaluation.actionableGaps?.length ? (
+            <ul className="mt-2 list-inside list-disc space-y-0.5 text-[11px] leading-snug text-muted-foreground">
+              {evaluation.actionableGaps.map((t, i) => (
+                <li key={i}>{t}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
 
@@ -71,7 +88,7 @@ export function ProposalQualityPanel({ evaluation }: { evaluation: ProposalEvalu
         </div>
       </div>
 
-      {evaluation.strengthSummary ? (
+      {evaluation.strengthSummary && !evaluation.qualitySummary ? (
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{evaluation.strengthSummary}</p>
       ) : null}
 
@@ -80,7 +97,7 @@ export function ProposalQualityPanel({ evaluation }: { evaluation: ProposalEvalu
       ) : null}
 
       <Collapsible open={open} onOpenChange={setOpen} className="group/pq mt-4">
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-left text-xs font-medium text-foreground transition-colors hover:bg-muted/35">
+        <CollapsibleTrigger className="flex min-h-11 w-full items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-left text-xs font-medium text-foreground transition-colors hover:bg-muted/35 sm:min-h-0 sm:py-2">
           Reasoning &amp; actions
           <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/pq:rotate-180" />
         </CollapsibleTrigger>

@@ -24,6 +24,8 @@ export function buildProposalSystemPrompt(
     "Never invent employers, degrees, awards, revenue numbers, client names, or past project brands not present in context.",
     "Write in first person. Prefer concrete verbs, short sentences, and evidence-led claims over adjectives.",
     "Personalize by weaving overlap between the freelancer's stated skills, niches, and phrases from the RFP—without keyword stuffing.",
+    "Mirror project type cues from the RFP only when explicit (e.g. fixed-price vs hourly, deliverable list, stack names). Do not assume a platform workflow unless the brief names it.",
+    "Banned openers / filler: do not use “I am excited”, “thrilled”, “cutting-edge”, “leverage”, “world-class”, or “robust solution” unless the client used those exact words.",
     length,
     toneLine[tone],
     proposalFrameworkBlock(mode),

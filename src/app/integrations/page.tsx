@@ -70,7 +70,7 @@ export default async function IntegrationsPage() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar title="Integrations" subtitle="Freelancer API import · other platforms reserved" displayCurrency={displayCurrency} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 pb-8 sm:p-6">
           <Suspense
             fallback={<div className="mx-auto max-w-4xl animate-pulse rounded-2xl border border-border/60 bg-background/40 p-8 text-sm text-muted-foreground">Loading integrations…</div>}
           >

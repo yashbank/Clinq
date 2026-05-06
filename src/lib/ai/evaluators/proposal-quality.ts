@@ -12,13 +12,19 @@ const evaluationSchema = z.object({
   ctaStrength: z.number().min(0).max(100),
   relevance: z.number().min(0).max(100),
   overall: z.number().min(0).max(100),
-  notes: z.array(z.string()).max(8),
+  notes: z.array(z.string()).max(6),
   improvements: z.array(z.string()).max(6).optional(),
   whyItWorks: z.array(z.string()).max(5).optional(),
   weakPoints: z.array(z.string()).max(5).optional(),
   trustSignalsIncluded: z.array(z.string()).max(6).optional(),
   strengthSummary: z.string().max(700).optional(),
   scoringConfidenceNote: z.string().max(400).optional(),
+  /** One calm sentence — holistic quality. */
+  qualitySummary: z.string().max(260).optional(),
+  /** Up to three concrete edits (no fluff). */
+  actionableGaps: z.array(z.string().max(140)).max(3).optional(),
+  /** Fit vs brief + one trust caveat. */
+  trustFitNote: z.string().max(240).optional(),
 });
 
 export type ProposalEvaluationRecord = z.infer<typeof evaluationSchema> & {
@@ -36,13 +42,16 @@ const SYS = `You evaluate freelance proposals for a serious freelancer OS. Retur
   "ctaStrength": 0-100 integer (one decisive next step, realistic ask),
   "relevance": 0-100 integer (addresses stated problem and constraints),
   "overall": 0-100 integer (holistic, conservative if data thin),
-  "notes": string[] max 8 short bullets (mixed feedback),
+  "notes": string[] max 6 terse bullets (mixed feedback, no hype words),
   "improvements": string[] max 6 optional actionable edits,
   "whyItWorks": string[] max 5 optional concise positives grounded in text,
   "weakPoints": string[] max 5 optional risks or gaps,
   "trustSignalsIncluded": string[] max 6 optional signals actually present (e.g. milestones, questions, proof),
-  "strengthSummary": optional string max 700 chars — one paragraph synthesis,
-  "scoringConfidenceNote": optional string max 400 chars — when scores are uncertain (thin RFP, missing profile), say so plainly.
+  "strengthSummary": optional string max 700 chars — one paragraph synthesis (legacy; prefer qualitySummary),
+  "scoringConfidenceNote": optional string max 400 chars — when scores are uncertain (thin RFP, missing profile), say so plainly,
+  "qualitySummary": string max 260 chars — one calm sentence on overall quality (no exclamation marks),
+  "actionableGaps": string[] max 3, each max 140 chars — concrete weaknesses to fix next,
+  "trustFitNote": string max 240 chars — brief fit vs stated brief + one trust caveat if any
 }
 Penalize generic hype, invented metrics, multiple CTAs, and template openers. Never claim you verified external facts.`;
 

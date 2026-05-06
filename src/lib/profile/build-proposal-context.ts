@@ -16,6 +16,23 @@ export function buildFreelancerProfileContext(p: FreelancerProfileFields | null)
   if (p.niches?.length) lines.push(`Focus niches: ${p.niches.slice(0, 12).join(", ")}`);
   if (p.skills?.length) lines.push(`Skills: ${p.skills.slice(0, 25).join(", ")}`);
   if (p.tech_stack?.length) lines.push(`Tech stack: ${p.tech_stack.slice(0, 25).join(", ")}`);
+
+  const strengthChips: string[] = [];
+  const seen = new Set<string>();
+  for (const s of [...(p.skills ?? []), ...(p.tech_stack ?? [])]) {
+    const t = String(s).trim();
+    if (!t) continue;
+    const k = t.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    strengthChips.push(t);
+    if (strengthChips.length >= 12) break;
+  }
+  if (strengthChips.length) {
+    lines.push(
+      `Use 2–3 of these strengths only where they clearly match the RFP (verbatim phrasing, no filler adjectives): ${strengthChips.join(", ")}.`,
+    );
+  }
   if (p.portfolio_links?.length) {
     lines.push(`Portfolio / work links: ${p.portfolio_links.filter(Boolean).slice(0, 8).join(" · ")}`);
   }

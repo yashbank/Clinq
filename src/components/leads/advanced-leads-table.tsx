@@ -168,10 +168,10 @@ export function AdvancedLeadsTable({
                   lead.aiScore >= 80 && "bg-clinq-success/5",
                 )}
               >
-                <td className="px-3 py-3 sm:px-4">
+                <td className="px-3 py-2.5 sm:px-4 sm:py-3">
                   <p className="line-clamp-2 font-medium text-foreground">{lead.projectTitle || lead.name}</p>
                 </td>
-                <td className="hidden px-2 py-3 sm:table-cell">
+                <td className="hidden px-2 py-2.5 sm:table-cell sm:py-3">
                   {lead.sourceChannel === "freelancer" ? (
                     <span className="inline-flex rounded border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
                       Freelancer
@@ -180,10 +180,10 @@ export function AdvancedLeadsTable({
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="hidden px-3 py-3 text-sm text-muted-foreground md:table-cell">
+                <td className="hidden px-3 py-2.5 text-sm text-muted-foreground md:table-cell md:py-3">
                   <p className="line-clamp-2 leading-snug">{lead.shortSummary || "—"}</p>
                 </td>
-                <td className="px-2 py-3 text-center align-middle">
+                <td className="px-2 py-2.5 text-center align-middle sm:py-3">
                   <span
                     className={cn(
                       "inline-flex min-w-[2.25rem] items-center justify-center rounded-md border border-border/60 px-1.5 py-0.5 text-lg font-bold tabular-nums",
@@ -193,7 +193,7 @@ export function AdvancedLeadsTable({
                     {lead.aiScore}
                   </span>
                 </td>
-                <td className="hidden px-2 py-3 sm:table-cell">
+                <td className="hidden px-2 py-2.5 sm:table-cell sm:py-3">
                   {lead.budgetLine ? (
                     <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
                       {lead.budgetKind === "hourly" ? (
@@ -207,7 +207,7 @@ export function AdvancedLeadsTable({
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-1 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                <td className="px-1 py-2.5 text-center align-middle sm:py-3" onClick={(e) => e.stopPropagation()}>
                   {lead.listingUrl ? (
                     <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground hover:text-primary" asChild>
                       <a href={lead.listingUrl} target="_blank" rel="noopener noreferrer" title="Open original listing" aria-label="Open original listing">
@@ -218,12 +218,12 @@ export function AdvancedLeadsTable({
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-2 py-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
+                <td className="px-2 py-2.5 text-right align-middle sm:py-3" onClick={(e) => e.stopPropagation()}>
                   <Button variant="secondary" size="sm" className="text-xs" asChild>
                     <Link href={`/proposals?leadId=${encodeURIComponent(lead.id)}`}>Generate proposal</Link>
                   </Button>
                 </td>
-                <td className="px-1 py-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
+                <td className="px-1 py-2.5 text-right align-middle sm:py-3" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button

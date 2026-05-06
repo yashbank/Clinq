@@ -1,6 +1,6 @@
 import "server-only";
 
-import { hoursSinceLeadActivity } from "@/lib/ai/lead-priority";
+import { hoursSinceLeadActivity } from "@/lib/ai/lead-ranking-base";
 import type { LeadRow, PipelineStage } from "@/types/database";
 
 export type LeadOpportunityStateId =

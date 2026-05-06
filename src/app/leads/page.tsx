@@ -66,6 +66,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         view: parsed.view,
         sort: parsed.sort,
         profileSearchTokens,
+        freelancerProfile: {
+          skills: Array.isArray(profileRow?.skills) ? (profileRow.skills as string[]) : [],
+          tech_stack: Array.isArray(profileRow?.tech_stack) ? (profileRow.tech_stack as string[]) : [],
+          niches: Array.isArray(profileRow?.niches) ? (profileRow.niches as string[]) : [],
+        },
       }),
       fetchLeadTabCounts(supabase),
       fetchLeadsListSummary(supabase),

@@ -30,7 +30,7 @@ export default function ProposalsPage() {
             onOpenHistory={() => setShowHistory(true)}
           />
           <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
-            <div className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-border p-4 sm:p-5 lg:max-w-[420px] lg:border-r">
+            <div className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-border p-3 sm:p-5 lg:max-w-[420px] lg:border-r">
               <JobDescriptionInput />
               <div className="rounded-2xl border border-border bg-card/95 p-4 shadow-sm">
                 <h3 className="text-sm font-semibold text-foreground">Client angle</h3>
@@ -45,7 +45,7 @@ export default function ProposalsPage() {
               <AIWritingPanel />
             </div>
 
-            <div className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-border p-4 sm:p-5 lg:max-w-[340px] lg:border-l">
+            <div className="flex w-full shrink-0 flex-col gap-4 overflow-y-auto border-border p-3 sm:p-5 lg:max-w-[340px] lg:border-l">
               <ProposalSettings />
               <div className="rounded-2xl border border-border bg-card/95 p-4 shadow-sm">
                 <h3 className="text-sm font-semibold text-foreground">Win signals</h3>

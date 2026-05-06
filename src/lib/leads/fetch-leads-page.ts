@@ -3,12 +3,13 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
-import { loadFeedbackSignalsSummary, type FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
-import type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
-import type { LeadSourceFilter } from "@/lib/leads/source-filters";
 import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
+import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
+import { loadFeedbackSignalsSummary, type FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
+import type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
+import type { LeadSourceFilter } from "@/lib/leads/source-filters";
 import type { LeadRow, PipelineStage } from "@/types/database";
 
 export type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
@@ -31,6 +32,8 @@ export type LeadsQueryParams = {
   sort?: LeadsSortMode;
   /** Profile tokens used to rank search hits (skill match > title > description). */
   profileSearchTokens?: string[];
+  /** When set, recommended sort uses overlap + niche + effective USD (V3). */
+  freelancerProfile?: { skills: string[]; tech_stack: string[]; niches: string[] };
 };
 
 export type LeadTabCounts = {
@@ -251,11 +254,58 @@ export async function fetchLeadsPage(
     if (auth.user) {
       feedbackSummary = await loadFeedbackSignalsSummary(supabase, auth.user.id);
     }
-    const prio = (row: LeadRow) =>
-      computeLeadPriorityScore(row, {
+
+    let mergedFx: Record<string, number> = {};
+    try {
+      mergedFx = mergeUsdToForeignRates(await getUsdToForeignRates());
+    } catch {
+      mergedFx = {};
+    }
+
+    const proposalLeadSet = new Set<string>();
+    if (auth.user) {
+      const { data: propRows } = await supabase
+        .from("proposals")
+        .select("lead_id")
+        .eq("user_id", auth.user.id)
+        .not("lead_id", "is", null)
+        .limit(4000);
+      for (const pr of propRows ?? []) {
+        const id = typeof pr.lead_id === "string" ? pr.lead_id : null;
+        if (id) proposalLeadSet.add(id);
+      }
+    }
+
+    const fp = params.freelancerProfile;
+    const tokenBase = [
+      ...(fp?.skills ?? []),
+      ...(fp?.tech_stack ?? []),
+      ...(fp?.niches ?? []),
+      ...profileSearchTokens,
+    ]
+      .map((s) => s.trim().toLowerCase())
+      .filter((s) => s.length > 1);
+    const rankingTokens = [...new Set(tokenBase)].slice(0, 80);
+
+    const prio = (row: LeadRow) => {
+      let skillMatchPct: number | undefined;
+      let nicheMatchPct: number | undefined;
+      if (fp) {
+        const m = computeLeadFreelancerMatch(row, { skills: fp.skills, techStack: fp.tech_stack, niches: fp.niches });
+        skillMatchPct = m.skillMatchPct;
+        nicheMatchPct = m.nicheMatchPct;
+      }
+      const effectiveUsd = Object.keys(mergedFx).length > 0 ? resolveEffectiveBudgetUsd(row, mergedFx) : resolveEffectiveBudgetUsd(row, null);
+      return computeLeadPriorityScore(row, {
         feedbackSummary: feedbackSummary ?? undefined,
         openFollowUpCount: feedbackSummary?.openFollowUpsByLeadId.get(row.id) ?? 0,
+        skillMatchPct,
+        nicheMatchPct,
+        effectiveBudgetUsd: effectiveUsd,
+        profileTokens: rankingTokens.length > 0 ? rankingTokens : undefined,
+        hasProposal: proposalLeadSet.has(row.id),
       });
+    };
 
     query = query.order("updated_at", { ascending: false });
     const { data: poolRows, error, count } = await query.range(0, RECOMMENDED_SORT_CAP - 1);

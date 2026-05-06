@@ -3,6 +3,7 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytics-cards";
+import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { formatUsdTotalForDisplay, leadBudgetAsUsd } from "@/lib/currency/format-pipeline-budget";
 import {
@@ -12,6 +13,7 @@ import {
   canonicalPlatformBadge,
   canonicalProposalHref,
 } from "@/lib/leads/canonical-lead-display";
+import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { buildDailyActions, type DailyAction } from "@/lib/ai/daily-actions";
 import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
@@ -187,19 +189,35 @@ function buildTopPriorityLeads(
     sourceSignals: Pick<DashboardSourceSignals, "bestPromotionSource">;
   },
 ): DashboardPriorityLead[] {
+  const mergedFx = mergeUsdToForeignRates(currency.usdToForeignRates);
+  const profileTokens = [...freelancer.skills, ...freelancer.techStack, ...freelancer.niches]
+    .map((s) => String(s).trim().toLowerCase())
+    .filter((s) => s.length > 1);
+  const rankingTokens = [...new Set(profileTokens)].slice(0, 80);
+
   const ranked = rows.map((row) => {
     const match = computeLeadFreelancerMatch(row, freelancer);
     const openFu = opts.feedbackSummary.openFollowUpsByLeadId.get(row.id) ?? 0;
+    const effectiveUsd = resolveEffectiveBudgetUsd(row, mergedFx);
+    const hasProposal = opts.proposalLeadIds.has(row.id);
     const priorityScore = computeLeadPriorityScore(row, {
       skillMatchPct: match.skillMatchPct,
+      nicheMatchPct: match.nicheMatchPct,
+      effectiveBudgetUsd: effectiveUsd,
+      profileTokens: rankingTokens.length > 0 ? rankingTokens : undefined,
+      hasProposal,
       feedbackSummary: opts.feedbackSummary,
       openFollowUpCount: openFu,
     });
-    const reason = generatePriorityReason(row, { skillMatchPct: match.skillMatchPct });
+    const reason = generatePriorityReason(row, {
+      skillMatchPct: match.skillMatchPct,
+      nicheMatchPct: match.nicheMatchPct,
+      effectiveBudgetUsd: effectiveUsd,
+      profileTokens: rankingTokens.length > 0 ? rankingTokens : undefined,
+    });
     const title = canonicalLeadProjectTitle(row);
     const href = `/leads?sort=recommended&q=${encodeURIComponent(title)}`;
     const budgetUi = computeLeadBudgetUiLine(row, currency.preferredCurrency, currency.usdToForeignRates);
-    const hasProposal = opts.proposalLeadIds.has(row.id);
     const opp = computeLeadOpportunityState(row, {
       hasProposal,
       openFollowUpCount: openFu,
@@ -374,6 +392,9 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     }>,
     activities: (activityRows ?? []) as Array<{ lead_id: string | null; created_at: string }>,
     leadIdsWithProposal: proposalLeadIds,
+    feedbackSummary,
+    freelancerProfile: freelancerForPriority,
+    usdToForeignRates,
   });
   const recommendations = buildDashboardRecommendations({
     recentLeads,
