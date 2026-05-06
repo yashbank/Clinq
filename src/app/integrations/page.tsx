@@ -7,6 +7,8 @@ import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { IntegrationHub } from "@/components/integrations/integration-hub";
 import { getFreelancerIntegrationEnv } from "@/lib/integrations/freelancer/env";
 import { getSourceIngestStats } from "@/lib/integrations/source-ingest-stats";
+import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
+import { evaluateProfileLeadAiReadiness } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 import type { IntegrationAccountRow } from "@/types/integrations";
@@ -24,7 +26,7 @@ export default async function IntegrationsPage() {
   /** PAT + OAuth token storage and imports require the service role; OAuth app env is optional when using a personal token. */
   const freelancerImportReady = hasSupabaseServiceRoleKey();
 
-  const [{ data: rows, error }, { data: flJobs }, { data: profRow }, sourceIngestStats] = await Promise.all([
+  const [{ data: rows, error }, { data: flJobs }, { data: profRow }, sourceIngestStats, profileForGate] = await Promise.all([
     supabase
       .from("integration_accounts")
       .select("id, user_id, provider, status, meta, sync_status, last_sync_at, import_stats, created_at, updated_at")
@@ -39,7 +41,10 @@ export default async function IntegrationsPage() {
       .limit(15),
     supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
     getSourceIngestStats(supabase, user.id),
+    loadFreelancerProfileForAi(supabase, user.id),
   ]);
+  const readiness = profileForGate ? evaluateProfileLeadAiReadiness(profileForGate) : null;
+  const profileGaps = readiness?.ready ? [] : readiness?.gaps ?? ["profile"];
   const displayCurrency =
     typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
       ? profRow.preferred_currency.trim()
@@ -71,6 +76,7 @@ export default async function IntegrationsPage() {
               freelancerImportReady={freelancerImportReady}
               freelancerImportJobs={flJobs ?? []}
               sourceIngestStats={sourceIngestStats}
+              profileGaps={profileGaps}
             />
           </Suspense>
         </main>

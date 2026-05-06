@@ -12,6 +12,7 @@ import {
   Trash2,
   Briefcase,
   Clock,
+  ExternalLink,
 } from "lucide-react";
 
 import { archiveLeadAction, softDeleteLeadAction, updateLeadInterestAction } from "@/actions/leads";
@@ -127,7 +128,7 @@ export function AdvancedLeadsTable({
       </div>
 
       <div className="-mx-0 overflow-x-auto px-0 sm:mx-0">
-        <table className="w-full min-w-[720px] table-fixed">
+        <table className="w-full min-w-[760px] table-fixed">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-2.5 sm:px-4">Project</th>
@@ -135,6 +136,9 @@ export function AdvancedLeadsTable({
               <th className="hidden px-3 py-2.5 md:table-cell lg:w-[32%]">Summary</th>
               <th className="w-[72px] px-2 py-2.5 text-center sm:w-[88px]">Score</th>
               <th className="hidden w-[120px] px-2 py-2.5 sm:table-cell">Budget</th>
+              <th className="w-11 px-1 py-2.5 text-center sm:w-12">
+                <span className="sr-only">Listing</span>
+              </th>
               <th className="w-[120px] px-2 py-2.5 text-right sm:w-[150px]">Proposal</th>
               <th className="w-12 px-1 py-2.5 text-right" />
             </tr>
@@ -142,7 +146,7 @@ export function AdvancedLeadsTable({
           <tbody className="divide-y divide-border/80">
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-16 text-center">
+                <td colSpan={8} className="px-4 py-16 text-center">
                   <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
                     <Target className="h-8 w-8 text-primary" />
                     <p className="text-sm font-medium text-foreground">No leads yet</p>
@@ -201,6 +205,18 @@ export function AdvancedLeadsTable({
                       ) : null}
                       <span className="tabular-nums">{lead.budgetLine}</span>
                     </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-1 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                  {lead.listingUrl ? (
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary" asChild>
+                      <a href={lead.listingUrl} target="_blank" rel="noopener noreferrer" title="Open original listing">
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="sr-only">Open listing</span>
+                      </a>
+                    </Button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}

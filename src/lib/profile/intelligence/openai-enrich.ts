@@ -8,15 +8,33 @@ import type { FreelancerProfileFields } from "@/types/profile";
 
 import type { ProfileIntelligenceV1 } from "@/types/profile-intelligence";
 
+const strList = (max: number) =>
+  z.preprocess(
+    (v) => (Array.isArray(v) ? v : []),
+    z.array(z.unknown()).transform((arr) =>
+      arr
+        .map((x) => (typeof x === "string" ? x : "").trim())
+        .filter(Boolean)
+        .map((s) => s.slice(0, 600))
+        .slice(0, max),
+    ),
+  );
+
+const nonNullStr = (max: number, fallback: string) =>
+  z.preprocess(
+    (v) => (v == null ? fallback : v),
+    z.union([z.string(), z.number()]).transform((v) => String(v).trim().slice(0, max) || fallback),
+  );
+
 const schema = z.object({
-  strengths: z.array(z.string()).max(8),
-  inferredNiches: z.array(z.string()).max(12),
-  proposalToneHint: z.string().max(600),
-  idealProjectSummary: z.string().max(600),
-  positioningLine: z.string().max(400),
-  missingSkillHints: z.array(z.string()).max(6).optional(),
-  proposalPositioningNotes: z.array(z.string()).max(5).optional(),
-  idealClientNotes: z.array(z.string()).max(4).optional(),
+  strengths: strList(8),
+  inferredNiches: strList(12),
+  proposalToneHint: nonNullStr(600, "professional"),
+  idealProjectSummary: nonNullStr(600, "Well-scoped projects with documented requirements."),
+  positioningLine: nonNullStr(400, "Experienced freelancer"),
+  missingSkillHints: strList(6).optional(),
+  proposalPositioningNotes: strList(5).optional(),
+  idealClientNotes: strList(4).optional(),
 });
 
 /**

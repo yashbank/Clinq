@@ -6,6 +6,7 @@ import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytic
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { formatUsdTotalForDisplay, leadBudgetAsUsd } from "@/lib/currency/format-pipeline-budget";
 import {
+  canonicalLeadListingUrl,
   canonicalLeadProjectTitle,
   canonicalLeadSummaryLine,
   canonicalPlatformBadge,
@@ -31,6 +32,7 @@ export type DashboardRecentLead = {
   platformLabel: string;
   summaryLine: string;
   proposalHref: string;
+  listingUrl: string | null;
   company: string | null;
   budget: number | null;
   budgetLabel: string;
@@ -300,6 +302,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
       platformLabel: canonicalPlatformBadge(r),
       summaryLine: canonicalLeadSummaryLine(r).slice(0, 220),
       proposalHref: canonicalProposalHref(r.id),
+      listingUrl: canonicalLeadListingUrl(r),
       company: r.company,
       budget: r.budget,
       budgetLabel: bl.show ? bl.label : "—",

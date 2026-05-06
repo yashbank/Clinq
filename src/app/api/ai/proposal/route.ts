@@ -6,6 +6,7 @@ import { buildProposalSystemPrompt, type ProposalTone } from "@/lib/ai/proposal-
 import { inferProposalScenarios } from "@/lib/ai/proposal-scenario";
 import { evaluateProposalWithOpenAi } from "@/lib/ai/evaluators/proposal-quality";
 import { buildFreelancerProfileContext } from "@/lib/profile/build-proposal-context";
+import { evaluateProfileLeadAiReadiness } from "@/lib/profile/profile-completeness";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
@@ -55,6 +56,23 @@ export async function POST(req: Request) {
     const { jobDescription, mode, tone, leadId, title } = parsed.data;
 
     const profileRow = await loadFreelancerProfileForAi(supabase, user.id);
+    if (!profileRow) {
+      return NextResponse.json(
+        { error: "Profile not found.", code: "PROFILE_INCOMPLETE", gaps: ["profile"] },
+        { status: 412 },
+      );
+    }
+    const readiness = evaluateProfileLeadAiReadiness(profileRow);
+    if (!readiness.ready) {
+      return NextResponse.json(
+        {
+          error: "Profile context is too thin for reliable proposal generation.",
+          code: "PROFILE_INCOMPLETE",
+          gaps: readiness.gaps,
+        },
+        { status: 412 },
+      );
+    }
     const profileBlock = buildFreelancerProfileContext(profileRow);
 
     let leadContext = "";

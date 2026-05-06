@@ -4,31 +4,36 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { nullishToUndef, zNullableTrimmedString, zStringArray } from "@/lib/zod/form-coercion";
 import { isSupportedDisplayCurrency } from "@/types/currency";
 
 const profileSchema = z.object({
-  display_name: z.string().max(120).nullable().optional(),
-  bio: z.string().max(4_000).nullable().optional(),
-  website_url: z.string().max(2000).nullable().optional(),
-  resume_text: z.string().max(48_000).nullable().optional(),
-  resume_filename: z.string().max(255).nullable().optional(),
-  skills: z.array(z.string().max(80)).max(80),
-  tech_stack: z.array(z.string().max(80)).max(80),
-  portfolio_links: z.array(z.string().max(2000)).max(20),
-  linkedin_url: z.string().max(2000).optional(),
-  github_url: z.string().max(2000).optional(),
+  display_name: zNullableTrimmedString(120),
+  bio: zNullableTrimmedString(4_000),
+  website_url: zNullableTrimmedString(2000),
+  resume_text: zNullableTrimmedString(48_000),
+  resume_filename: zNullableTrimmedString(255),
+  skills: zStringArray(80, 80),
+  tech_stack: zStringArray(80, 80),
+  portfolio_links: zStringArray(20, 2000),
+  linkedin_url: zNullableTrimmedString(2000),
+  github_url: zNullableTrimmedString(2000),
   experience_level: z
-    .string()
-    .max(20)
-    .optional()
+    .preprocess(nullishToUndef, z.union([z.string(), z.null(), z.undefined()]).optional())
     .transform((s) => {
-      if (!s || s.trim() === "") return null;
+      if (s == null || typeof s !== "string") return null;
       const v = s.trim();
+      if (!v) return null;
       if (v === "junior" || v === "mid" || v === "senior" || v === "lead") return v;
       return null;
     }),
-  niches: z.array(z.string().max(80)).max(40),
-  preferred_currency: z.enum(["USD", "INR", "GBP", "CAD", "EUR"]).default("USD"),
+  niches: zStringArray(40, 80),
+  preferred_currency: z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((v) => {
+      const raw = v == null || String(v).trim() === "" ? "USD" : String(v).trim().toUpperCase();
+      return isSupportedDisplayCurrency(raw) ? raw : "USD";
+    }),
   markComplete: z.boolean().optional(),
 });
 

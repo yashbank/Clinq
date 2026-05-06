@@ -18,9 +18,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clinq — AI operating system for freelancers",
+  title: {
+    default: "Clinq",
+    template: "%s | Clinq",
+  },
   description:
     "Lead intelligence, AI scoring, proposals, pipeline, and analytics—built for serious freelancers.",
+  applicationName: "Clinq",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],

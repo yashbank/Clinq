@@ -7,6 +7,8 @@ export interface Lead {
   name: string;
   projectTitle: string;
   projectUrl: string;
+  /** External listing URL when present (https). */
+  listingUrl: string | null;
   /** Short list blurb (DB or extractive). */
   shortSummary: string;
   /** Display line for budget; empty when hidden. */

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { normalizeScrapedPayload } from "@/lib/leads/normalize-scraped-payload";
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
+import { assertProfileReadyForCuratedLeadAi } from "@/lib/profile/profile-gate";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REVAL_SCRAPED = ["/leads", "/pipeline", "/dashboard", "/integrations", "/integrations/scraped", "/analytics"] as const;
@@ -102,6 +103,11 @@ export async function promoteScrapedLeadManuallyAction(
   } = await supabase.auth.getUser();
   if (!user) {
     return { ok: false, error: "Unauthorized" };
+  }
+
+  const gate = await assertProfileReadyForCuratedLeadAi(supabase, user.id);
+  if (!gate.ok) {
+    return { ok: false, error: gate.message };
   }
 
   const { data: row, error } = await supabase

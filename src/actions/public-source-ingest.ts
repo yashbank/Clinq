@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
 import { getPublicIngestAdapter, type PublicIngestSourceId } from "@/lib/leads/sources/registry";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
+import { assertProfileReadyForCuratedLeadAi } from "@/lib/profile/profile-gate";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type PublicIngestResult = {
@@ -30,6 +31,11 @@ export async function runPublicSourceIngestAction(
   } = await supabase.auth.getUser();
   if (!user) {
     return { ok: false, error: "Unauthorized" };
+  }
+
+  const gate = await assertProfileReadyForCuratedLeadAi(supabase, user.id);
+  if (!gate.ok) {
+    return { ok: false, error: gate.message };
   }
 
   const adapter = getPublicIngestAdapter(source);

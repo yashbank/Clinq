@@ -5,6 +5,9 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { ScrapedLeadsInteractiveSection, type ScrapedInteractiveRow } from "@/components/integrations/scraped-leads-interactive-section";
+import { ProfileReadinessCallout } from "@/components/profile/profile-readiness-callout";
+import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
+import { evaluateProfileLeadAiReadiness } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { skipReasonChips } from "@/lib/leads/scraped-skip-chips";
 import { cn } from "@/lib/utils";
@@ -111,11 +114,16 @@ export default async function ScrapedLeadsReviewPage({
     redirect("/login");
   }
 
-  const { data: profRow } = await supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle();
+  const [{ data: profRow }, profileForGate] = await Promise.all([
+    supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
+    loadFreelancerProfileForAi(supabase, user.id),
+  ]);
   const displayCurrency =
     typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
       ? profRow.preferred_currency.trim()
       : "USD";
+  const readiness = profileForGate ? evaluateProfileLeadAiReadiness(profileForGate) : null;
+  const profileGaps = readiness?.ready ? [] : readiness?.gaps ?? ["profile"];
 
   const sourceFilter = sanitizeToken(sp.source, 32)?.toLowerCase() ?? null;
   const skipFilter = sanitizeToken(sp.skip, 64);
@@ -212,6 +220,7 @@ export default async function ScrapedLeadsReviewPage({
         <TopNavbar title="Scraped leads" subtitle="Review-only staging from imports" displayCurrency={displayCurrency} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="mx-auto max-w-6xl space-y-5">
+            {profileGaps.length > 0 ? <ProfileReadinessCallout gaps={profileGaps} /> : null}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
                 Rows land here first; promotion uses relevance scoring.{" "}

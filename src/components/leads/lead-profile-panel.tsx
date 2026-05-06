@@ -23,7 +23,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { isHighConversionScore } from "@/lib/ai/lead-score";
 import { parseStoredLeadIntelligence } from "@/lib/ai/parse-stored-lead-intelligence";
 import { LeadFreelancerMatchSection, type FreelancerMatchContext } from "@/components/leads/lead-freelancer-match-section";
-import { canonicalProposalHref } from "@/lib/leads/canonical-lead-display";
+import { canonicalLeadListingUrl, canonicalProposalHref } from "@/lib/leads/canonical-lead-display";
 
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
@@ -214,20 +214,28 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
             </div>
           </div>
 
-          <div className="mt-4 flex gap-2">
-            <Button variant="ghost" size="sm" className="flex-1 gap-2 border border-border" asChild>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {canonicalLeadListingUrl(row) ? (
+              <Button variant="outline" size="sm" className="h-10 w-full gap-2 sm:w-auto sm:flex-1" asChild>
+                <a href={canonicalLeadListingUrl(row)!} target="_blank" rel="noopener noreferrer">
+                  <Globe className="h-4 w-4 shrink-0" />
+                  Open listing
+                </a>
+              </Button>
+            ) : null}
+            <Button variant="ghost" size="sm" className="h-10 flex-1 gap-2 border border-border" asChild>
               <a href={row.email ? `mailto:${row.email}` : "#"} aria-disabled={!row.email}>
                 <Mail className="h-4 w-4" />
                 Email
               </a>
             </Button>
-            <Button variant="ghost" size="sm" className="flex-1 gap-2 border border-border" asChild>
+            <Button variant="ghost" size="sm" className="h-10 flex-1 gap-2 border border-border" asChild>
               <a href={row.phone ? `tel:${row.phone}` : "#"} aria-disabled={!row.phone}>
                 <Phone className="h-4 w-4" />
                 Call
               </a>
             </Button>
-            <Button size="sm" className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+            <Button size="sm" className="h-10 flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
               <a href={canonicalProposalHref(row.id)}>
                 <FileText className="h-4 w-4" />
                 Proposal

@@ -7,6 +7,7 @@ import { logLeadPromotion } from "@/lib/logging/app-log";
 import { normalizeScrapedPayload, rawTitleHint } from "@/lib/leads/normalize-scraped-payload";
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
 import { computeScrapedRelevanceV2, formatRelevanceSkipReason } from "@/lib/leads/scraped-relevance-v2";
+import { assertProfileReadyForCuratedLeadAi } from "@/lib/profile/profile-gate";
 import type { LeadRow } from "@/types/database";
 
 type ProfileSnap = {
@@ -75,6 +76,18 @@ export async function processScrapedLeads(
   userId: string,
   options?: { profile?: ProfileSnap | null },
 ): Promise<ProcessScrapedLeadsResult> {
+  const gate = await assertProfileReadyForCuratedLeadAi(supabase, userId);
+  if (!gate.ok) {
+    return {
+      promoted: 0,
+      skipped_irrelevant: 0,
+      skipped_invalid: 0,
+      skipped_persist_failed: 0,
+      errors: [gate.message],
+      skip_reason_counts: {},
+    };
+  }
+
   let profile = options?.profile;
   if (profile === undefined) {
     const { data: prof } = await supabase.from("profiles").select("tech_stack, niches, skills").eq("id", userId).maybeSingle();

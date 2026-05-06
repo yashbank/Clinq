@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Search, Users } from "lucide-react";
+import { ArrowUpRight, ExternalLink, Search, Users } from "lucide-react";
 import { PremiumEmpty } from "@/components/ui/premium-empty";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -60,7 +60,7 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px]">
+        <table className="w-full min-w-[760px]">
           <thead>
             <tr className="border-b border-border bg-muted/20">
               <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -77,6 +77,9 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
               </th>
               <th className="px-4 py-3 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Budget
+              </th>
+              <th className="w-12 px-2 py-3 text-center text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="sr-only">Listing</span>
               </th>
               <th className="px-4 py-3 text-right text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Proposal
@@ -106,6 +109,18 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
                   <span className={cn("text-sm font-semibold tabular-nums", scoreTone(lead.score))}>{lead.score}</span>
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-right text-sm tabular-nums text-foreground">{lead.budgetLabel}</td>
+                <td className="px-2 py-3 text-center">
+                  {lead.listingUrl ? (
+                    <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-primary" asChild>
+                      <a href={lead.listingUrl} target="_blank" rel="noopener noreferrer" title="Open original listing">
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="sr-only">Open listing</span>
+                      </a>
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-right">
                   <Button variant="ghost" size="sm" className="h-8 gap-1 text-primary" asChild>
                     <Link href={lead.proposalHref}>

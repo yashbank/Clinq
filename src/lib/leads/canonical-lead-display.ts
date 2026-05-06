@@ -54,3 +54,17 @@ export function canonicalPlatformBadge(row: LeadRow): string {
 export function canonicalProposalHref(leadId: string): string {
   return `/proposals?leadId=${encodeURIComponent(leadId)}`;
 }
+
+/** External listing URL when present and valid (e.g. Freelancer project link). */
+export function canonicalLeadListingUrl(row: LeadRow): string | null {
+  const meta = metaRecord(row);
+  const raw = typeof meta.project_url === "string" ? meta.project_url.trim() : "";
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.href;
+  } catch {
+    return null;
+  }
+}

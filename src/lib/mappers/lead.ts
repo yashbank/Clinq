@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { intelligenceFromMetadata, type LeadTier } from "@/lib/ai/lead-intelligence";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
 import {
+  canonicalLeadListingUrl,
   canonicalLeadProjectTitle,
   canonicalLeadSummaryLine,
   canonicalPlatformBadge,
@@ -118,6 +119,7 @@ export function mapLeadRowToUiLead(
     name: projectTitle,
     projectTitle,
     projectUrl,
+    listingUrl: canonicalLeadListingUrl(row),
     shortSummary,
     budgetLine,
     budgetKind,

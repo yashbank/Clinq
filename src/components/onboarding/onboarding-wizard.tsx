@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { parseResumeAdvanced } from "@/lib/profile/parse-resume-advanced";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 
@@ -98,8 +99,8 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
       tech_stack: initial.tech_stack ?? [],
       niches: splitTags(nichesStr),
       portfolio_links: splitLines(portfolioLines),
-      linkedin_url: linkedin.trim() || undefined,
-      github_url: github.trim() || undefined,
+      linkedin_url: linkedin.trim() || null,
+      github_url: github.trim() || null,
       experience_level: experience ? (experience as "junior" | "mid" | "senior" | "lead") : null,
     });
   }, [
@@ -137,8 +138,8 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
             tech_stack: initial.tech_stack ?? [],
             niches: splitTags(nichesStr),
             portfolio_links: splitLines(portfolioLines),
-            linkedin_url: linkedin.trim() || undefined,
-            github_url: github.trim() || undefined,
+            linkedin_url: linkedin.trim() || null,
+            github_url: github.trim() || null,
             experience_level: experience ? (experience as "junior" | "mid" | "senior" | "lead") : null,
           });
           if (!res.ok) toast.error(res.error);
@@ -201,8 +202,8 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           tech_stack: initial.tech_stack ?? [],
           niches: splitTags(nichesStr),
           portfolio_links: splitLines(portfolioLines),
-          linkedin_url: linkedin.trim() || undefined,
-          github_url: github.trim() || undefined,
+          linkedin_url: linkedin.trim() || null,
+          github_url: github.trim() || null,
           experience_level: experience ? (experience as "junior" | "mid" | "senior" | "lead") : null,
           markComplete: true,
         });
@@ -380,9 +381,32 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
                 <ResumeUploadZone
                   resumeText={resumeText}
                   resumeFilename={resumeFilename}
-                  onExtracted={(t, fn) => {
+                  onExtracted={(t, fn, extraction, profileEnriched) => {
                     setResumeText(t);
                     setResumeFilename(fn);
+                    const parsed = extraction ?? parseResumeAdvanced(t);
+                    if (parsed.skills.length) {
+                      const merged = [...new Set([...splitTags(skillsStr), ...parsed.skills, ...parsed.tech_stack])].slice(0, 48);
+                      setSkillsStr(merged.join(", "));
+                    }
+                    if (parsed.inferred_niches?.length && splitTags(nichesStr).length < 1) {
+                      setNichesStr(parsed.inferred_niches.slice(0, 8).join(", "));
+                    }
+                    if (parsed.summary_draft && bodyBio.trim().length < 20) {
+                      setBodyBio(parsed.summary_draft.slice(0, 2000));
+                    }
+                    if (!(linkedin ?? "").trim() && parsed.linkedin_url) setLinkedin(parsed.linkedin_url);
+                    if (!(github ?? "").trim() && parsed.github_url) setGithub(parsed.github_url);
+                    if (!(websiteUrl ?? "").trim() && parsed.website_url) setWebsiteUrl(parsed.website_url);
+                    if (parsed.portfolio_urls?.length && splitLines(portfolioLines).length < 2) {
+                      setPortfolioLines([...splitLines(portfolioLines), ...parsed.portfolio_urls].slice(0, 8).join("\n"));
+                    }
+                    if (profileEnriched?.length) {
+                      toast.message("Profile enriched from resume on the server", {
+                        description: profileEnriched.join(" · "),
+                      });
+                      router.refresh();
+                    }
                   }}
                 />
                 <div className="space-y-2">
