@@ -62,6 +62,10 @@ export type AnalyticsSnapshot = {
   completedWithProposalPct: number | null;
   /** `stage_changed` activities in the last ~28 days, grouped into four 7-day buckets (oldest → newest). */
   pipelineMoveTrend: { label: string; count: number }[];
+  /** Open follow-up reminder activities (status not done). */
+  openFollowUpReminders: number;
+  /** Total stage_changed activities counted in pipelineMoveTrend. */
+  pipelineStageChanges28d: number;
 };
 
 export async function getAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> {
@@ -73,7 +77,7 @@ export async function getAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> 
 
   const since = new Date(Date.now() - 35 * MS_DAY).toISOString();
 
-  const [{ data: leads }, { data: proposals }, { data: stageActs }] = await Promise.all([
+  const [{ data: leads }, { data: proposals }, { data: stageActs }, { data: followUpActs }] = await Promise.all([
     supabase.from("leads").select("id, stage, score, platform, metadata").is("deleted_at", null).is("archived_at", null),
     supabase.from("proposals").select("id, lead_id, created_at"),
     supabase
@@ -84,11 +88,27 @@ export async function getAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> 
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(500),
+    supabase
+      .from("activities")
+      .select("metadata")
+      .eq("user_id", user.id)
+      .eq("type", "follow_up_reminder")
+      .order("created_at", { ascending: false })
+      .limit(400),
   ]);
 
   const list = (leads ?? []) as Pick<LeadRow, "id" | "stage" | "score" | "platform" | "metadata">[];
   const props = proposals ?? [];
   const acts = stageActs ?? [];
+
+  let openFollowUpReminders = 0;
+  for (const row of followUpActs ?? []) {
+    const meta = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+      ? (row.metadata as Record<string, unknown>)
+      : {};
+    const st = typeof meta.status === "string" ? meta.status.toLowerCase() : "";
+    if (st !== "done") openFollowUpReminders += 1;
+  }
 
   const totals = {
     leads: list.length,
@@ -195,6 +215,7 @@ export async function getAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> 
     { label: "Week −1", count: bucketCounts[2] },
     { label: "This week", count: bucketCounts[3] },
   ];
+  const pipelineStageChanges28d = bucketCounts.reduce((s, n) => s + n, 0);
 
   return {
     totals,
@@ -211,5 +232,7 @@ export async function getAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> 
     proposalsPrev30d,
     completedWithProposalPct,
     pipelineMoveTrend,
+    openFollowUpReminders,
+    pipelineStageChanges28d,
   };
 }

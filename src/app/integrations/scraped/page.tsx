@@ -221,7 +221,7 @@ export default async function ScrapedLeadsReviewPage({
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar title="Scraped leads" subtitle="Review-only staging from imports" displayCurrency={displayCurrency} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 pb-10 sm:p-6">
           <div className="mx-auto max-w-6xl space-y-5">
             <ProfileCompletenessBanner assessment={profileCompleteness} />
             <div className="flex flex-wrap items-center justify-between gap-3">

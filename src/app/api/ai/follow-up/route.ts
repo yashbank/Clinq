@@ -79,7 +79,7 @@ export async function POST(req: Request) {
       user_id: user.id,
       metric: "follow_up_generated",
       value: 1,
-      dimensions: { tone, leadId: leadId ?? null },
+      dimensions: { tone },
     });
 
     return NextResponse.json({ text });

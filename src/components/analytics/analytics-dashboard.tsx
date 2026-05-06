@@ -51,8 +51,6 @@ export function AnalyticsDashboard({ data, sourceQuality }: { data: AnalyticsSna
   const pipelineChart = data.pipelineByStage.map((s) => ({ name: s.label, count: s.count }));
   const platformChart = data.platformBreakdown.slice(0, 8).map((p) => ({ name: p.label, count: p.count }));
   const scoreChart = data.scoreDistribution.map((s) => ({ name: s.band, count: s.count }));
-  const originChart = data.sourceOriginSplit.map((s) => ({ name: s.label, count: s.count }));
-  const moveChart = data.pipelineMoveTrend.map((s) => ({ name: s.label, count: s.count }));
   const manualCount = data.sourceOriginSplit.find((s) => s.label === "Manual entry")?.count ?? 0;
   const importedCount = data.sourceOriginSplit.find((s) => s.label === "Imported")?.count ?? 0;
 
@@ -116,21 +114,31 @@ export function AnalyticsDashboard({ data, sourceQuality }: { data: AnalyticsSna
       </div>
 
       {!empty ? (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Stat
             label="Proposal pace (30d)"
             value={String(data.proposalsLast30d)}
             hint={`Compared to prior 30 days (${data.proposalsPrev30d} proposals with recorded dates).`}
           />
           <Stat
+            label="Open follow-up reminders"
+            value={String(data.openFollowUpReminders)}
+            hint="Follow-up activities not marked done — your backlog for nudges."
+          />
+          <Stat
+            label="Pipeline stage updates (28d)"
+            value={String(data.pipelineStageChanges28d)}
+            hint="Count of stage_changed activities in the trend window."
+          />
+          <Stat
             label="Manual vs imported leads"
             value={`${manualCount} / ${importedCount}`}
-            hint="Imported = rows carrying import_external_id in metadata; manual is the remainder."
+            hint="Imported = import_external_id in metadata; manual is the remainder."
           />
           <Stat
             label="Completed + proposal link"
             value={data.completedWithProposalPct == null ? "—" : `${data.completedWithProposalPct}%`}
-            hint="Share of completed-stage leads that have at least one proposal referencing them."
+            hint="Completed leads with at least one linked proposal."
           />
         </div>
       ) : null}
@@ -217,54 +225,6 @@ export function AnalyticsDashboard({ data, sourceQuality }: { data: AnalyticsSna
                     }}
                   />
                   <Bar dataKey="count" radius={[6, 6, 0, 0]} fill="oklch(0.72 0.14 200)" maxBarSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-foreground">Manual vs imported</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Based on import metadata on lead rows.</p>
-            <div className="mt-4 h-[220px] w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={originChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.02 280 / 0.35)" vertical={false} />
-                  <XAxis dataKey="name" tick={chartTick} axisLine={false} tickLine={false} interval={0} />
-                  <YAxis tick={chartTick} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "10px",
-                      border: "1px solid oklch(0.28 0.02 280 / 0.45)",
-                      background: "oklch(0.12 0.01 280 / 0.96)",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[6, 6, 0, 0]} fill="oklch(0.68 0.18 160)" maxBarSize={48} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border/70 bg-background/40 p-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-foreground">Pipeline moves</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Count of <span className="font-mono text-[10px]">stage_changed</span> activities (last ~35 days), grouped by week.
-            </p>
-            <div className="mt-4 h-[220px] w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={moveChart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.02 280 / 0.35)" vertical={false} />
-                  <XAxis dataKey="name" tick={chartTick} axisLine={false} tickLine={false} interval={0} />
-                  <YAxis tick={chartTick} axisLine={false} tickLine={false} width={32} allowDecimals={false} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "10px",
-                      border: "1px solid oklch(0.28 0.02 280 / 0.45)",
-                      background: "oklch(0.12 0.01 280 / 0.96)",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[6, 6, 0, 0]} fill="oklch(0.62 0.12 240)" maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { FollowUpsWorkspace } from "@/components/follow-ups/follow-ups-workspace";
+import { formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { ActivityRow } from "@/types/database";
@@ -33,7 +34,7 @@ export default async function FollowUpsPage() {
   if (error) {
     return (
       <div className="gradient-mesh flex min-h-screen items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        Could not load reminders ({error.message}).
+        {formatWorkspaceLoadError("reminders", error.message)}
       </div>
     );
   }
@@ -43,7 +44,7 @@ export default async function FollowUpsPage() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar title="Follow-ups" subtitle="Reminders in your workspace · AI drafts only" />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 pb-10 sm:p-6">
           <FollowUpsWorkspace initialRows={(rows ?? []) as ActivityRow[]} />
         </main>
       </div>

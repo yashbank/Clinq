@@ -206,7 +206,7 @@ export async function POST(req: Request) {
       user_id: user.id,
       metric: "proposal_generated",
       value: 1,
-      dimensions: { mode, tone, leadId: leadId ?? null },
+      dimensions: { mode, tone },
     });
 
     return NextResponse.json({

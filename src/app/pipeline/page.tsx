@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import PipelinePageClient from "@/app/pipeline/pipeline-page-client";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
+import { formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { LeadRow } from "@/types/database";
@@ -43,7 +44,7 @@ export default async function PipelinePage() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        Could not load pipeline ({error.message}). Apply the SQL migration in Supabase if you have not yet.
+        {formatWorkspaceLoadError("pipeline", error.message)}
       </div>
     );
   }

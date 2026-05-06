@@ -30,7 +30,7 @@ export default async function SettingsPage() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar title="Settings" subtitle="Workspace preferences" displayCurrency={preferred} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 pb-10 sm:p-6">
           <div className="mx-auto max-w-lg space-y-6">
             <p className="text-sm text-muted-foreground">
               Auth and API keys stay in Supabase / Vercel. Use the links below for profile and integrations.

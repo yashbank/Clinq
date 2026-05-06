@@ -20,7 +20,7 @@ export function OpportunityCommandCenter({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold tracking-tight text-foreground">Best opportunities today</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Ranked from your signals — interest, imports, proposals, follow-ups.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Ranked from score, fit, recency, and your recent signals.</p>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
           <Link

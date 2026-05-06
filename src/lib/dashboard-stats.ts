@@ -395,6 +395,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     feedbackSummary,
     freelancerProfile: freelancerForPriority,
     usdToForeignRates,
+    scrapedHighRelevanceSkipped: sourceSignals.highRelevanceSkippedCount,
   });
   const recommendations = buildDashboardRecommendations({
     recentLeads,
@@ -407,7 +408,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
 
   const topApply = recentLeads
     .filter((l) => l.stage === "saved" && l.score >= 70)
-    .slice(0, 5)
+    .slice(0, 3)
     .map((l) => ({
       title: l.client_name,
       subtitle: `Score ${l.score} · ${l.company?.trim() || "No company"}`,
@@ -416,7 +417,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
 
   const highScore = recentLeads
     .filter((l) => l.score >= 80)
-    .slice(0, 5)
+    .slice(0, 3)
     .map((l) => ({
       title: l.client_name,
       subtitle: `Score ${l.score} · stage ${l.stage}`,
@@ -433,10 +434,10 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
         href: "/proposals",
       });
     }
-    if (weakProposals.length >= 5) break;
+    if (weakProposals.length >= 4) break;
   }
 
-  const suggestions: DashboardInsightLine[] = recommendations.slice(0, 6).map((r) => ({
+  const suggestions: DashboardInsightLine[] = recommendations.slice(0, 4).map((r) => ({
     title: r.title,
     subtitle: r.detail,
     href: r.href,

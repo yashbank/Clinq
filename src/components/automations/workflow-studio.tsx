@@ -125,13 +125,13 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8 pb-16">
+    <div className="mx-auto max-w-3xl space-y-6 pb-12">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Automations</h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Define reminders and priority rules. Nothing runs on a schedule yet—definitions are stored for the execution
-            layer (notifications / n8n) to pick up later.
+          <h2 className="text-sm font-semibold text-foreground">Saved workflow rules</h2>
+          <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground">
+            Enable or remove definitions you have stored. Execution on a schedule is not enabled in this release — rules
+            are intent only.
           </p>
         </div>
         <Button type="button" size="sm" className="shrink-0 gap-2 self-start sm:self-auto" onClick={() => setOpen(true)}>

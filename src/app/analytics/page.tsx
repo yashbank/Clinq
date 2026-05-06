@@ -40,7 +40,7 @@ export default async function AnalyticsPage() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar title="Analytics" subtitle="From your workspace data only" displayCurrency={displayCurrency} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 pb-10 sm:p-6">
           <AnalyticsDashboard data={snapshot} sourceQuality={sourceQuality} />
         </main>
       </div>

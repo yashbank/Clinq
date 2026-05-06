@@ -10,6 +10,7 @@ import { getFreelancerIntegrationEnv } from "@/lib/integrations/freelancer/env";
 import { getSourceIngestStats } from "@/lib/integrations/source-ingest-stats";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { assessProfileCompleteness } from "@/lib/profile/profile-completeness";
+import { formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 import type { IntegrationAccountRow } from "@/types/integrations";
@@ -57,10 +58,7 @@ export default async function IntegrationsPage() {
   if (error) {
     return (
       <div className="gradient-mesh flex min-h-screen flex-col items-center justify-center p-8 text-center">
-        <p className="max-w-md text-sm text-muted-foreground">
-          Could not load integrations ({error.message}). Apply the latest Supabase migration including{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-foreground">integration_accounts</code>.
-        </p>
+        <p className="max-w-md text-sm text-muted-foreground">{formatWorkspaceLoadError("integrations", error.message)}</p>
       </div>
     );
   }

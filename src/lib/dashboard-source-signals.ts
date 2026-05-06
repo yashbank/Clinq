@@ -15,6 +15,28 @@ function isDismissedScraped(skipReason: string | null | undefined, dismissedAt: 
   return (skipReason ?? "").toLowerCase().startsWith("dismissed");
 }
 
+/** Processed scraped rows in the last 7d, relevance ≥62, not promoted and not dismissed. */
+export async function countHighRelevanceSkippedScraped(supabase: SupabaseClient, userId: string): Promise<number> {
+  const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const { data: scrapedScan } = await supabase
+    .from("scraped_leads")
+    .select("skip_reason, relevance_score, processed, dismissed_at")
+    .eq("user_id", userId)
+    .gte("created_at", since)
+    .limit(1200);
+
+  let n = 0;
+  for (const r of scrapedScan ?? []) {
+    if (isDismissedScraped(r.skip_reason, r.dismissed_at)) continue;
+    if (!r.processed) continue;
+    if (skipIndicatesPromoted(r.skip_reason)) continue;
+    const rel = Number(r.relevance_score);
+    if (!Number.isFinite(rel) || rel < 62) continue;
+    n += 1;
+  }
+  return n;
+}
+
 export type DashboardSourceBullet = {
   label: string;
   detail: string;
@@ -61,25 +83,10 @@ export async function getDashboardSourceSignals(
   },
 ): Promise<DashboardSourceSignals> {
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
-  const [metrics7d, { data: scrapedScan }] = await Promise.all([
+  const [metrics7d, highRelevanceSkippedCount] = await Promise.all([
     getSourceQualityMetrics(supabase, userId, { days: 7 }),
-    supabase
-      .from("scraped_leads")
-      .select("skip_reason, relevance_score, processed, dismissed_at")
-      .eq("user_id", userId)
-      .gte("created_at", since)
-      .limit(1200),
+    countHighRelevanceSkippedScraped(supabase, userId),
   ]);
-
-  let highRelevanceSkippedCount = 0;
-  for (const r of scrapedScan ?? []) {
-    if (isDismissedScraped(r.skip_reason, r.dismissed_at)) continue;
-    if (!r.processed) continue;
-    if (skipIndicatesPromoted(r.skip_reason)) continue;
-    const rel = Number(r.relevance_score);
-    if (!Number.isFinite(rel) || rel < 62) continue;
-    highRelevanceSkippedCount += 1;
-  }
 
   const importedSavedNoProposalCount = args.leadHints.filter(
     (l) => l.stage === "saved" && l.score >= 72 && l.id && !args.proposalLeadIds.has(l.id),

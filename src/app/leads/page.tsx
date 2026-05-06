@@ -5,6 +5,7 @@ import LeadsPageClient from "@/app/leads/leads-page-client";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { fetchLeadTabCounts, fetchLeadsListSummary, fetchLeadsPage } from "@/lib/leads/fetch-leads-page";
 import { parseLeadsSearchParams } from "@/lib/leads/leads-url-params";
+import { formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { LeadRow } from "@/types/database";
@@ -87,9 +88,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-muted-foreground">
         <div className="max-w-md space-y-2">
-          <p>Could not load leads ({loadError}).</p>
-          <p className="text-xs">
-            Apply the latest Supabase migration (leads lifecycle columns + <code className="rounded bg-muted px-1">lead_tab_counts</code>).
+          <p>{formatWorkspaceLoadError("leads", loadError)}</p>
+          <p className="text-xs text-muted-foreground">
+            If you self-host Supabase, confirm migrations for leads lifecycle and <code className="rounded bg-muted px-1">lead_tab_counts</code> are applied.
           </p>
         </div>
       </div>
