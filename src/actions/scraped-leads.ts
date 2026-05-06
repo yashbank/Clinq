@@ -6,6 +6,93 @@ import { normalizeScrapedPayload } from "@/lib/leads/normalize-scraped-payload";
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+const REVAL_SCRAPED = ["/leads", "/pipeline", "/dashboard", "/integrations", "/integrations/scraped", "/analytics"] as const;
+
+function revalidateScrapedSurface() {
+  for (const p of REVAL_SCRAPED) {
+    revalidatePath(p);
+  }
+}
+
+export async function dismissScrapedLeadAction(
+  scrapedId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "Unauthorized" };
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("scraped_leads")
+    .update({
+      processed: true,
+      dismissed_at: now,
+      skip_reason: "Dismissed",
+    })
+    .eq("id", scrapedId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  revalidateScrapedSurface();
+  return { ok: true };
+}
+
+export async function dismissScrapedLeadsBulkAction(
+  scrapedIds: string[],
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const ids = [...new Set(scrapedIds)].filter((x) => typeof x === "string" && x.length > 0).slice(0, 50);
+  if (!ids.length) {
+    return { ok: false, error: "No rows selected" };
+  }
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: "Unauthorized" };
+  }
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("scraped_leads")
+    .update({
+      processed: true,
+      dismissed_at: now,
+      skip_reason: "Dismissed",
+    })
+    .in("id", ids)
+    .eq("user_id", user.id)
+    .select("id");
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  const count = data?.length ?? 0;
+  revalidateScrapedSurface();
+  return { ok: true, count };
+}
+
+export async function promoteScrapedLeadsBulkAction(
+  scrapedIds: string[],
+): Promise<{ ok: true; promoted: number; errors: string[] } | { ok: false; error: string }> {
+  const ids = [...new Set(scrapedIds)].filter((x) => typeof x === "string" && x.length > 0).slice(0, 25);
+  if (!ids.length) {
+    return { ok: false, error: "No rows selected" };
+  }
+  const errors: string[] = [];
+  let promoted = 0;
+  for (const id of ids) {
+    const res = await promoteScrapedLeadManuallyAction(id);
+    if (res.ok) promoted += 1;
+    else errors.push(res.error);
+  }
+  return { ok: true, promoted, errors };
+}
+
 export async function promoteScrapedLeadManuallyAction(
   scrapedId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -19,13 +106,16 @@ export async function promoteScrapedLeadManuallyAction(
 
   const { data: row, error } = await supabase
     .from("scraped_leads")
-    .select("id, raw_data, source")
+    .select("id, raw_data, source, dismissed_at")
     .eq("id", scrapedId)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (error || !row) {
     return { ok: false, error: error?.message ?? "Row not found" };
+  }
+  if (row.dismissed_at) {
+    return { ok: false, error: "This row was dismissed." };
   }
 
   const raw = row.raw_data && typeof row.raw_data === "object" && !Array.isArray(row.raw_data) ? (row.raw_data as Record<string, unknown>) : {};
@@ -70,15 +160,14 @@ export async function promoteScrapedLeadManuallyAction(
     .from("scraped_leads")
     .update({
       processed: true,
+      dismissed_at: null,
       skip_reason: "Manually promoted to Leads",
       relevance_score: 100,
     })
     .eq("id", scrapedId)
     .eq("user_id", user.id);
 
-  for (const p of ["/leads", "/pipeline", "/dashboard", "/integrations", "/integrations/scraped", "/analytics"]) {
-    revalidatePath(p);
-  }
+  revalidateScrapedSurface();
 
   return { ok: true };
 }

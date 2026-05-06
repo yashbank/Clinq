@@ -7,8 +7,12 @@ import { inferProposalScenarios } from "@/lib/ai/proposal-scenario";
 import { evaluateProposalWithOpenAi } from "@/lib/ai/evaluators/proposal-quality";
 import { buildFreelancerProfileContext } from "@/lib/profile/build-proposal-context";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
+import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
+import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
+import { canonicalProposalLeadLinesForApi } from "@/lib/leads/canonical-proposal-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOpenAIClient } from "@/services/ai/openai.server";
+import type { LeadRow } from "@/types/database";
 
 const MAX_TEXT = 48_000;
 
@@ -57,51 +61,38 @@ export async function POST(req: Request) {
     let leadBudget: number | null = null;
     let leadRepeat = false;
     if (leadId) {
-      const { data: lead } = await supabase
-        .from("leads")
-        .select("client_name, company, platform, project_description, budget, score, repeat_hire, metadata, proposal_match_notes, client_history")
-        .eq("id", leadId)
-        .eq("user_id", user.id)
-        .is("deleted_at", null)
-        .is("archived_at", null)
-        .single();
+      const [{ data: lead }, { data: profRow }] = await Promise.all([
+        supabase
+          .from("leads")
+          .select(
+            "client_name, company, platform, short_description, project_description, budget, score, repeat_hire, metadata, proposal_match_notes, client_history",
+          )
+          .eq("id", leadId)
+          .eq("user_id", user.id)
+          .is("deleted_at", null)
+          .is("archived_at", null)
+          .single(),
+        supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
+      ]);
       if (lead) {
+        const row = lead as LeadRow;
         leadBudget = lead.budget != null ? Number(lead.budget) : null;
         leadRepeat = Boolean(lead.repeat_hire);
-        const meta = (lead.metadata && typeof lead.metadata === "object" ? lead.metadata : {}) as Record<
-          string,
-          unknown
-        >;
-        const strat =
-          typeof meta.proposal_strategy_hint === "string" ? meta.proposal_strategy_hint.trim() : "";
-        const portfolio =
-          typeof meta.portfolio_angle_suggestion === "string" ? meta.portfolio_angle_suggestion.trim() : "";
-        const riskBits: string[] = [];
-        if (typeof meta.scam_risk_label === "string") {
-          if (typeof meta.scam_risk_score === "number") {
-            riskBits.push(`Scam risk: ${meta.scam_risk_label} (${meta.scam_risk_score}/100)`);
-          } else {
-            riskBits.push(`Scam risk: ${meta.scam_risk_label}`);
-          }
+        const preferredCurrency =
+          typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
+            ? profRow.preferred_currency.trim()
+            : "USD";
+        let usdToForeignRates: Record<string, number> | null = null;
+        try {
+          usdToForeignRates = await getUsdToForeignRates();
+        } catch {
+          usdToForeignRates = null;
         }
-        if (typeof meta.seriousness_score === "number") {
-          riskBits.push(`Seriousness: ${meta.seriousness_score}/100`);
-        }
-        const scam = riskBits.length ? `${riskBits.join(". ")}.` : "";
-        leadContext = [
-          `Client: ${lead.client_name}${lead.company ? ` (${lead.company})` : ""}`,
-          `Platform: ${lead.platform ?? "n/a"}`,
-          `Budget: ${lead.budget ?? "unknown"}`,
-          `Lead score: ${lead.score}`,
-          scam || null,
-          strat ? `Strategy hint: ${strat}` : null,
-          portfolio ? `Portfolio angle: ${portfolio}` : null,
-          lead.client_history ? `Stakeholder / history notes: ${lead.client_history}` : null,
-          lead.proposal_match_notes ? `Your match notes: ${lead.proposal_match_notes}` : null,
-          `Project brief:\n${lead.project_description ?? ""}`,
-        ]
-          .filter(Boolean)
-          .join("\n");
+        const budgetUi = computeLeadBudgetUiLine(row, preferredCurrency, usdToForeignRates);
+        const lines = canonicalProposalLeadLinesForApi(row, budgetUi.show ? budgetUi.label : null, budgetUi.show);
+        leadContext = [`Client: ${lead.client_name}${lead.company ? ` (${lead.company})` : ""}`, `Lead score: ${lead.score}`, ...lines].join(
+          "\n",
+        );
       }
     }
 

@@ -1,8 +1,7 @@
 "use server";
 
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
-import { canonicalLeadProjectTitle } from "@/lib/leads/canonical-lead-display";
-import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
+import { canonicalProposalRfpSeedFromLead } from "@/lib/leads/canonical-proposal-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { LeadRow } from "@/types/database";
 
@@ -40,19 +39,10 @@ export async function loadProposalLeadRfpAction(
       : "USD";
 
   const row = lead as LeadRow;
-  const meta = (row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-    ? row.metadata
-    : {}) as Record<string, unknown>;
-  const title = canonicalLeadProjectTitle(row);
-  const url = typeof meta.project_url === "string" ? meta.project_url.trim() : "";
-  const { label: budgetLine, show: showBudget } = computeLeadBudgetUiLine(row, preferredCurrency, usdToForeignRates);
+  const text = canonicalProposalRfpSeedFromLead(row, preferredCurrency, usdToForeignRates);
+  if (!text.trim()) {
+    return { ok: false, error: "Not enough canonical lead fields to build RFP text." };
+  }
 
-  const parts = [
-    title ? `Title: ${title}` : "",
-    row.project_description ? `Description:\n${String(row.project_description).trim()}` : "",
-    showBudget && budgetLine ? `Budget: ${budgetLine}` : "",
-    url ? `Listing URL: ${url}` : "",
-  ].filter(Boolean);
-
-  return { ok: true, text: parts.join("\n\n") };
+  return { ok: true, text };
 }

@@ -91,6 +91,7 @@ export async function processScrapedLeads(
     .select("id, raw_data, source")
     .eq("user_id", userId)
     .eq("processed", false)
+    .is("dismissed_at", null)
     .order("created_at", { ascending: true })
     .limit(100);
 

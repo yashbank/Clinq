@@ -5,6 +5,7 @@ import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
 import { getAnalyticsSnapshot } from "@/lib/analytics/aggregate";
+import { getSourceQualityMetrics } from "@/lib/integrations/source-quality-metrics";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function AnalyticsPage() {
@@ -16,9 +17,10 @@ export default async function AnalyticsPage() {
     redirect("/login");
   }
 
-  const [{ data: profRow }, snapshot] = await Promise.all([
+  const [{ data: profRow }, snapshot, sourceQuality] = await Promise.all([
     supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
     getAnalyticsSnapshot(),
+    getSourceQualityMetrics(supabase, user.id, { days: 14 }),
   ]);
   if (!snapshot) {
     redirect("/login");
@@ -34,7 +36,7 @@ export default async function AnalyticsPage() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar title="Analytics" subtitle="From your workspace data only" displayCurrency={displayCurrency} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <AnalyticsDashboard data={snapshot} />
+          <AnalyticsDashboard data={snapshot} sourceQuality={sourceQuality} />
         </main>
       </div>
       <FloatingAIOrb />

@@ -1,5 +1,6 @@
-import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
 import type { DashboardRecentLead, DashboardRecentProposal } from "@/lib/dashboard-stats";
+import type { SourceQualityRow } from "@/lib/integrations/source-quality-metrics";
+import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
 
 export type DashboardRecommendation = {
   id: string;
@@ -11,6 +12,35 @@ export type DashboardRecommendation = {
 };
 
 const MS_DAY = 86_400_000;
+
+function isImportedDashboardLead(lead: DashboardRecentLead): boolean {
+  const m = lead.metadata;
+  return typeof m?.import_external_id === "string" && m.import_external_id.trim().length > 0;
+}
+
+function skippedImportsWorthReview(count: number): DashboardRecommendation | null {
+  if (count < 1) return null;
+  return {
+    id: "skipped-imports-review",
+    title: "High-scoring skipped imports",
+    detail: `${count} staging row(s) scored ≥62 but were not auto-promoted.`,
+    why: "From scraped_leads in the last 7 days: processed, not promoted, not dismissed, relevance_score ≥ 62.",
+    href: "/integrations/scraped?state=skipped&minScore=62",
+  };
+}
+
+function strongImportSource(rows: SourceQualityRow[] | undefined): DashboardRecommendation | null {
+  if (!rows?.length) return null;
+  const top = [...rows].sort((a, b) => (b.avgPromotedLeadScore ?? 0) - (a.avgPromotedLeadScore ?? 0))[0];
+  if (!top || top.avgPromotedLeadScore == null || top.avgPromotedLeadScore < 70 || top.promotedScraped < 1) return null;
+  return {
+    id: "strong-import-source",
+    title: `Strong signal from ${top.source} imports`,
+    detail: `Avg lead score ${top.avgPromotedLeadScore} across ${top.promotedScraped} promoted row(s) in the 7-day import window.`,
+    why: "Average Clinq score of imported leads (rows with import_external_id) attributed to that provider.",
+    href: "/integrations",
+  };
+}
 
 function bestPrioritizeLead(leads: DashboardRecentLead[]): DashboardRecommendation | null {
   const pool = leads.filter((l) => l.stage === "saved" || l.stage === "applied" || l.stage === "replied");
@@ -114,11 +144,14 @@ function hotLeadWithoutProposal(
   );
   if (!pool.length) return null;
   const top = [...pool].sort((a, b) => b.score - a.score)[0];
+  const imported = isImportedDashboardLead(top);
   return {
     id: "hot-no-proposal",
     title: "High-score lead — no proposal logged",
     detail: `${top.client_name} (${top.score}) has no linked proposal row yet.`,
-    why: `Score ≥ 68 in Saved and no \`proposals.lead_id\` references this lead id.`,
+    why: imported
+      ? "Imported lead (import_external_id on metadata), score ≥ 68 in Saved, and no proposals.lead_id for this lead."
+      : "Score ≥ 68 in Saved and no proposals.lead_id references this lead id.",
     href: "/proposals",
   };
 }
@@ -128,6 +161,8 @@ export function buildDashboardRecommendations(args: {
   recentProposals: Array<DashboardRecentProposal & { evaluation?: unknown }>;
   profileQualityScore: number | null;
   proposalLeadIds: Set<string>;
+  sourceQualityRows?: SourceQualityRow[];
+  highRelevanceSkippedCount?: number;
 }): DashboardRecommendation[] {
   const out: DashboardRecommendation[] = [];
   const seen = new Set<string>();
@@ -137,6 +172,8 @@ export function buildDashboardRecommendations(args: {
     out.push(r);
   };
   push(staleSavedLead(args.recentLeads));
+  push(skippedImportsWorthReview(args.highRelevanceSkippedCount ?? 0));
+  push(strongImportSource(args.sourceQualityRows));
   push(hotLeadWithoutProposal(args.recentLeads, args.proposalLeadIds));
   push(bestPrioritizeLead(args.recentLeads));
   push(highestPotential(args.recentLeads));

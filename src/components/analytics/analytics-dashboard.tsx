@@ -14,6 +14,8 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import type { AnalyticsSnapshot } from "@/lib/analytics/aggregate";
+import type { SourceQualityMetrics } from "@/lib/integrations/source-quality-metrics";
+import { SourceQualityInline } from "@/components/analytics/source-quality-inline";
 function Stat({
   label,
   value,
@@ -43,7 +45,7 @@ const PIPELINE_COLORS = [
   "oklch(0.62 0.12 200)",
 ];
 
-export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
+export function AnalyticsDashboard({ data, sourceQuality }: { data: AnalyticsSnapshot; sourceQuality?: SourceQualityMetrics | null }) {
   const empty = data.totals.leads === 0 && data.totals.proposals === 0;
 
   const pipelineChart = data.pipelineByStage.map((s) => ({ name: s.label, count: s.count }));
@@ -269,6 +271,8 @@ export function AnalyticsDashboard({ data }: { data: AnalyticsSnapshot }) {
           </div>
         </div>
       ) : null}
+
+      {sourceQuality ? <SourceQualityInline stats={sourceQuality} /> : null}
     </div>
   );
 }

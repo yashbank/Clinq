@@ -5,6 +5,11 @@ export async function recordLeadImportBatchMetrics(
   userId: string,
   dims: {
     provider: string;
+    /** Rows returned from upstream API (when known). */
+    fetched?: number;
+    /** Rows inserted into scraped_leads for this batch. */
+    staged?: number;
+    /** Rows promoted into `leads` (same meaning as legacy `imported`). */
     imported: number;
     duplicates: number;
     failed: number;
@@ -20,6 +25,12 @@ export async function recordLeadImportBatchMetrics(
     { ...base, metric: "lead_import_duplicates", value: dims.duplicates, dimensions: { provider: dims.provider } },
     { ...base, metric: "lead_import_failed", value: dims.failed, dimensions: { provider: dims.provider } },
   ];
+  if (typeof dims.fetched === "number" && Number.isFinite(dims.fetched) && dims.fetched >= 0) {
+    rows.push({ ...base, metric: "lead_import_fetched", value: dims.fetched, dimensions: { provider: dims.provider } });
+  }
+  if (typeof dims.staged === "number" && Number.isFinite(dims.staged) && dims.staged >= 0) {
+    rows.push({ ...base, metric: "lead_import_staged", value: dims.staged, dimensions: { provider: dims.provider } });
+  }
   if (dims.api_error) {
     rows.push({
       ...base,

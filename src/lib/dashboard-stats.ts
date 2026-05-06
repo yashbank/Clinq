@@ -14,6 +14,7 @@ import {
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { buildDailyActions, type DailyAction } from "@/lib/ai/daily-actions";
 import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
+import { getDashboardSourceSignals, type DashboardSourceSignals } from "@/lib/dashboard-source-signals";
 import { buildDashboardRecommendations, type DashboardRecommendation } from "@/lib/dashboard-recommendations";
 import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
@@ -94,6 +95,7 @@ export type DashboardPageData = {
   dailyActions: DailyAction[];
   preferredCurrency: string;
   usdToForeignRates: Record<string, number> | null;
+  sourceSignals: DashboardSourceSignals | null;
 };
 
 const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
@@ -318,6 +320,14 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   const proposalLeadIds = new Set(
     (proposalLeadRows ?? []).map((r) => r.lead_id).filter((id): id is string => typeof id === "string" && id.length > 0),
   );
+  const sourceSignals = await getDashboardSourceSignals(supabase, user.id, {
+    proposalLeadIds,
+    leadHints: fullLeadRows.map((r) => ({
+      id: r.id,
+      stage: r.stage,
+      score: Number(r.score) || 0,
+    })),
+  });
   const dailyActions = buildDailyActions({
     leads: fullLeadRows,
     proposals: (recentProposalRows ?? []) as Array<{
@@ -335,6 +345,8 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     recentProposals,
     profileQualityScore: intel?.profileQualityScore ?? null,
     proposalLeadIds,
+    sourceQualityRows: sourceSignals.metrics7d.rows,
+    highRelevanceSkippedCount: sourceSignals.highRelevanceSkippedCount,
   });
 
   const topApply = recentLeads
@@ -394,5 +406,6 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     dailyActions,
     preferredCurrency,
     usdToForeignRates,
+    sourceSignals,
   };
 }

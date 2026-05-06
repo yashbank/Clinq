@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
-import { ScrapedPromoteButton } from "@/components/integrations/scraped-promote-button";
+import { ScrapedLeadsInteractiveSection, type ScrapedInteractiveRow } from "@/components/integrations/scraped-leads-interactive-section";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ type ScrapedRow = {
   processed: boolean;
   raw_data: Record<string, unknown>;
   relevance_score: number | null;
+  dismissed_at: string | null;
 };
 
 function asRecord(v: unknown): Record<string, unknown> | null {
@@ -80,13 +81,25 @@ function sanitizeToken(raw: string | undefined, max = 48): string | null {
   return t.length ? t : null;
 }
 
+function skipIndicatesPromoted(skipReason: string | null | undefined): boolean {
+  const s = (skipReason ?? "").toLowerCase();
+  return s.includes("promoted to leads") || s.includes("manually promoted");
+}
+
+function isDismissedRow(row: ScrapedRow): boolean {
+  if (row.dismissed_at) return true;
+  return (row.skip_reason ?? "").toLowerCase().startsWith("dismissed");
+}
+
 const SOURCE_LINKS = ["all", "freelancer", "reddit", "github"] as const;
 const STAGED_SOURCES = ["freelancer", "reddit", "github"] as const;
+const STATE_LINKS = ["queue", "pending", "promoted", "skipped", "dismissed", "all"] as const;
+type StateFilter = (typeof STATE_LINKS)[number];
 
 export default async function ScrapedLeadsReviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ source?: string; skip?: string }>;
+  searchParams: Promise<{ source?: string; skip?: string; state?: string; minScore?: string }>;
 }) {
   const sp = await searchParams;
   const supabase = await createSupabaseServerClient();
@@ -105,13 +118,17 @@ export default async function ScrapedLeadsReviewPage({
 
   const sourceFilter = sanitizeToken(sp.source, 32)?.toLowerCase() ?? null;
   const skipFilter = sanitizeToken(sp.skip, 64);
+  const stateRaw = sanitizeToken(sp.state, 24)?.toLowerCase() ?? null;
+  const stateFilter: StateFilter = STATE_LINKS.includes(stateRaw as StateFilter) ? (stateRaw as StateFilter) : "queue";
+  const minScoreRaw = sp.minScore?.trim() ?? "";
+  const minScoreN = /^\d+$/.test(minScoreRaw) ? Math.min(100, Math.max(0, parseInt(minScoreRaw, 10))) : null;
 
   let query = supabase
     .from("scraped_leads")
-    .select("id, source, short_summary, skip_reason, created_at, processed, raw_data, relevance_score")
+    .select("id, source, short_summary, skip_reason, created_at, processed, raw_data, relevance_score, dismissed_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(250);
 
   if (sourceFilter && (STAGED_SOURCES as readonly string[]).includes(sourceFilter)) {
     query = query.eq("source", sourceFilter);
@@ -119,24 +136,69 @@ export default async function ScrapedLeadsReviewPage({
   if (skipFilter) {
     query = query.ilike("skip_reason", `%${skipFilter}%`);
   }
+  if (minScoreN != null) {
+    query = query.gte("relevance_score", minScoreN);
+  }
 
-  const { data: rows, error } = await query;
+  if (stateFilter === "queue") {
+    query = query.is("dismissed_at", null);
+  } else if (stateFilter === "dismissed") {
+    query = query.not("dismissed_at", "is", null);
+  } else if (stateFilter === "pending" || stateFilter === "promoted" || stateFilter === "skipped") {
+    query = query.is("dismissed_at", null);
+  }
+  // "all" — include dismissed and active
 
-  const filterHref = (patch: { source?: string; skip?: string }) => {
+  const { data: rowsRaw, error } = await query;
+  let rows = (rowsRaw ?? []) as ScrapedRow[];
+
+  if (stateFilter === "pending") {
+    rows = rows.filter((r) => !r.processed && !isDismissedRow(r));
+  } else if (stateFilter === "promoted") {
+    rows = rows.filter((r) => skipIndicatesPromoted(r.skip_reason));
+  } else if (stateFilter === "skipped") {
+    rows = rows.filter((r) => r.processed && !skipIndicatesPromoted(r.skip_reason) && !isDismissedRow(r));
+  } else if (stateFilter === "queue") {
+    rows = rows.filter((r) => !isDismissedRow(r));
+  } else if (stateFilter === "dismissed") {
+    rows = rows.filter((r) => isDismissedRow(r));
+  }
+
+  const filterHref = (patch: { source?: string; skip?: string; state?: string; minScore?: string | null }) => {
     const p = new URLSearchParams();
     if (patch.source && patch.source !== "all") p.set("source", patch.source);
     if (patch.skip) p.set("skip", patch.skip);
+    if (patch.state && patch.state !== "queue") p.set("state", patch.state);
+    if (patch.minScore != null && patch.minScore !== "") p.set("minScore", patch.minScore);
     const qs = p.toString();
     return qs ? `/integrations/scraped?${qs}` : "/integrations/scraped";
   };
 
   const canManualPromote = (row: ScrapedRow) => {
+    if (isDismissedRow(row)) return false;
     const sr = row.skip_reason ?? "";
     if (!row.processed) return false;
     if (sr.includes("Promoted to Leads")) return false;
     if (sr.includes("Manually promoted")) return false;
     return true;
   };
+
+  const canDismiss = (row: ScrapedRow) => !isDismissedRow(row);
+
+  const interactiveRows: ScrapedInteractiveRow[] = rows.map((row) => ({
+    id: row.id,
+    source: platformLabel(row.source),
+    title: listingTitle(row),
+    summary: rawSnippet(row),
+    skipReason: row.skip_reason?.trim() ? row.skip_reason : row.processed ? "—" : "Pending",
+    scoreLabel:
+      row.relevance_score != null && Number.isFinite(Number(row.relevance_score))
+        ? Number(row.relevance_score).toFixed(0)
+        : "—",
+    createdLabel: new Date(row.created_at).toLocaleString(),
+    canPromote: canManualPromote(row),
+    canDismiss: canDismiss(row),
+  }));
 
   return (
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
@@ -163,7 +225,12 @@ export default async function ScrapedLeadsReviewPage({
               {SOURCE_LINKS.map((s) => (
                 <Link
                   key={s}
-                  href={filterHref({ source: s === "all" ? undefined : s, skip: skipFilter ?? undefined })}
+                  href={filterHref({
+                    source: s === "all" ? undefined : s,
+                    skip: skipFilter ?? undefined,
+                    state: stateFilter === "queue" ? undefined : stateFilter,
+                    minScore: minScoreN != null ? String(minScoreN) : null,
+                  })}
                   className={cn(
                     "rounded-md border px-2.5 py-1 font-medium transition-colors",
                     (s === "all" && !sourceFilter) || (s !== "all" && sourceFilter === s)
@@ -175,8 +242,32 @@ export default async function ScrapedLeadsReviewPage({
                 </Link>
               ))}
               <span className="mx-1 text-border">|</span>
+              <span className="text-muted-foreground">State:</span>
+              {STATE_LINKS.map((st) => (
+                <Link
+                  key={st}
+                  href={filterHref({
+                    source: sourceFilter ?? undefined,
+                    skip: skipFilter ?? undefined,
+                    state: st === "queue" ? undefined : st,
+                    minScore: minScoreN != null ? String(minScoreN) : null,
+                  })}
+                  className={cn(
+                    "rounded-md border px-2 py-1 font-medium capitalize transition-colors",
+                    stateFilter === st ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40",
+                  )}
+                >
+                  {st}
+                </Link>
+              ))}
+              <span className="mx-1 text-border">|</span>
               <Link
-                href={filterHref({ source: sourceFilter ?? undefined, skip: "relevance" })}
+                href={filterHref({
+                  source: sourceFilter ?? undefined,
+                  skip: "relevance",
+                  state: stateFilter === "queue" ? undefined : stateFilter,
+                  minScore: minScoreN != null ? String(minScoreN) : null,
+                })}
                 className={cn(
                   "rounded-md border px-2.5 py-1 font-medium transition-colors",
                   skipFilter === "relevance"
@@ -187,10 +278,24 @@ export default async function ScrapedLeadsReviewPage({
                 Skip ~ relevance
               </Link>
               <Link
-                href={filterHref({ source: sourceFilter ?? undefined, skip: undefined })}
+                href={filterHref({
+                  source: sourceFilter ?? undefined,
+                  skip: undefined,
+                  state: stateFilter === "queue" ? undefined : stateFilter,
+                  minScore: "62",
+                })}
+                className={cn(
+                  "rounded-md border px-2.5 py-1 font-medium transition-colors",
+                  minScoreN === 62 ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40",
+                )}
+              >
+                Score ≥ 62
+              </Link>
+              <Link
+                href={filterHref({ source: sourceFilter ?? undefined, skip: undefined, state: undefined, minScore: null })}
                 className="rounded-md border border-border px-2.5 py-1 text-muted-foreground hover:bg-muted/30"
               >
-                Clear skip filter
+                Reset filters
               </Link>
             </div>
 
@@ -198,63 +303,12 @@ export default async function ScrapedLeadsReviewPage({
               <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
                 {error.message}
               </p>
-            ) : !rows?.length ? (
+            ) : !rows.length ? (
               <div className="rounded-2xl border border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">
                 No scraped rows match these filters.
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-border bg-card/90 shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[820px] text-sm">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/20 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        <th className="px-3 py-3">Title</th>
-                        <th className="px-3 py-3">Source</th>
-                        <th className="px-3 py-3">Summary</th>
-                        <th className="px-3 py-3">Score</th>
-                        <th className="px-3 py-3">Skip reason</th>
-                        <th className="px-3 py-3 text-right">Created</th>
-                        <th className="px-3 py-3 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60">
-                      {(rows as ScrapedRow[]).map((row) => (
-                        <tr key={row.id} className="align-top hover:bg-muted/15">
-                          <td className="max-w-[180px] px-3 py-3 font-medium text-foreground">{listingTitle(row)}</td>
-                          <td className="whitespace-nowrap px-3 py-3">
-                            <span className="rounded-md border border-border bg-muted/30 px-2 py-0.5 text-xs">
-                              {platformLabel(row.source)}
-                            </span>
-                          </td>
-                          <td className="max-w-[220px] px-3 py-3 text-muted-foreground">
-                            <span className="line-clamp-3 text-xs leading-snug">{rawSnippet(row)}</span>
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 tabular-nums text-muted-foreground">
-                            {row.relevance_score != null && Number.isFinite(Number(row.relevance_score))
-                              ? Number(row.relevance_score).toFixed(0)
-                              : "—"}
-                          </td>
-                          <td className="max-w-[200px] px-3 py-3 text-muted-foreground">
-                            {row.skip_reason?.trim() ? (
-                              <span className="line-clamp-3 text-xs leading-snug">{row.skip_reason}</span>
-                            ) : row.processed ? (
-                              "—"
-                            ) : (
-                              <span className="text-xs italic">Pending</span>
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-3 text-right text-xs tabular-nums text-muted-foreground">
-                            {new Date(row.created_at).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-3 text-right">
-                            <ScrapedPromoteButton scrapedId={row.id} disabled={!canManualPromote(row)} />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <ScrapedLeadsInteractiveSection rows={interactiveRows} />
             )}
           </div>
         </main>

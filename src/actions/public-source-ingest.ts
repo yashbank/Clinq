@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
 import { getPublicIngestAdapter, type PublicIngestSourceId } from "@/lib/leads/sources/registry";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -126,6 +127,16 @@ export async function runPublicSourceIngestAction(
   if (proc.errors.length) {
     errors.push(...proc.errors.slice(0, 5));
   }
+
+  const failedForMetrics = skipped_invalid_count + errors.length;
+  await recordLeadImportBatchMetrics(supabase, user.id, {
+    provider: source,
+    fetched: items.length,
+    staged: scraped_staged_count,
+    imported: proc.promoted,
+    duplicates: duplicate_count,
+    failed: failedForMetrics,
+  });
 
   for (const p of ["/leads", "/pipeline", "/dashboard", "/integrations", "/integrations/scraped", "/analytics"]) {
     revalidatePath(p);

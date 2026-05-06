@@ -294,6 +294,8 @@ export async function runFreelancerLeadImportAction(
 
   await recordLeadImportBatchMetrics(supabase, user.id, {
     provider: "freelancer",
+    fetched: fetched_count,
+    staged: scraped_staged_count,
     imported: promoted_count,
     duplicates: duplicate_count,
     failed: failed_count,
