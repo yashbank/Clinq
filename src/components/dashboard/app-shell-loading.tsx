@@ -9,7 +9,7 @@ export function AppShellLoading({
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
       <aside className="hidden h-screen w-14 shrink-0 border-r border-border bg-sidebar md:block" aria-hidden />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-background/90 px-4 backdrop-blur-sm sm:px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-background/90 px-3 backdrop-blur-sm sm:px-6">
           <Skeleton className="h-5 w-44 rounded-md clinq-skeleton-shimmer" />
           <div className="hidden items-center gap-2 lg:flex">
             <Skeleton className="h-9 max-w-lg flex-1 rounded-lg clinq-skeleton-shimmer" />
@@ -19,7 +19,7 @@ export function AppShellLoading({
             <Skeleton className="h-8 w-20 rounded-md clinq-skeleton-shimmer" />
           </div>
         </header>
-        <main className="flex-1 space-y-5 overflow-y-auto p-4 motion-safe:animate-fade-in sm:p-6">
+        <main className="flex-1 space-y-5 overflow-y-auto p-3 pb-8 motion-safe:animate-fade-in motion-safe:duration-200 sm:p-6">
           {variant === "dashboard" ? (
             <>
               <Skeleton className="h-16 w-full max-w-2xl rounded-xl clinq-skeleton-shimmer" />

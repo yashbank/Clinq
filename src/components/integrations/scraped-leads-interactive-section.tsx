@@ -3,14 +3,16 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Inbox, Loader2 } from "lucide-react";
 
 import { dismissScrapedLeadsBulkAction, promoteScrapedLeadsBulkAction } from "@/actions/scraped-leads";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { ScrapedDismissButton } from "@/components/integrations/scraped-dismiss-button";
 import { ScrapedPromoteButton } from "@/components/integrations/scraped-promote-button";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import { cn } from "@/lib/utils";
 
 export type ScrapedInteractiveRow = {
@@ -54,6 +56,19 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
 
   const anyWorthReview = rows.some((r) => r.worthReview);
 
+  if (rows.length === 0) {
+    return (
+      <PremiumEmpty
+        icon={Inbox}
+        title="No scraped rows in this view"
+        description="Imports and webhooks land here before promotion. Run a Freelancer sync or check filters — then promote the fits into Leads."
+        primary={{ label: "Integrations", href: "/integrations" }}
+        secondary={{ label: "Open Leads", href: "/leads" }}
+        className="border-border/70 bg-background/30 py-14"
+      />
+    );
+  }
+
   return (
     <div className="space-y-3">
       {anyWorthReview ? (
@@ -84,7 +99,7 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
               void (async () => {
                 const res = await promoteScrapedLeadsBulkAction(ids);
                 if (!res.ok) {
-                  toast.error("Bulk promote failed");
+                  toast.error(formatActionFailure("Bulk promote", res.error));
                   return;
                 }
                 if (res.errors.length) {
@@ -114,7 +129,7 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
               void (async () => {
                 const res = await dismissScrapedLeadsBulkAction(ids);
                 if (!res.ok) {
-                  toast.error(res.error);
+                  toast.error(formatActionFailure("Bulk dismiss", res.error));
                   return;
                 }
                 toast.message(`Dismissed ${res.count} row(s)`);

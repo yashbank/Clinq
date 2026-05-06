@@ -18,6 +18,7 @@ import { ProfileCompletenessBanner } from "@/components/profile/profile-complete
 import type { ProfileCompletenessAssessment } from "@/lib/profile/profile-completeness";
 import type { SourceIngestStats } from "@/lib/integrations/source-ingest-stats";
 import { INTEGRATION_PROVIDERS } from "@/lib/integrations/registry";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { cn } from "@/lib/utils";
 import type { IntegrationAccountRow, IntegrationProviderId } from "@/types/integrations";
 
@@ -65,7 +66,7 @@ export function IntegrationHub({
         const res = await setIntegrationStatusAction(provider, status);
         setBusy(null);
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Updating integration", res.error));
           return;
         }
         const def = INTEGRATION_PROVIDERS.find((p) => p.id === provider);
@@ -84,7 +85,7 @@ export function IntegrationHub({
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <header className="space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Integrations</h1>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">Freelancer and reserved platforms</h2>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Freelancer.com can import real project listings via OAuth or a temporary personal access token (same REST API).
           Other platforms stay in reserved slots until their modules ship—no scraping and no simulated OAuth.

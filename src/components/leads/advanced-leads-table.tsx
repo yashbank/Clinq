@@ -17,6 +17,8 @@ import {
 
 import { archiveLeadAction, softDeleteLeadAction, updateLeadInterestAction } from "@/actions/leads";
 import { Button } from "@/components/ui/button";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,7 +66,7 @@ export function AdvancedLeadsTable({
       void (async () => {
         const res = await updateLeadInterestAction(leadId, status);
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Updating interest", res.error));
           return;
         }
         toast.message(
@@ -80,7 +82,7 @@ export function AdvancedLeadsTable({
       void (async () => {
         const res = await archiveLeadAction(leadId, true);
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Archiving lead", res.error));
           return;
         }
         toast.success("Lead archived");
@@ -94,7 +96,7 @@ export function AdvancedLeadsTable({
       void (async () => {
         const res = await softDeleteLeadAction(leadId);
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Removing lead", res.error));
           return;
         }
         toast.message("Lead removed", { description: "Hidden from lists." });
@@ -144,17 +146,23 @@ export function AdvancedLeadsTable({
           <tbody className="divide-y divide-border/80">
             {leads.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-16 text-center">
-                  <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
-                    <Target className="h-8 w-8 text-primary" />
-                    <p className="text-sm font-medium text-foreground">No leads yet</p>
-                    <p className="text-sm text-muted-foreground">Import from Freelancer or add a lead manually.</p>
-                    {onAddLead ? (
-                      <Button type="button" onClick={onAddLead} className="bg-primary text-primary-foreground">
-                        Add lead
-                      </Button>
-                    ) : null}
-                  </div>
+                <td colSpan={8} className="px-3 py-10 sm:px-6">
+                  <PremiumEmpty
+                    icon={Target}
+                    title="No leads in this view"
+                    description="Connect Freelancer or promote rows from Scraped review — then score, propose, and move deals on the pipeline."
+                    primary={
+                      onAddLead
+                        ? { label: "Add lead manually", onClick: onAddLead }
+                        : { label: "Integrations", href: "/integrations" }
+                    }
+                    secondary={
+                      onAddLead
+                        ? { label: "Review scraped", href: "/integrations/scraped" }
+                        : { label: "Open leads (all)", href: "/leads" }
+                    }
+                    className="mx-auto max-w-lg border-border/70 bg-card/30 py-10"
+                  />
                 </td>
               </tr>
             ) : null}

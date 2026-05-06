@@ -2,10 +2,12 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { updateLeadStageAction } from "@/actions/leads";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import { ActivityTimeline } from "@/components/pipeline/activity-timeline";
 import { AIRecommendationsPanel } from "@/components/pipeline/ai-recommendations-panel";
 import { ClientDetailPanel } from "@/components/pipeline/client-detail-panel";
@@ -13,8 +15,10 @@ import { KanbanBoard, type KanbanLead } from "@/components/pipeline/kanban-board
 import { PipelineHeader } from "@/components/pipeline/pipeline-header";
 
 import { formatUsdTotalForDisplay, leadBudgetAsUsd } from "@/lib/currency/format-pipeline-budget";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { leadKanbanBudgetLine, leadKanbanSummary, leadKanbanTitle } from "@/lib/leads/pipeline-display";
 import type { LeadRow } from "@/types/database";
+import { LayoutGrid } from "lucide-react";
 
 function toKanban(
   row: LeadRow,
@@ -69,9 +73,11 @@ export default function PipelinePageClient({
   const onStageChange = (leadId: string, stage: KanbanLead["stage"]) => {
     startTransition(async () => {
       const res = await updateLeadStageAction(leadId, stage);
-      if (res.ok) {
-        router.refresh();
+      if (!res.ok) {
+        toast.error(formatActionFailure("Moving lead on the board", res.error));
+        return;
       }
+      router.refresh();
     });
   };
 
@@ -95,12 +101,25 @@ export default function PipelinePageClient({
               className="flex-1 overflow-hidden transition-opacity duration-200"
               style={{ opacity: pending ? 0.65 : 1 }}
             >
-              <KanbanBoard
-                leads={kanbanLeads}
-                onSelectClient={setSelectedClient}
-                selectedClient={selectedClient}
-                onStageChange={onStageChange}
-              />
+              {initialRows.length === 0 ? (
+                <div className="flex h-full min-h-[50vh] items-center justify-center overflow-y-auto p-4">
+                  <PremiumEmpty
+                    icon={LayoutGrid}
+                    title="Nothing on the board yet"
+                    description="Save leads from Lead intelligence or promote imports — then drag cards as stages change. Totals and budget roll up automatically."
+                    primary={{ label: "Open Leads", href: "/leads" }}
+                    secondary={{ label: "Integrations", href: "/integrations" }}
+                    className="w-full max-w-md border-border/70"
+                  />
+                </div>
+              ) : (
+                <KanbanBoard
+                  leads={kanbanLeads}
+                  onSelectClient={setSelectedClient}
+                  selectedClient={selectedClient}
+                  onStageChange={onStageChange}
+                />
+              )}
             </div>
 
             {showTimeline ? (

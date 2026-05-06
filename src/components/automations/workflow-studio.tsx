@@ -7,6 +7,8 @@ import { Loader2, Plus, Trash2, Zap } from "lucide-react";
 
 import { createWorkflowAction, deleteWorkflowAction, updateWorkflowAction } from "@/actions/workflows";
 import { Button } from "@/components/ui/button";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -90,7 +92,7 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
       void (async () => {
         const res = await createWorkflowAction({ name: name.trim(), workflow_type: type, config });
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Saving workflow", res.error));
           return;
         }
         toast.success("Workflow saved");
@@ -105,7 +107,7 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
     startTransition(() => {
       void (async () => {
         const res = await updateWorkflowAction(id, { enabled: !currentEnabled });
-        if (!res.ok) toast.error(res.error);
+        if (!res.ok) toast.error(formatActionFailure("Updating workflow", res.error));
         else router.refresh();
       })();
     });
@@ -115,7 +117,7 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
     startTransition(() => {
       void (async () => {
         const res = await deleteWorkflowAction(id);
-        if (!res.ok) toast.error(res.error);
+        if (!res.ok) toast.error(formatActionFailure("Removing workflow", res.error));
         else {
           toast.message("Workflow removed");
           router.refresh();
@@ -220,11 +222,14 @@ export function WorkflowStudio({ initial }: { initial: AutomationWorkflowRow[] }
 
       <div className="space-y-3">
         {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border/80 bg-background/30 px-6 py-14 text-center">
-            <Zap className="mx-auto h-8 w-8 text-primary/80" />
-            <p className="mt-4 text-sm font-medium text-foreground">No workflows yet</p>
-            <p className="mt-2 text-sm text-muted-foreground">Create a definition—execution ships in a later release.</p>
-          </div>
+          <PremiumEmpty
+            icon={Zap}
+            title="No saved workflows"
+            description="Define reminders and score rules here — the scheduler that runs them ships next. Start with one rule so the board is not empty."
+            primary={{ label: "New workflow", onClick: () => setOpen(true) }}
+            secondary={{ label: "Follow-ups", href: "/follow-ups" }}
+            className="border-border/70 bg-background/25 py-12"
+          />
         ) : (
           rows.map((row) => (
             <div

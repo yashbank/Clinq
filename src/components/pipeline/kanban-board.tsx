@@ -175,7 +175,7 @@ export function KanbanBoard({ leads, onSelectClient, selectedClient, onStageChan
             <DroppableColumn key={col.id} id={col.id} label={col.label} tone={col.tone} count={colLeads.length}>
               {colLeads.length === 0 ? (
                 <div className="flex flex-1 items-center justify-center py-8 text-center text-xs text-muted-foreground">
-                  Drop leads here
+                  Nothing in this stage
                 </div>
               ) : (
                 colLeads.map((card) => (

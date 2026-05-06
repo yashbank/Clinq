@@ -10,8 +10,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { BarChart3 } from "lucide-react";
+
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 
 import type { AnalyticsSnapshot } from "@/lib/analytics/aggregate";
 import type { SourceQualityMetrics } from "@/lib/integrations/source-quality-metrics";
@@ -57,35 +58,21 @@ export function AnalyticsDashboard({ data, sourceQuality }: { data: AnalyticsSna
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-16">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Analytics</h1>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">Workspace signals</h2>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Every figure is computed from your Supabase leads and proposals only—no sample or projected series.
         </p>
       </header>
 
       {empty ? (
-        <div className="rounded-2xl border border-dashed border-border/80 bg-background/30 px-6 py-16 text-center">
-          <p className="text-sm font-medium text-foreground">Nothing to chart yet</p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Save leads and log proposals—this page will populate automatically.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <Link
-              href="/leads"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-            >
-              Leads
-              <ArrowUpRight className="h-4 w-4 opacity-80" />
-            </Link>
-            <Link
-              href="/proposals"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground"
-            >
-              Proposals
-              <ArrowUpRight className="h-4 w-4 opacity-80" />
-            </Link>
-          </div>
-        </div>
+        <PremiumEmpty
+          icon={BarChart3}
+          title="Charts need data first"
+          description="Once you have leads and logged proposals, funnel mix, reply proxy, and pace tiles fill in automatically."
+          primary={{ label: "Open Leads", href: "/leads" }}
+          secondary={{ label: "Proposal studio", href: "/proposals" }}
+          className="border-border/70 bg-background/30 py-14"
+        />
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

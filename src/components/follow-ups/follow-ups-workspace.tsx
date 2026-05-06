@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Check, Clock, Plus, Sparkles } from "lucide-react";
 
 import { createFollowUpReminderAction, updateFollowUpReminderAction } from "@/actions/follow-ups";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { FollowUpAiDraft } from "@/components/follow-ups/follow-up-ai-draft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
           priority,
         });
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Saving reminder", res.error));
           return;
         }
         toast.success("Reminder saved");
@@ -74,7 +75,7 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
       void (async () => {
         const res = await updateFollowUpReminderAction(id, { status: "snoozed", remind_at: next });
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Snoozing reminder", res.error));
           return;
         }
         toast.message("Snoozed ~24h", { description: "Suggested revisit time saved on this reminder." });
@@ -88,7 +89,7 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
       void (async () => {
         const res = await updateFollowUpReminderAction(id, { status: "done" });
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Completing reminder", res.error));
           return;
         }
         router.refresh();
@@ -152,7 +153,9 @@ export function FollowUpsWorkspace({ initialRows }: { initialRows: ActivityRow[]
           <PremiumEmpty
             icon={Sparkles}
             title="No open follow-ups"
-            description="Add a reminder when you owe yourself a nudge. Done items appear in history below."
+            description="Capture the next nudge above — or pick a lead and log context there first. Done items roll into history on this page."
+            primary={{ label: "Browse leads", href: "/leads" }}
+            secondary={{ label: "Automations", href: "/automations" }}
             className="border-border/60 bg-background/30 py-10"
           />
         ) : (
