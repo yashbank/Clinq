@@ -12,9 +12,12 @@ import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 export function TopNavbar({
   title = "Command Center",
   subtitle,
+  /** Shown as a compact link to Settings (display currency). */
+  displayCurrency,
 }: {
   title?: string;
   subtitle?: string;
+  displayCurrency?: string | null;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -69,6 +72,15 @@ export function TopNavbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        {displayCurrency ? (
+          <Link
+            href="/settings"
+            className="hidden h-8 items-center rounded-md border border-border/80 bg-muted/30 px-2.5 text-[11px] font-medium tabular-nums text-muted-foreground transition-colors hover:border-primary/30 hover:bg-muted/50 hover:text-foreground sm:inline-flex"
+            title="Display currency — change in Settings"
+          >
+            {displayCurrency}
+          </Link>
+        ) : null}
         <Button
           type="button"
           variant="ghost"

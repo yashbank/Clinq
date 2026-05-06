@@ -1,20 +1,23 @@
 import { formatDistanceToNow } from "date-fns";
 
-import { generateShortLeadDescription } from "@/lib/ai/short-lead-description";
 import { intelligenceFromMetadata, type LeadTier } from "@/lib/ai/lead-intelligence";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
+import {
+  canonicalLeadProjectTitle,
+  canonicalLeadSummaryLine,
+  canonicalPlatformBadge,
+} from "@/lib/leads/canonical-lead-display";
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { getLeadImportedAtIso, isFreelancerLeadRow, isImportedLeadRow } from "@/lib/leads/source-filters";
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("") || "?";
+function initials(label: string): string {
+  const words = label.split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return `${words[0]![0] ?? ""}${words[1]![0] ?? ""}`.toUpperCase() || "?";
+  }
+  return (label[0] ?? "?").toUpperCase();
 }
 
 function scoreToStatus(score: number): Lead["status"] {
@@ -66,7 +69,7 @@ export function mapLeadRowToUiLead(
   const isImported = isImportedLeadRow(row);
   const isFreelancer = isFreelancerLeadRow(row);
   const int = intelligenceFromMetadata(meta);
-  const projectTitle = typeof meta.project_title === "string" ? meta.project_title : "";
+  const projectTitle = canonicalLeadProjectTitle(row);
   const projectUrl = typeof meta.project_url === "string" ? meta.project_url : "";
   const leadTier = (int.tier as LeadTier | undefined) ?? defaultTier(score);
   const confidenceScore = typeof int.confidence === "number" ? int.confidence : 50;
@@ -99,12 +102,7 @@ export function mapLeadRowToUiLead(
       ? "Strong fit on score—tailor proof points to the brief and your saved profile."
       : "Review brief and competition. Add strategy notes when you research the buyer.");
 
-  const shortFromDb = typeof row.short_description === "string" ? row.short_description.trim() : "";
-  const shortSummary =
-    shortFromDb ||
-    generateShortLeadDescription(row.project_description ?? "") ||
-    generateShortLeadDescription(projectTitle) ||
-    "";
+  const shortSummary = canonicalLeadSummaryLine(row);
 
   const { label: budgetLine, kind: budgetKind } = computeLeadBudgetUiLine(
     row,
@@ -115,7 +113,7 @@ export function mapLeadRowToUiLead(
   return {
     id: row.id,
     interest_status: row.interest_status ?? null,
-    name: row.client_name,
+    name: projectTitle,
     projectTitle,
     projectUrl,
     shortSummary,
@@ -124,10 +122,10 @@ export function mapLeadRowToUiLead(
     leadTier,
     confidenceScore,
     intelligenceFlags,
-    company: row.company || row.platform || "—",
+    company: row.company || canonicalPlatformBadge(row),
     email: row.email || "—",
     phone: row.phone || "—",
-    avatar: initials(row.client_name),
+    avatar: initials(projectTitle),
     value: budget,
     aiScore: score,
     conversionScore: score,

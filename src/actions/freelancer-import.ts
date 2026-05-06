@@ -6,8 +6,7 @@ import { fetchFreelancerActiveProjects } from "@/lib/integrations/freelancer/api
 import { logFreelancerImport } from "@/lib/logging/app-log";
 import { getFreelancerTokensForUser } from "@/lib/integrations/freelancer/token-store";
 import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
-import { enqueueIntegrationSyncJob } from "@/lib/integrations/sync-queue";
-import { updateIntegrationAccountSyncFields } from "@/lib/integrations/sync-queue";
+import { enqueueIntegrationSyncJob, updateIntegrationAccountSyncFields } from "@/lib/integrations/sync-queue";
 import {
   collectImportExternalIds,
   normalizeFreelancerProject,
@@ -21,19 +20,29 @@ export type FreelancerImportPayload = {
   limit?: number;
 };
 
+export type FreelancerImportSuccess = {
+  ok: true;
+  jobId: string;
+  /** Rows returned by Freelancer API for this batch. */
+  fetched_count: number;
+  /** Rows written to scraped_leads (staging). */
+  scraped_staged_count: number;
+  /** Rows promoted into leads after relevance gates. */
+  promoted_count: number;
+  /** Rows skipped by relevance gates (keyword / skill / title). */
+  skipped_irrelevant_count: number;
+  /** Rows that could not be normalized from payload. */
+  skipped_invalid_count: number;
+  /** Rows that passed gates but lead insert failed. */
+  skipped_persist_failed_count: number;
+  duplicate_count: number;
+  failed_count: number;
+  errors: string[];
+};
+
 export async function runFreelancerLeadImportAction(
   payload: FreelancerImportPayload,
-): Promise<
-  | {
-      ok: true;
-      jobId: string;
-      imported: number;
-      duplicates: number;
-      failed: number;
-      errors: string[];
-    }
-  | { ok: false; error: string }
-> {
+): Promise<FreelancerImportSuccess | { ok: false; error: string }> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -99,7 +108,7 @@ export async function runFreelancerLeadImportAction(
   if (!api.ok) {
     logFreelancerImport(
       "api_fetch_failed",
-      { userId: user.id, jobId, status: api.status ?? null, error: api.error },
+      { userId: user.id, jobId, status: api.status ?? null, error: api.error, query: query || null },
       "error",
     );
     await supabase
@@ -108,7 +117,7 @@ export async function runFreelancerLeadImportAction(
         status: "failed",
         completed_at: new Date().toISOString(),
         error: api.error,
-        result: { stage: "api_fetch", status: api.status ?? null },
+        result: { stage: "api_fetch", status: api.status ?? null, query: query || null },
       })
       .eq("id", jobId)
       .eq("user_id", user.id);
@@ -129,6 +138,7 @@ export async function runFreelancerLeadImportAction(
     return { ok: false, error: api.error };
   }
 
+  const fetched_count = api.data.projects.length;
   const importedAt = new Date().toISOString();
 
   const extIds = collectImportExternalIds(
@@ -167,9 +177,10 @@ export async function runFreelancerLeadImportAction(
       }
     }
   }
-  let imported = 0;
-  let duplicates = 0;
-  let failed = 0;
+
+  let scraped_staged_count = 0;
+  let duplicate_count = 0;
+  let failed_count = 0;
   const errors: string[] = [];
 
   const { data: prof } = await supabase.from("profiles").select("tech_stack, niches, skills").eq("id", user.id).maybeSingle();
@@ -182,16 +193,16 @@ export async function runFreelancerLeadImportAction(
   for (const p of api.data.projects) {
     const n = normalizeFreelancerProject(p, importedAt);
     if (!n) {
-      failed += 1;
+      failed_count += 1;
       continue;
     }
     const ext = n.metadataExtra.import_external_id;
     if (typeof ext !== "string") {
-      failed += 1;
+      failed_count += 1;
       continue;
     }
     if (existing.has(ext)) {
-      duplicates += 1;
+      duplicate_count += 1;
       continue;
     }
 
@@ -206,10 +217,11 @@ export async function runFreelancerLeadImportAction(
       processed: false,
     });
     if (scrapeErr) {
-      failed += 1;
+      failed_count += 1;
       errors.push(scrapeErr.message);
       continue;
     }
+    scraped_staged_count += 1;
     existing.add(ext);
   }
 
@@ -217,13 +229,25 @@ export async function runFreelancerLeadImportAction(
   if (proc.errors.length) {
     errors.push(...proc.errors.slice(0, 5));
   }
-  imported = proc.promoted;
 
-  logFreelancerImport("scraped_processed", {
+  const promoted_count = proc.promoted;
+  const skipped_irrelevant_count = proc.skipped_irrelevant;
+  const skipped_invalid_count = proc.skipped_invalid;
+  const skipped_persist_failed_count = proc.skipped_persist_failed;
+
+  logFreelancerImport("import_batch_processed", {
     userId: user.id,
     jobId,
-    promoted: proc.promoted,
-    skipped: proc.skipped,
+    query: query || null,
+    fetched_count,
+    scraped_staged_count,
+    promoted_count,
+    skipped_irrelevant_count,
+    skipped_invalid_count,
+    skipped_persist_failed_count,
+    duplicate_count,
+    failed_count,
+    skip_reason_summary: proc.skip_reason_counts,
     scrapeErrors: proc.errors.length,
   });
 
@@ -233,11 +257,20 @@ export async function runFreelancerLeadImportAction(
       status: "succeeded",
       completed_at: new Date().toISOString(),
       result: {
-        imported,
-        duplicates,
-        failed,
-        projectCount: api.data.projects.length,
+        fetched_count,
+        scraped_staged_count,
+        promoted_count,
+        skipped_irrelevant_count,
+        skipped_invalid_count,
+        skipped_persist_failed_count,
+        duplicate_count,
+        failed_count,
+        imported: promoted_count,
+        duplicates: duplicate_count,
+        failed: failed_count,
+        projectCount: fetched_count,
         query: query || null,
+        skip_reason_counts: proc.skip_reason_counts,
       },
       error: errors.length ? errors.slice(0, 5).join(" | ") : null,
     })
@@ -251,47 +284,53 @@ export async function runFreelancerLeadImportAction(
     lastSyncAt: new Date().toISOString(),
     importStatsPatch: {
       lastJobId: jobId,
-      leadsImported: imported,
-      jobsSeen: api.data.projects.length,
-      lastDuplicates: duplicates,
-      lastFailed: failed,
+      leadsImported: promoted_count,
+      jobsSeen: fetched_count,
+      lastDuplicates: duplicate_count,
+      lastFailed: failed_count,
       lastError: errors.length ? errors[0] : null,
     },
   });
 
   await recordLeadImportBatchMetrics(supabase, user.id, {
     provider: "freelancer",
-    imported,
-    duplicates,
-    failed,
+    imported: promoted_count,
+    duplicates: duplicate_count,
+    failed: failed_count,
   });
 
-  for (const p of ["/leads", "/pipeline", "/dashboard", "/integrations"]) {
+  for (const p of ["/leads", "/pipeline", "/dashboard", "/integrations", "/integrations/scraped"]) {
     revalidatePath(p);
   }
 
   logFreelancerImport("job_succeeded", {
     userId: user.id,
     jobId,
-    imported,
-    duplicates,
-    failed,
-    projectCount: api.data.projects.length,
+    fetched_count,
+    promoted_count,
+    skipped_irrelevant_count,
+    duplicate_count,
+    failed_count,
   });
 
-  return { ok: true, jobId, imported, duplicates, failed, errors };
+  return {
+    ok: true,
+    jobId,
+    fetched_count,
+    scraped_staged_count,
+    promoted_count,
+    skipped_irrelevant_count,
+    skipped_invalid_count,
+    skipped_persist_failed_count,
+    duplicate_count,
+    failed_count,
+    errors,
+  };
 }
 
-export async function retryFreelancerImportJobAction(jobId: string): Promise<
-  | {
-      ok: true;
-      imported: number;
-      duplicates: number;
-      failed: number;
-      errors: string[];
-    }
-  | { ok: false; error: string }
-> {
+export async function retryFreelancerImportJobAction(
+  jobId: string,
+): Promise<FreelancerImportSuccess | { ok: false; error: string }> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -322,5 +361,5 @@ export async function retryFreelancerImportJobAction(jobId: string): Promise<
   if (!res.ok) {
     return { ok: false, error: res.error };
   }
-  return { ok: true, imported: res.imported, duplicates: res.duplicates, failed: res.failed, errors: res.errors };
+  return res;
 }

@@ -5,6 +5,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytics-cards";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { formatUsdTotalForDisplay, leadBudgetAsUsd } from "@/lib/currency/format-pipeline-budget";
+import {
+  canonicalLeadProjectTitle,
+  canonicalLeadSummaryLine,
+  canonicalPlatformBadge,
+  canonicalProposalHref,
+} from "@/lib/leads/canonical-lead-display";
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { buildDailyActions, type DailyAction } from "@/lib/ai/daily-actions";
 import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
@@ -16,7 +22,12 @@ import type { LeadRow, PipelineStage } from "@/types/database";
 
 export type DashboardRecentLead = {
   id: string;
+  /** Kept for filters / legacy; matches canonical project title. */
   client_name: string;
+  projectTitle: string;
+  platformLabel: string;
+  summaryLine: string;
+  proposalHref: string;
   company: string | null;
   budget: number | null;
   budgetLabel: string;
@@ -157,9 +168,7 @@ function buildTopPriorityLeads(
     const match = computeLeadFreelancerMatch(row, freelancer);
     const priorityScore = computeLeadPriorityScore(row);
     const reason = generatePriorityReason(row, { skillMatchPct: match.skillMatchPct });
-    const meta = (row.metadata && typeof row.metadata === "object" ? row.metadata : {}) as Record<string, unknown>;
-    const projectTitle = typeof meta.project_title === "string" ? meta.project_title.trim() : "";
-    const title = projectTitle.length > 0 ? projectTitle : row.client_name;
+    const title = canonicalLeadProjectTitle(row);
     const href = `/leads?sort=recommended&q=${encodeURIComponent(row.client_name)}`;
     const budgetUi = computeLeadBudgetUiLine(row, currency.preferredCurrency, currency.usdToForeignRates);
     return {
@@ -246,9 +255,14 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
 
   const recentLeads: DashboardRecentLead[] = fullLeadRows.map((r) => {
     const bl = computeLeadBudgetUiLine(r, preferredCurrency, usdToForeignRates);
+    const projectTitle = canonicalLeadProjectTitle(r);
     return {
       id: r.id,
-      client_name: r.client_name,
+      client_name: projectTitle,
+      projectTitle,
+      platformLabel: canonicalPlatformBadge(r),
+      summaryLine: canonicalLeadSummaryLine(r).slice(0, 220),
+      proposalHref: canonicalProposalHref(r.id),
       company: r.company,
       budget: r.budget,
       budgetLabel: bl.show ? bl.label : "—",

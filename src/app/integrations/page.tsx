@@ -23,7 +23,7 @@ export default async function IntegrationsPage() {
   /** PAT + OAuth token storage and imports require the service role; OAuth app env is optional when using a personal token. */
   const freelancerImportReady = hasSupabaseServiceRoleKey();
 
-  const [{ data: rows, error }, { data: flJobs }] = await Promise.all([
+  const [{ data: rows, error }, { data: flJobs }, { data: profRow }] = await Promise.all([
     supabase
       .from("integration_accounts")
       .select("id, user_id, provider, status, meta, sync_status, last_sync_at, import_stats, created_at, updated_at")
@@ -36,7 +36,12 @@ export default async function IntegrationsPage() {
       .eq("job_type", "lead_import")
       .order("scheduled_at", { ascending: false })
       .limit(15),
+    supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
   ]);
+  const displayCurrency =
+    typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
+      ? profRow.preferred_currency.trim()
+      : "USD";
 
   if (error) {
     return (
@@ -53,7 +58,7 @@ export default async function IntegrationsPage() {
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <TopNavbar title="Integrations" subtitle="Freelancer API import · other platforms reserved" />
+        <TopNavbar title="Integrations" subtitle="Freelancer API import · other platforms reserved" displayCurrency={displayCurrency} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Suspense
             fallback={<div className="mx-auto max-w-4xl animate-pulse rounded-2xl border border-border/60 bg-background/40 p-8 text-sm text-muted-foreground">Loading integrations…</div>}

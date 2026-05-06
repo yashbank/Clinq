@@ -87,6 +87,12 @@ export function IntegrationHub({
           </Link>{" "}
           first so proposals and lead scoring stay personalized.
         </div>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/integrations/scraped" className="font-medium text-primary underline-offset-4 hover:underline">
+            Scraped leads
+          </Link>{" "}
+          — review-only staging from each import (title, skip reason, timestamps).
+        </p>
       </header>
 
       <FreelancerIntegrationCard

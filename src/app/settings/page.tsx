@@ -24,7 +24,7 @@ export default async function SettingsPage() {
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <TopNavbar title="Settings" subtitle="Workspace preferences" />
+        <TopNavbar title="Settings" subtitle="Workspace preferences" displayCurrency={preferred} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="mx-auto max-w-lg space-y-6">
             <p className="text-sm text-muted-foreground">

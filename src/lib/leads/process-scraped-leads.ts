@@ -16,8 +16,20 @@ type ProfileSnap = {
 };
 
 const MIN_SKILL_MATCH_PCT = 35;
-/** Listing tags + profile terms must clear this aggregate score. */
 const MIN_KEYWORD_SCORE = 8;
+
+export type ProcessScrapedLeadsResult = {
+  promoted: number;
+  /** Rows that failed relevance gates (keyword / skill / title). */
+  skipped_irrelevant: number;
+  /** Payload could not be normalized to a lead shape. */
+  skipped_invalid: number;
+  /** Lead insert failed after passing gates. */
+  skipped_persist_failed: number;
+  errors: string[];
+  /** Counts by gate reason for logging (keyword | skill | title). */
+  skip_reason_counts: Record<string, number>;
+};
 
 function syntheticLeadForMatch(input: CreateLeadInput, metadataExtra: Record<string, unknown>): LeadRow {
   const meta = {
@@ -57,7 +69,6 @@ function importTagsFromMetadata(metadataExtra: Record<string, unknown>): string[
   return tags.filter((t): t is string => typeof t === "string" && t.trim().length > 0).map((t) => t.trim());
 }
 
-/** Weighted keyword / tag overlap (tags count more than generic profile tokens). */
 function keywordRelevanceScore(input: CreateLeadInput, profile: ProfileSnap, listingTags: string[]): number {
   const hay = `${input.project_title ?? ""} ${input.project_description ?? ""}`.toLowerCase();
   const profileKeys = [...profile.skills, ...profile.tech_stack, ...profile.niches]
@@ -92,7 +103,6 @@ function skillMatchPass(synth: LeadRow, profile: ProfileSnap): boolean {
   return skillMatchPct >= MIN_SKILL_MATCH_PCT;
 }
 
-/** Stricter title alignment: multiple word hits or a substantive skill phrase in the title. */
 function titleRelevancePass(input: CreateLeadInput, profile: ProfileSnap): boolean {
   const title = (input.project_title ?? "").toLowerCase().trim();
   if (title.length < 8) return false;
@@ -135,6 +145,22 @@ function evaluatePromotionGates(
   return { ok: true };
 }
 
+function gateReasonToUserMessage(reason: "keyword" | "skill" | "title"): string {
+  if (reason === "keyword") return "Low relevance (keywords / tags vs your profile)";
+  if (reason === "skill") return "Low relevance (skill match below threshold)";
+  return "Low relevance (title vs your profile)";
+}
+
+function shortSummaryForScraped(normalized: { input: CreateLeadInput } | null, rawTitle: string): string {
+  if (normalized) {
+    const t = (normalized.input.project_title ?? "").trim();
+    if (t.length > 0) return t.slice(0, 160);
+    const d = (normalized.input.project_description ?? "").replace(/\s+/g, " ").trim();
+    if (d.length > 0) return d.slice(0, 160);
+  }
+  return rawTitle.slice(0, 160) || "—";
+}
+
 type ScrapedRow = {
   id: string;
   raw_data: Record<string, unknown>;
@@ -145,7 +171,7 @@ export async function processScrapedLeads(
   supabase: SupabaseClient,
   userId: string,
   options?: { profile?: ProfileSnap | null },
-): Promise<{ promoted: number; skipped: number; errors: string[] }> {
+): Promise<ProcessScrapedLeadsResult> {
   let profile = options?.profile;
   if (profile === undefined) {
     const { data: prof } = await supabase.from("profiles").select("tech_stack, niches, skills").eq("id", userId).maybeSingle();
@@ -167,17 +193,31 @@ export async function processScrapedLeads(
 
   if (error) {
     logLeadPromotion("batch_query_failed", { userId, message: error.message }, "error");
-    return { promoted: 0, skipped: 0, errors: [error.message] };
+    return {
+      promoted: 0,
+      skipped_irrelevant: 0,
+      skipped_invalid: 0,
+      skipped_persist_failed: 0,
+      errors: [error.message],
+      skip_reason_counts: {},
+    };
   }
 
   let promoted = 0;
-  let skipped = 0;
+  let skipped_irrelevant = 0;
+  let skipped_invalid = 0;
+  let skipped_persist_failed = 0;
   const errors: string[] = [];
+  const skip_reason_counts: Record<string, number> = {};
 
   for (const row of (rows ?? []) as ScrapedRow[]) {
     const raw = row.raw_data && typeof row.raw_data === "object" ? row.raw_data : {};
     const importedAt = typeof raw.imported_at === "string" ? raw.imported_at : new Date().toISOString();
     const freelancerProject = raw.freelancer_project;
+    const rawTitle =
+      freelancerProject && typeof freelancerProject === "object" && !Array.isArray(freelancerProject)
+        ? String((freelancerProject as Record<string, unknown>).title ?? "").slice(0, 200)
+        : "";
 
     const normalized =
       row.source === "freelancer" && freelancerProject != null
@@ -186,28 +226,42 @@ export async function processScrapedLeads(
 
     if (!normalized) {
       logLeadPromotion("skip_unnormalizable", { userId, scrapedId: row.id, source: row.source }, "warn");
-      await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
-      skipped += 1;
+      skipped_invalid += 1;
+      await supabase
+        .from("scraped_leads")
+        .update({
+          processed: true,
+          skip_reason: "Invalid or incomplete listing payload",
+          short_summary: shortSummaryForScraped(null, rawTitle),
+        })
+        .eq("id", row.id)
+        .eq("user_id", userId);
       continue;
     }
 
+    const summary = shortSummaryForScraped(normalized, rawTitle);
     const synth = syntheticLeadForMatch(normalized.input, normalized.metadataExtra as Record<string, unknown>);
     const gates = evaluatePromotionGates(normalized.input, profSnap, normalized.metadataExtra as Record<string, unknown>, synth);
 
     if (!gates.ok) {
+      const msg = gateReasonToUserMessage(gates.reason);
+      skip_reason_counts[gates.reason] = (skip_reason_counts[gates.reason] ?? 0) + 1;
       logLeadPromotion("skip_gate", {
         userId,
         scrapedId: row.id,
         reason: gates.reason,
-        client: normalized.input.client_name,
         keywordScore: keywordRelevanceScore(
           normalized.input,
           profSnap,
           importTagsFromMetadata(normalized.metadataExtra as Record<string, unknown>),
         ),
       });
-      skipped += 1;
-      await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
+      skipped_irrelevant += 1;
+      await supabase
+        .from("scraped_leads")
+        .update({ processed: true, skip_reason: msg, short_summary: summary })
+        .eq("id", row.id)
+        .eq("user_id", userId);
       continue;
     }
 
@@ -219,16 +273,37 @@ export async function processScrapedLeads(
     if (!ins.ok) {
       logLeadPromotion("insert_failed", { userId, scrapedId: row.id, error: ins.error, client: normalized.input.client_name }, "error");
       errors.push(ins.error);
-      await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
-      skipped += 1;
+      skipped_persist_failed += 1;
+      await supabase
+        .from("scraped_leads")
+        .update({
+          processed: true,
+          skip_reason: `Could not save lead: ${ins.error.slice(0, 200)}`,
+          short_summary: summary,
+        })
+        .eq("id", row.id)
+        .eq("user_id", userId);
       continue;
     }
 
     promoted += 1;
     logLeadPromotion("promoted", { userId, scrapedId: row.id, leadId: ins.lead.id, client: normalized.input.client_name });
-    await supabase.from("scraped_leads").update({ processed: true }).eq("id", row.id).eq("user_id", userId);
+    await supabase
+      .from("scraped_leads")
+      .update({ processed: true, skip_reason: "Promoted to Leads", short_summary: summary })
+      .eq("id", row.id)
+      .eq("user_id", userId);
   }
 
-  logLeadPromotion("batch_complete", { userId, promoted, skipped, errorCount: errors.length });
-  return { promoted, skipped, errors };
+  logLeadPromotion("batch_complete", {
+    userId,
+    promoted,
+    skipped_irrelevant,
+    skipped_invalid,
+    skipped_persist_failed,
+    errorCount: errors.length,
+    skip_reason_counts,
+  });
+
+  return { promoted, skipped_irrelevant, skipped_invalid, skipped_persist_failed, errors, skip_reason_counts };
 }

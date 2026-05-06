@@ -20,9 +20,7 @@ function titleForAction(
   }
   if (a.leadId) {
     const l = leadById.get(a.leadId);
-    const meta = l?.metadata ?? {};
-    const projectTitle = typeof meta.project_title === "string" ? meta.project_title.trim() : "";
-    if (projectTitle.length > 0) return projectTitle.slice(0, 56);
+    if (l?.projectTitle?.trim()) return l.projectTitle.trim().slice(0, 56);
     return (l?.client_name ?? "Lead").slice(0, 56);
   }
   return "Today";
@@ -55,7 +53,7 @@ export function TodayFocusSection({
       <ul className="mt-3 space-y-2.5">
         {actions.map((a, i) => {
           const title = titleForAction(a, leadById, proposalById);
-          const clientName = a.leadId ? leadById.get(a.leadId)?.client_name : undefined;
+          const clientName = a.leadId ? leadById.get(a.leadId)?.projectTitle ?? leadById.get(a.leadId)?.client_name : undefined;
           return (
             <li
               key={`${a.type}-${a.leadId ?? ""}-${a.proposalId ?? ""}-${i}`}

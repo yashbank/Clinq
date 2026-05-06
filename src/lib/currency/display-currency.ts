@@ -15,12 +15,18 @@ export function convertUsdToDisplayCurrency(
 export function formatCurrencyAmount(amount: number, currency: SupportedDisplayCurrency): string {
   const rounded = Math.round(amount * 100) / 100;
   try {
-    return new Intl.NumberFormat("en-US", {
+    const locale = currency === "CAD" ? "en-CA" : "en-US";
+    const formatted = new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       maximumFractionDigits: rounded >= 1000 && currency !== "INR" ? 0 : 2,
     }).format(rounded);
+    if (currency === "CAD") {
+      return formatted.replace(/\bCA\$\b/g, "C$").replace(/\bCAD\s/g, "C$ ");
+    }
+    return formatted;
   } catch {
+    if (currency === "CAD") return `C$${rounded.toLocaleString("en-US")}`;
     return `${currency} ${rounded.toLocaleString()}`;
   }
 }

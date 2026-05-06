@@ -7,7 +7,11 @@ import { toast } from "sonner";
 import { Download, KeyRound, Loader2, Plug2, RefreshCw, Unplug } from "lucide-react";
 
 import { connectFreelancerPersonalTokenAction, validateFreelancerPersonalTokenAction } from "@/actions/freelancer-personal-token";
-import { retryFreelancerImportJobAction, runFreelancerLeadImportAction } from "@/actions/freelancer-import";
+import {
+  retryFreelancerImportJobAction,
+  runFreelancerLeadImportAction,
+  type FreelancerImportSuccess,
+} from "@/actions/freelancer-import";
 import { setIntegrationStatusAction } from "@/actions/integrations";
 import { IntegrationPlatformMark } from "@/components/integrations/integration-platform-mark";
 import { Button } from "@/components/ui/button";
@@ -39,6 +43,29 @@ export type FreelancerImportJobSummary = {
 function connectionKindFromMeta(meta: Record<string, unknown> | undefined): "oauth2" | "personal_token" | null {
   const k = meta?.connection_kind;
   return k === "oauth2" || k === "personal_token" ? k : null;
+}
+
+function num(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+function showImportResultToasts(res: FreelancerImportSuccess) {
+  const errTail = res.errors.length ? ` ${res.errors.slice(0, 2).join("; ")}` : "";
+  if (res.fetched_count === 0) {
+    toast.info("No listings matched this query from Freelancer", {
+      description: "Try different keywords or increase batch size.",
+    });
+    return;
+  }
+  if (res.promoted_count === 0) {
+    toast.message("Listings were fetched but filtered out as low relevance", {
+      description: `Fetched ${res.fetched_count}, staged ${res.scraped_staged_count}, promoted 0. Skipped (irrelevant): ${res.skipped_irrelevant_count}. Duplicates: ${res.duplicate_count}. Failed: ${res.failed_count}.${errTail}`.trim(),
+    });
+    return;
+  }
+  toast.success("Import finished", {
+    description: `Fetched ${res.fetched_count} · Promoted ${res.promoted_count} · Skipped irrelevant ${res.skipped_irrelevant_count} · Duplicates ${res.duplicate_count} · Failed ${res.failed_count}${errTail}`.trim(),
+  });
 }
 
 type Props = {
@@ -112,9 +139,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
           toast.error(res.error);
           return;
         }
-        toast.success("Import finished", {
-          description: `Imported ${res.imported}, skipped duplicates ${res.duplicates}, failed ${res.failed}.`,
-        });
+        showImportResultToasts(res);
         router.refresh();
       })();
     });
@@ -130,9 +155,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
           toast.error(res.error);
           return;
         }
-        toast.success("Retry finished", {
-          description: `Imported ${res.imported}, duplicates ${res.duplicates}, failed ${res.failed}.`,
-        });
+        showImportResultToasts(res);
         router.refresh();
       })();
     });
@@ -239,12 +262,20 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
                 {account.sync_status && account.sync_status !== "idle" ? ` · ${account.sync_status}` : null}
               </p>
             ) : null}
-            {lastSummary && typeof lastSummary.imported === "number" ? (
+            {lastSummary ? (
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Last batch: {String(lastSummary.imported)} new · {String(lastSummary.duplicates ?? 0)} duplicates ·{" "}
-                {String(lastSummary.failed ?? 0)} failed
+                Last batch: fetched {num(lastSummary.fetched_count) ?? num(lastSummary.projectCount) ?? "—"} · promoted{" "}
+                {num(lastSummary.promoted_count) ?? num(lastSummary.imported) ?? "—"} · skipped irrelevant{" "}
+                {num(lastSummary.skipped_irrelevant_count) ?? "—"} · duplicates {num(lastSummary.duplicate_count) ?? num(lastSummary.duplicates) ?? "—"} · failed{" "}
+                {num(lastSummary.failed_count) ?? num(lastSummary.failed) ?? "—"}
+                {typeof lastSummary.query === "string" && lastSummary.query.trim() ? ` · query “${lastSummary.query.trim()}”` : ""}
               </p>
             ) : null}
+            <p className="mt-1 text-[11px]">
+              <Link href="/integrations/scraped" className="font-medium text-primary underline-offset-4 hover:underline">
+                Review scraped leads
+              </Link>
+            </p>
             <p className="mt-2 font-mono text-[10px] text-muted-foreground/70">module · freelancer.v1</p>
           </div>
         </div>
@@ -346,9 +377,12 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
               <ul className="max-h-48 divide-y divide-border/40 overflow-y-auto text-xs">
                 {jobs.map((j) => {
                   const res = j.result && typeof j.result === "object" ? (j.result as Record<string, unknown>) : null;
-                  const dup = res && typeof res.duplicates === "number" ? res.duplicates : null;
-                  const imp = res && typeof res.imported === "number" ? res.imported : null;
-                  const fail = res && typeof res.failed === "number" ? res.failed : null;
+                  const dup = num(res?.duplicate_count) ?? num(res?.duplicates);
+                  const promoted = num(res?.promoted_count) ?? num(res?.imported);
+                  const fetched = num(res?.fetched_count) ?? num(res?.projectCount);
+                  const skippedIrr = num(res?.skipped_irrelevant_count);
+                  const fail = num(res?.failed_count) ?? num(res?.failed);
+                  const q = res && typeof res.query === "string" ? res.query.trim() : "";
                   return (
                     <li key={j.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5">
                       <div className="min-w-0 flex-1">
@@ -356,11 +390,14 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
                           <span className="font-medium text-foreground">{j.status}</span>
                           <span className="text-muted-foreground">{new Date(j.scheduled_at).toLocaleString()}</span>
                         </div>
-                        {imp != null || dup != null || fail != null ? (
-                          <p className="mt-1 text-[10px] text-muted-foreground">
-                            {imp != null ? <span className="mr-2">New: {imp}</span> : null}
+                        {fetched != null || promoted != null || dup != null || fail != null || skippedIrr != null ? (
+                          <p className="mt-1 text-[10px] leading-relaxed text-muted-foreground">
+                            {fetched != null ? <span className="mr-2">Fetched: {fetched}</span> : null}
+                            {promoted != null ? <span className="mr-2">Promoted: {promoted}</span> : null}
+                            {skippedIrr != null ? <span className="mr-2">Skip irr.: {skippedIrr}</span> : null}
                             {dup != null ? <span className="mr-2">Dup: {dup}</span> : null}
                             {fail != null ? <span>Fail: {fail}</span> : null}
+                            {q ? <span className="mt-0.5 block truncate" title={q}>{`Query: ${q}`}</span> : null}
                           </p>
                         ) : null}
                         {j.error ? (

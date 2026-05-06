@@ -44,6 +44,8 @@ export type NormalizedFreelancerLead = {
 /**
  * Maps a Freelancer `projects` API object into Clinq lead input + import metadata.
  * Defensive: unknown shapes from the wire must not throw.
+ *
+ * Budget: only `budget.minimum`, `budget.maximum`, `currency.code`, and project `type` — no invented amounts.
  */
 export function normalizeFreelancerProject(project: unknown, importedAtIso: string): NormalizedFreelancerLead | null {
   const p = asRecord(project);
@@ -62,27 +64,39 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
 
   const budgetObj = asRecord(p.budget);
   const currencyObj = asRecord(p.currency);
-  const currencyCode = currencyObj ? str(currencyObj.code, 8)?.toUpperCase() ?? null : null;
 
   const budgetMin = budgetObj ? num(budgetObj.minimum) : null;
   const budgetMax = budgetObj ? num(budgetObj.maximum) : null;
+  const currencyCode = currencyObj ? str(currencyObj.code, 8)?.toUpperCase() ?? null : null;
 
-  let budget: number | null = null;
-  if (budgetMin !== null && budgetMax !== null) {
-    budget = Math.round(((budgetMin + budgetMax) / 2) * 100) / 100;
-  } else if (budgetMin !== null) {
-    budget = budgetMin;
-  } else if (budgetMax !== null) {
-    budget = budgetMax;
+  const hasReliableBudget =
+    (budgetMin !== null && Number.isFinite(budgetMin) && budgetMin >= 0) ||
+    (budgetMax !== null && Number.isFinite(budgetMax) && budgetMax >= 0);
+
+  let budget: number | undefined;
+  if (hasReliableBudget) {
+    if (budgetMin !== null && budgetMax !== null) {
+      budget = Math.round(((budgetMin + budgetMax) / 2) * 100) / 100;
+    } else if (budgetMin !== null) {
+      budget = budgetMin;
+    } else if (budgetMax !== null) {
+      budget = budgetMax;
+    }
   }
 
   const projectTypeRaw = str(p.type, 32)?.toLowerCase() ?? "";
   const budgetType: "fixed" | "hourly" | "unknown" =
     projectTypeRaw.includes("hourly") ? "hourly" : projectTypeRaw.includes("fixed") ? "fixed" : "unknown";
 
-  const ownerId = num(p.owner_id) ?? num(p.ownerId);
+  const ownerRec = asRecord(p.owner);
+  const ownerUsername = ownerRec ? str(ownerRec.username, 120) ?? str(ownerRec.display_name, 120) : null;
+  const listingTitle = title.trim();
   const clientName =
-    ownerId !== null ? `Freelancer client (owner ${ownerId})` : `Freelancer client · project ${id}`;
+    ownerUsername && ownerUsername.trim().length > 0
+      ? ownerUsername.trim().slice(0, 120)
+      : listingTitle.length > 0
+        ? listingTitle.slice(0, 120)
+        : "Freelancer listing";
 
   const jobsRaw = p.jobs;
   const tags: string[] = [];
@@ -114,13 +128,13 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
     budget_min: budgetMin,
     budget_max: budgetMax,
     budget_type: budgetType,
-    owner_id: ownerId,
     bid_count: bidCount,
     seo_url: seoUrl,
     description_preview: description.slice(0, 400) || null,
   };
 
   const clientSignals: UnknownRecord = {};
+  const ownerId = num(p.owner_id) ?? num(p.ownerId);
   if (ownerId !== null) clientSignals.owner_id = ownerId;
   const lang = str(p.language, 16);
   if (lang) clientSignals.language = lang;
@@ -131,12 +145,12 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
 
   const input: CreateLeadInput = {
     client_name: clientName,
-    project_title: title,
+    project_title: listingTitle,
     project_url: projectUrl,
     source: "freelancer",
     platform: "Freelancer",
-    project_description: description || preview || `Imported Freelancer project ${id}.`,
-    budget: budget ?? undefined,
+    project_description: description || preview || `Imported Freelancer listing.`,
+    ...(typeof budget === "number" && Number.isFinite(budget) ? { budget } : {}),
     repeat_hire: false,
     competition_level: competition,
     project_quality: projectQuality,
@@ -154,8 +168,8 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
       tags,
       client_signals: clientSignals,
       raw_snapshot: rawSnapshot,
-      budget_min: budgetMin,
-      budget_max: budgetMax,
+      budget_min: hasReliableBudget ? budgetMin : null,
+      budget_max: hasReliableBudget ? budgetMax : null,
       currency_code: currencyCode,
       budget_type: budgetType,
     },

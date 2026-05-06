@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getFreelancerApiBaseUrl } from "@/lib/integrations/freelancer/env";
-import { logFreelancerTokenValidation } from "@/lib/logging/app-log";
+import { logFreelancerImport, logFreelancerTokenValidation } from "@/lib/logging/app-log";
 
 const REQUEST_TIMEOUT_MS = 25_000;
 
@@ -70,6 +70,13 @@ export async function fetchFreelancerActiveProjects(args: {
         projectsUnknown.push(...p);
       }
     }
+    logFreelancerImport("api_fetch_ok", {
+      query: q || null,
+      limit,
+      offset,
+      rowsFetched: projectsUnknown.length,
+      requestPath: url.pathname + url.search,
+    });
     return { ok: true, data: { projects: projectsUnknown, raw: result } };
   } catch (e) {
     const msg = e instanceof Error && e.name === "AbortError" ? "Freelancer API request timed out" : (e instanceof Error ? e.message : "Request failed");

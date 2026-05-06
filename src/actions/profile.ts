@@ -115,6 +115,9 @@ export async function updatePreferredCurrencyAction(
   revalidatePath("/leads");
   revalidatePath("/dashboard");
   revalidatePath("/pipeline");
+  revalidatePath("/integrations");
+  revalidatePath("/integrations/scraped");
+  revalidatePath("/proposals");
   return { ok: true };
 }
 

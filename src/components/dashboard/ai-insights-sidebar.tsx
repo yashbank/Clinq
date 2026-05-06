@@ -103,7 +103,7 @@ function InsightsPanelBody({
                       href="/leads"
                       className="block rounded-lg border border-transparent px-2 py-1.5 transition-colors hover:border-border hover:bg-muted/25"
                     >
-                      <p className="truncate text-sm font-medium text-foreground">{l.client_name}</p>
+                      <p className="truncate text-sm font-medium text-foreground">{l.projectTitle}</p>
                       <p className="text-xs text-muted-foreground">Score {l.score}</p>
                     </Link>
                   </li>
