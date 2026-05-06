@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
@@ -47,9 +48,7 @@ export default function ForgotPasswordPage() {
               setError(null);
               startTransition(async () => {
                 const supabase = createSupabaseBrowserClient();
-                const site =
-                  (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "").trim() ||
-                  (typeof window !== "undefined" ? window.location.origin : "");
+                const site = getPublicSiteOrigin(typeof window !== "undefined" ? window.location.origin : "");
                 const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
                   redirectTo: `${site}/auth/callback?next=/dashboard`,
                 });

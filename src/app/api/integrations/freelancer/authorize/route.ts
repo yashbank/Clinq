@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { buildFreelancerAuthorizeUrl } from "@/lib/integrations/freelancer/oauth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export const runtime = "nodejs";
 
@@ -19,8 +20,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(login);
   }
 
-  const siteBase =
-    (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "").trim() || new URL(request.url).origin.replace(/\/$/, "");
+  const siteBase = getPublicSiteOrigin(new URL(request.url).origin);
 
   const state = randomBytes(24).toString("hex");
   const authorizeUrl = buildFreelancerAuthorizeUrl({ siteBaseUrl: siteBase, state });

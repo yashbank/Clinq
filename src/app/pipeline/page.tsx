@@ -17,6 +17,8 @@ export default async function PipelinePage() {
   const { data, error } = await supabase
     .from("leads")
     .select("*")
+    .is("deleted_at", null)
+    .is("archived_at", null)
     .order("updated_at", { ascending: false });
 
   if (error) {

@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytics-cards";
 import { buildDashboardRecommendations, type DashboardRecommendation } from "@/lib/dashboard-recommendations";
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
+import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
 import type { PipelineStage } from "@/types/database";
 
 export type DashboardRecentLead = {
@@ -35,6 +36,19 @@ export type DashboardStageRow = {
   pipelineValue: number;
 };
 
+export type DashboardInsightLine = {
+  title: string;
+  subtitle: string;
+  href: string;
+};
+
+export type DashboardInsights = {
+  topApply: DashboardInsightLine[];
+  highScore: DashboardInsightLine[];
+  weakProposals: DashboardInsightLine[];
+  suggestions: DashboardInsightLine[];
+};
+
 export type DashboardPageData = {
   displayName: string | null;
   /** True when profile wizard has not been completed or skipped. */
@@ -44,6 +58,7 @@ export type DashboardPageData = {
   recentProposals: DashboardRecentProposal[];
   stages: DashboardStageRow[];
   recommendations: DashboardRecommendation[];
+  insights: DashboardInsights;
 };
 
 const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
@@ -130,10 +145,12 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
       .select("display_name, profile_onboarding_completed_at, profile_intelligence")
       .eq("id", user.id)
       .maybeSingle(),
-    supabase.from("leads").select("score, budget, stage, repeat_hire"),
+    supabase.from("leads").select("score, budget, stage, repeat_hire").is("deleted_at", null).is("archived_at", null),
     supabase
       .from("leads")
       .select("id, client_name, company, budget, score, stage, repeat_hire, metadata, updated_at")
+      .is("deleted_at", null)
+      .is("archived_at", null)
       .order("updated_at", { ascending: false })
       .limit(40),
     supabase.from("proposals").select("id", { count: "exact", head: true }),
@@ -155,7 +172,12 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   const leadIds = [...new Set(proposalsBase.map((p) => p.lead_id).filter(Boolean))] as string[];
   let leadNameById = new Map<string, string>();
   if (leadIds.length > 0) {
-    const { data: nameRows } = await supabase.from("leads").select("id, client_name").in("id", leadIds);
+    const { data: nameRows } = await supabase
+      .from("leads")
+      .select("id, client_name")
+      .in("id", leadIds)
+      .is("deleted_at", null)
+      .is("archived_at", null);
     leadNameById = new Map((nameRows ?? []).map((r) => [r.id, r.client_name]));
   }
 
@@ -179,6 +201,50 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     proposalLeadIds,
   });
 
+  const topApply = recentLeads
+    .filter((l) => l.stage === "saved" && l.score >= 70)
+    .slice(0, 5)
+    .map((l) => ({
+      title: l.client_name,
+      subtitle: `Score ${l.score} · ${l.company?.trim() || "No company"}`,
+      href: `/leads?q=${encodeURIComponent(l.client_name)}`,
+    }));
+
+  const highScore = recentLeads
+    .filter((l) => l.score >= 80)
+    .slice(0, 5)
+    .map((l) => ({
+      title: l.client_name,
+      subtitle: `Score ${l.score} · stage ${l.stage}`,
+      href: "/leads?view=high_potential",
+    }));
+
+  const weakProposals: DashboardInsightLine[] = [];
+  for (const p of recentProposals) {
+    const ev = parseProposalEvaluation(p.evaluation);
+    if (ev && ev.overall < 58) {
+      weakProposals.push({
+        title: (p.title ?? "Proposal").slice(0, 72),
+        subtitle: `Overall ${ev.overall} — last evaluation`,
+        href: "/proposals",
+      });
+    }
+    if (weakProposals.length >= 5) break;
+  }
+
+  const suggestions: DashboardInsightLine[] = recommendations.slice(0, 6).map((r) => ({
+    title: r.title,
+    subtitle: r.detail,
+    href: r.href,
+  }));
+
+  const insights: DashboardInsights = {
+    topApply,
+    highScore,
+    weakProposals,
+    suggestions,
+  };
+
   return {
     displayName: profile?.display_name?.trim() || null,
     needsProfileOnboarding: !profile?.profile_onboarding_completed_at,
@@ -187,5 +253,6 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     recentProposals,
     stages: buildStages(agg),
     recommendations,
+    insights,
   };
 }

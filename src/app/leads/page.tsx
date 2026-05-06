@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 
 import LeadsPageClient from "@/app/leads/leads-page-client";
+import { fetchLeadTabCounts, fetchLeadsListSummary, fetchLeadsPage } from "@/lib/leads/fetch-leads-page";
+import { parseLeadsSearchParams } from "@/lib/leads/leads-url-params";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { LeadRow } from "@/types/database";
 
-export default async function LeadsPage() {
+export default async function LeadsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -14,15 +16,49 @@ export default async function LeadsPage() {
     redirect("/login");
   }
 
-  const [{ data, error }, { data: profileRow }] = await Promise.all([
-    supabase.from("leads").select("*").order("updated_at", { ascending: false }),
-    supabase.from("profiles").select("skills, tech_stack, niches").eq("id", user.id).maybeSingle(),
-  ]);
+  const sp = await searchParams;
+  const parsed = parseLeadsSearchParams(sp);
 
-  if (error) {
+  let rows: LeadRow[] = [];
+  let total = 0;
+  let tabCounts = { all: 0, imported: 0, manual: 0, freelancer: 0 };
+  let listSummary = { activeCount: 0, highScore80Plus: 0, repeatCount: 0, totalBudget: 0, avgScore: 0 };
+  let loadError: string | null = null;
+
+  const { data: profileRow } = await supabase.from("profiles").select("skills, tech_stack, niches").eq("id", user.id).maybeSingle();
+
+  try {
+    const [pageRes, counts, summary] = await Promise.all([
+      fetchLeadsPage(supabase, {
+        page: parsed.page,
+        pageSize: 20,
+        q: parsed.q,
+        source: parsed.source,
+        platform: parsed.platform,
+        scoreBand: parsed.scoreBand,
+        stage: parsed.stage,
+        view: parsed.view,
+      }),
+      fetchLeadTabCounts(supabase),
+      fetchLeadsListSummary(supabase),
+    ]);
+    rows = pageRes.rows;
+    total = pageRes.total;
+    tabCounts = counts;
+    listSummary = summary;
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "Could not load leads";
+  }
+
+  if (loadError) {
     return (
       <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        Could not load leads ({error.message}). Apply the SQL migration in Supabase if you have not yet.
+        <div className="max-w-md space-y-2">
+          <p>Could not load leads ({loadError}).</p>
+          <p className="text-xs">
+            Apply the latest Supabase migration (leads lifecycle columns + <code className="rounded bg-muted px-1">lead_tab_counts</code>).
+          </p>
+        </div>
       </div>
     );
   }
@@ -33,5 +69,18 @@ export default async function LeadsPage() {
     niches: Array.isArray(profileRow?.niches) ? (profileRow.niches as string[]) : [],
   };
 
-  return <LeadsPageClient initialRows={(data ?? []) as LeadRow[]} freelancerContext={freelancerContext} />;
+  const pageSize = 20;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  return (
+    <LeadsPageClient
+      initialRows={rows}
+      total={total}
+      totalPages={totalPages}
+      parsedQuery={parsed}
+      tabCounts={tabCounts}
+      listSummary={listSummary}
+      freelancerContext={freelancerContext}
+    />
+  );
 }

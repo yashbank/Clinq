@@ -1,4 +1,5 @@
 import type { LeadTier } from "@/lib/ai/lead-intelligence";
+import type { LeadInterestStatus } from "@/types/database";
 
 /** Lead row shape consumed by the premium leads table UI. */
 export interface Lead {
@@ -39,4 +40,5 @@ export interface Lead {
   importedAt?: string | null;
   /** True when `import_external_id` exists on lead metadata. */
   isImported?: boolean;
+  interest_status?: LeadInterestStatus | null;
 }

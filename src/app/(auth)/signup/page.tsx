@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -41,9 +42,7 @@ export default function SignupPage() {
                 return;
               }
               const supabase = createSupabaseBrowserClient();
-              const site =
-                (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "").trim() ||
-                (typeof window !== "undefined" ? window.location.origin : "");
+              const site = getPublicSiteOrigin(typeof window !== "undefined" ? window.location.origin : "");
               const { data, error: signErr } = await supabase.auth.signUp({
                 email,
                 password,

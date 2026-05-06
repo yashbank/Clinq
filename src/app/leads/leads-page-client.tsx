@@ -1,8 +1,7 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-
-import { countLeadsBySourceFilter, getLeadImportedAtIso, leadMatchesSourceFilter, type LeadSourceFilter } from "@/lib/leads/source-filters";
 
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -11,58 +10,42 @@ import { AdvancedLeadsTable } from "@/components/leads/advanced-leads-table";
 import { LeadsWorkspaceHints } from "@/components/leads/leads-workspace-hints";
 import { LeadIntelligenceHeader } from "@/components/leads/lead-intelligence-header";
 import { LeadProfilePanel } from "@/components/leads/lead-profile-panel";
-import { mapLeadRowToUiLead } from "@/lib/mappers/lead";
-
 import type { FreelancerMatchContext } from "@/components/leads/lead-freelancer-match-section";
+import type { LeadTabCounts, LeadsListSummary } from "@/lib/leads/fetch-leads-page";
+import { mergeLeadsListHref } from "@/lib/leads/leads-url-params";
+import type { ParsedLeadsSearchParams } from "@/lib/leads/leads-url-params";
+import { mapLeadRowToUiLead } from "@/lib/mappers/lead";
 import type { LeadRow } from "@/types/database";
 
 export default function LeadsPageClient({
   initialRows,
+  total,
+  totalPages,
+  parsedQuery,
+  tabCounts,
+  listSummary,
   freelancerContext,
 }: {
   initialRows: LeadRow[];
+  total: number;
+  totalPages: number;
+  parsedQuery: ParsedLeadsSearchParams;
+  tabCounts: LeadTabCounts;
+  listSummary: LeadsListSummary;
   freelancerContext: FreelancerMatchContext;
 }) {
   const { openCapture } = useLeadCapture();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const qs = searchParams.toString();
+
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
-  const [listSearch, setListSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<LeadSourceFilter>("all");
 
-  const sourceCounts = useMemo(() => countLeadsBySourceFilter(initialRows), [initialRows]);
+  const navigate = (patch: Partial<ParsedLeadsSearchParams>) => {
+    router.push(mergeLeadsListHref(qs, patch));
+  };
 
-  const importSummaryLine = useMemo(() => {
-    let latest: Date | null = null;
-    for (const r of initialRows) {
-      const t = getLeadImportedAtIso(r);
-      if (!t) continue;
-      const d = new Date(t);
-      if (!Number.isNaN(d.getTime()) && (!latest || d > latest)) latest = d;
-    }
-    if (!latest && sourceCounts.imported === 0) return null;
-    const n = sourceCounts.imported;
-    if (n === 0) return null;
-    return `${n} imported lead${n === 1 ? "" : "s"} · latest ${latest ? latest.toLocaleDateString() : "—"}`;
-  }, [initialRows, sourceCounts.imported]);
-
-  const sourceFilteredRows = useMemo(
-    () => initialRows.filter((r) => leadMatchesSourceFilter(r, sourceFilter)),
-    [initialRows, sourceFilter],
-  );
-
-  const filteredRows = useMemo(() => {
-    const q = listSearch.trim().toLowerCase();
-    if (!q) return sourceFilteredRows;
-    return sourceFilteredRows.filter((r) => {
-      const meta = r.metadata && typeof r.metadata === "object" ? (r.metadata as Record<string, unknown>) : {};
-      const title = typeof meta.project_title === "string" ? meta.project_title : "";
-      const hay = [r.client_name, r.company ?? "", title, r.project_description ?? "", r.platform ?? ""]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [sourceFilteredRows, listSearch]);
-
-  const filteredUiLeads = useMemo(() => filteredRows.map((r) => mapLeadRowToUiLead(r)), [filteredRows]);
+  const filteredUiLeads = useMemo(() => initialRows.map((r) => mapLeadRowToUiLead(r)), [initialRows]);
 
   const detail = useMemo(() => {
     if (!selectedLead) return null;
@@ -71,39 +54,38 @@ export default function LeadsPageClient({
     return { row, ui: mapLeadRowToUiLead(row) };
   }, [initialRows, selectedLead]);
 
-  const highScore = useMemo(() => initialRows.filter((r) => r.score >= 80).length, [initialRows]);
-  const repeatCount = useMemo(() => initialRows.filter((r) => r.repeat_hire).length, [initialRows]);
-  const totalBudget = useMemo(
-    () => initialRows.reduce((sum, r) => sum + (Number(r.budget) || 0), 0),
-    [initialRows],
-  );
-  const avgScore = useMemo(() => {
-    if (initialRows.length === 0) return 0;
-    return initialRows.reduce((s, r) => s + r.score, 0) / initialRows.length;
-  }, [initialRows]);
+  const importSummaryLine =
+    tabCounts.imported > 0 ? `${tabCounts.imported} imported lead${tabCounts.imported === 1 ? "" : "s"}` : null;
 
   return (
-    <div className="gradient-mesh flex h-screen overflow-hidden">
+    <div className="gradient-mesh flex h-screen max-h-[100dvh] overflow-hidden">
       <Sidebar />
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <LeadIntelligenceHeader
             onAddLead={openCapture}
-            leadCount={initialRows.length}
-            highScoreCount={highScore}
-            repeatCount={repeatCount}
-            totalBudget={totalBudget}
-            avgScore={avgScore}
-            listSearch={listSearch}
-            onListSearchChange={setListSearch}
-            sourceFilter={sourceFilter}
-            onSourceFilterChange={setSourceFilter}
-            sourceCounts={sourceCounts}
+            leadCount={listSummary.activeCount}
+            highScoreCount={listSummary.highScore80Plus}
+            repeatCount={listSummary.repeatCount}
+            totalBudget={listSummary.totalBudget}
+            avgScore={listSummary.avgScore}
+            sourceFilter={parsedQuery.source}
+            sourceCounts={{
+              all: tabCounts.all,
+              imported: tabCounts.imported,
+              manual: tabCounts.manual,
+              freelancer: tabCounts.freelancer,
+            }}
             importSummaryLine={importSummaryLine}
+            parsedQuery={parsedQuery}
+            onNavigate={navigate}
+            total={total}
+            totalPages={totalPages}
+            currentPage={parsedQuery.page}
           />
 
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
             <div className="mx-auto max-w-7xl space-y-6">
               <LeadsWorkspaceHints />
 
@@ -112,6 +94,11 @@ export default function LeadsPageClient({
                 selectedLead={selectedLead}
                 onSelectLead={setSelectedLead}
                 onAddLead={openCapture}
+                onLeadMutated={() => router.refresh()}
+                total={total}
+                page={parsedQuery.page}
+                totalPages={totalPages}
+                onPageChange={(p) => navigate({ page: p })}
               />
             </div>
           </main>

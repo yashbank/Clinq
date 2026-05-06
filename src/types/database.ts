@@ -6,6 +6,8 @@ export type PipelineStage =
   | "active"
   | "completed";
 
+export type LeadInterestStatus = "interested" | "not_interested";
+
 export type LeadRow = {
   id: string;
   user_id: string;
@@ -26,6 +28,16 @@ export type LeadRow = {
   metadata: Record<string, unknown>;
   /** Versioned lead intelligence pipeline output (see `lead-intelligence-pipeline`). */
   intelligence?: Record<string, unknown>;
+  interest_status?: LeadInterestStatus | null;
+  deleted_at?: string | null;
+  archived_at?: string | null;
+  similarity_demotion?: number | null;
+  /** Generated: score − similarity_demotion (clamped). */
+  sort_key?: number | null;
+  /** Generated from metadata + platform. */
+  is_freelancer_channel?: boolean | null;
+  /** Generated: import_external_id present. */
+  is_imported_lead?: boolean | null;
   created_at: string;
   updated_at: string;
 };

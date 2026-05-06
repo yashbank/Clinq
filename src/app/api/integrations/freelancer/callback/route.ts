@@ -6,6 +6,7 @@ import { upsertFreelancerTokensForUser } from "@/lib/integrations/freelancer/tok
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
+import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export const runtime = "nodejs";
 
@@ -50,8 +51,7 @@ export async function GET(request: Request) {
     return r;
   }
 
-  const siteBase =
-    (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "").trim() || new URL(request.url).origin.replace(/\/$/, "");
+  const siteBase = getPublicSiteOrigin(new URL(request.url).origin);
 
   const exchanged = await exchangeFreelancerAuthorizationCode({ siteBaseUrl: siteBase, code });
   if (!exchanged.ok) {

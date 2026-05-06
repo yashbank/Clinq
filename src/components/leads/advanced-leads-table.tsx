@@ -1,7 +1,8 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
   MoreHorizontal,
   Mail,
@@ -21,9 +22,21 @@ import {
   Zap,
   CheckCircle,
   XCircle,
+  ThumbsUp,
+  ThumbsDown,
+  Archive,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { archiveLeadAction, softDeleteLeadAction, updateLeadInterestAction } from "@/actions/leads";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Lead } from "@/types/leads-ui";
 
 type SortField = "aiScore" | "value" | "conversionScore" | "winProbability";
@@ -34,6 +47,12 @@ interface AdvancedLeadsTableProps {
   selectedLead: string | null;
   onSelectLead: (id: string | null) => void;
   onAddLead?: () => void;
+  onLeadMutated?: () => void;
+  total?: number;
+  page?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
+  searchQs?: string;
 }
 
 function TierBadge({ tier }: { tier: Lead["leadTier"] }) {
@@ -275,10 +294,58 @@ export function AdvancedLeadsTable({
   selectedLead,
   onSelectLead,
   onAddLead,
+  onLeadMutated,
+  total,
+  page = 1,
+  totalPages = 1,
+  onPageChange,
 }: AdvancedLeadsTableProps) {
   const [sortField, setSortField] = useState<SortField>("aiScore");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const runInterest = (leadId: string, status: "interested" | "not_interested" | null) => {
+    startTransition(() => {
+      void (async () => {
+        const res = await updateLeadInterestAction(leadId, status);
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        toast.message(status === "interested" ? "Marked interested" : status === "not_interested" ? "Marked not interested" : "Cleared interest");
+        onLeadMutated?.();
+      })();
+    });
+  };
+
+  const runArchive = (leadId: string) => {
+    startTransition(() => {
+      void (async () => {
+        const res = await archiveLeadAction(leadId, true);
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        toast.success("Lead archived");
+        onLeadMutated?.();
+      })();
+    });
+  };
+
+  const runDelete = (leadId: string) => {
+    startTransition(() => {
+      void (async () => {
+        const res = await softDeleteLeadAction(leadId);
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        toast.message("Lead removed", { description: "Hidden from lists. You can restore from the database if needed." });
+        onLeadMutated?.();
+      })();
+    });
+  };
 
   const sortedLeads = [...leads].sort((a, b) => {
     const modifier = sortDirection === "desc" ? -1 : 1;
@@ -498,6 +565,21 @@ export function AdvancedLeadsTable({
                           </span>
                         ) : null}
                         <TierBadge tier={lead.leadTier} />
+                        {lead.aiScore >= 80 ? (
+                          <span className="rounded-full border border-clinq-success/35 bg-clinq-success/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-clinq-success">
+                            High potential
+                          </span>
+                        ) : null}
+                        {lead.interest_status === "interested" ? (
+                          <span className="text-[10px] text-muted-foreground" title="Interested">
+                            <ThumbsUp className="inline h-3.5 w-3.5 text-primary" />
+                          </span>
+                        ) : null}
+                        {lead.interest_status === "not_interested" ? (
+                          <span className="text-[10px] text-muted-foreground" title="Not interested">
+                            <ThumbsDown className="inline h-3.5 w-3.5 text-muted-foreground" />
+                          </span>
+                        ) : null}
                         <span className="text-[10px] font-medium tabular-nums text-muted-foreground">
                           {lead.confidenceScore}% conf
                         </span>
@@ -644,14 +726,57 @@ export function AdvancedLeadsTable({
                     >
                       <FileText className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:bg-clinq-glass hover:text-foreground"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={pending}
+                          className="h-8 w-8 text-muted-foreground hover:bg-clinq-glass hover:text-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="Lead actions"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="min-w-[12rem] border-border bg-popover text-foreground"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <DropdownMenuItem
+                          className="gap-2 focus:bg-accent focus:text-accent-foreground"
+                          onClick={() => runInterest(lead.id, "interested")}
+                        >
+                          <ThumbsUp className="h-4 w-4" /> Interested
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2 focus:bg-accent focus:text-accent-foreground"
+                          onClick={() => runInterest(lead.id, "not_interested")}
+                        >
+                          <ThumbsDown className="h-4 w-4" /> Not interested
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2 focus:bg-accent focus:text-accent-foreground"
+                          onClick={() => runInterest(lead.id, null)}
+                        >
+                          Clear interest
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-border" />
+                        <DropdownMenuItem
+                          className="gap-2 focus:bg-accent focus:text-accent-foreground"
+                          onClick={() => runArchive(lead.id)}
+                        >
+                          <Archive className="h-4 w-4" /> Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          onClick={() => runDelete(lead.id)}
+                        >
+                          <Trash2 className="h-4 w-4" /> Remove from list
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </td>
               </tr>
@@ -661,19 +786,46 @@ export function AdvancedLeadsTable({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-clinq-glass-border px-5 py-3">
+      <div className="flex flex-col gap-3 border-t border-clinq-glass-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{leads.length}</span> leads
-          totaling{" "}
+          <span className="font-medium text-foreground">{leads.length}</span> on this page
+          {typeof total === "number" ? (
+            <>
+              {" "}
+              · <span className="font-medium text-foreground">{total}</span> matching
+            </>
+          ) : null}{" "}
+          ·{" "}
           <span className="font-medium text-foreground">
             ${(leads.reduce((sum, l) => sum + l.value, 0) / 1000).toFixed(0)}k
           </span>{" "}
-          in potential value
+          on page
         </p>
-        <Button variant="ghost" className="gap-2 text-sm text-primary hover:text-primary">
-          Export Intelligence Report
-          <ExternalLink className="h-4 w-4" />
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {onPageChange && totalPages > 1 ? (
+            <>
+              <Button type="button" variant="outline" size="sm" disabled={pending || page <= 1} onClick={() => onPageChange(page - 1)}>
+                Prev
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                {page} / {totalPages}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pending || page >= totalPages}
+                onClick={() => onPageChange(page + 1)}
+              >
+                Next
+              </Button>
+            </>
+          ) : null}
+          <Button variant="ghost" size="sm" className="gap-2 text-sm text-primary hover:text-primary">
+            Export
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

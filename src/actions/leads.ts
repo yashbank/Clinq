@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
 import { analyzeLead } from "@/lib/ai/lead-intelligence";
 import { buildLeadIntelligenceRecord } from "@/lib/ai/lead-intelligence-pipeline";
@@ -9,7 +10,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
 
-import type { LeadRow, PipelineStage } from "@/types/database";
+import { tokenizeLeadText, tokenOverlap } from "@/lib/leads/interest-similarity";
+import type { LeadInterestStatus, LeadRow, PipelineStage } from "@/types/database";
+
+const uuid = z.string().uuid();
 
 export async function createLeadAction(input: CreateLeadInput): Promise<{ ok: true; lead: LeadRow } | { ok: false; error: string }> {
   const supabase = await createSupabaseServerClient();
@@ -188,4 +192,103 @@ export async function recalculateLeadScoreAction(leadId: string): Promise<{ ok: 
   revalidatePath("/leads");
   revalidatePath("/pipeline");
   return { ok: true, score: intel.score };
+}
+
+async function bumpSimilarityDemotionForPeers(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string,
+  subject: LeadRow,
+): Promise<void> {
+  const subjectTokens = tokenizeLeadText(subject);
+  if (subjectTokens.size === 0) return;
+
+  const { data: peers } = await supabase
+    .from("leads")
+    .select("id, client_name, company, platform, project_description, proposal_match_notes, metadata, similarity_demotion")
+    .eq("user_id", userId)
+    .neq("id", subject.id)
+    .is("deleted_at", null)
+    .is("archived_at", null);
+
+  for (const p of peers ?? []) {
+    const row = p as LeadRow;
+    const overlap = tokenOverlap(subjectTokens, tokenizeLeadText(row));
+    if (overlap < 2) continue;
+    const bump = Math.min(15, overlap * 5);
+    const cur = row.similarity_demotion ?? 0;
+    const next = Math.min(50, cur + bump);
+    if (next <= cur) continue;
+    await supabase.from("leads").update({ similarity_demotion: next }).eq("id", row.id).eq("user_id", userId);
+  }
+}
+
+export async function updateLeadInterestAction(
+  leadId: string,
+  status: LeadInterestStatus | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const id = uuid.safeParse(leadId);
+  if (!id.success) return { ok: false, error: "Invalid lead" };
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Unauthorized" };
+
+  const { data: lead, error: fe } = await supabase.from("leads").select("*").eq("id", id.data).eq("user_id", user.id).maybeSingle();
+  if (fe || !lead) return { ok: false, error: fe?.message ?? "Not found" };
+
+  const { error } = await supabase.from("leads").update({ interest_status: status }).eq("id", id.data).eq("user_id", user.id);
+  if (error) return { ok: false, error: error.message };
+
+  if (status === "not_interested") {
+    await bumpSimilarityDemotionForPeers(supabase, user.id, lead as LeadRow);
+  }
+
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function archiveLeadAction(leadId: string, archived: boolean): Promise<{ ok: true } | { ok: false; error: string }> {
+  const id = uuid.safeParse(leadId);
+  if (!id.success) return { ok: false, error: "Invalid lead" };
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Unauthorized" };
+
+  const patch = archived ? { archived_at: new Date().toISOString() } : { archived_at: null as string | null };
+  const { error } = await supabase.from("leads").update(patch).eq("id", id.data).eq("user_id", user.id).is("deleted_at", null);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/leads");
+  revalidatePath("/pipeline");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function softDeleteLeadAction(leadId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const id = uuid.safeParse(leadId);
+  if (!id.success) return { ok: false, error: "Invalid lead" };
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("leads")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id.data)
+    .eq("user_id", user.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/leads");
+  revalidatePath("/pipeline");
+  revalidatePath("/dashboard");
+  return { ok: true };
 }

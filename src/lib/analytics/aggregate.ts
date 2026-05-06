@@ -74,7 +74,7 @@ export async function getAnalyticsSnapshot(): Promise<AnalyticsSnapshot | null> 
   const since = new Date(Date.now() - 35 * MS_DAY).toISOString();
 
   const [{ data: leads }, { data: proposals }, { data: stageActs }] = await Promise.all([
-    supabase.from("leads").select("id, stage, score, platform, metadata"),
+    supabase.from("leads").select("id, stage, score, platform, metadata").is("deleted_at", null).is("archived_at", null),
     supabase.from("proposals").select("id, lead_id, created_at"),
     supabase
       .from("activities")

@@ -92,6 +92,7 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
 
   return {
     id: row.id,
+    interest_status: row.interest_status ?? null,
     name: row.client_name,
     projectTitle,
     projectUrl,

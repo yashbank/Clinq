@@ -62,6 +62,8 @@ export async function POST(req: Request) {
         .select("client_name, company, platform, project_description, budget, score, repeat_hire, metadata, proposal_match_notes, client_history")
         .eq("id", leadId)
         .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .is("archived_at", null)
         .single();
       if (lead) {
         leadBudget = lead.budget != null ? Number(lead.budget) : null;
