@@ -12,7 +12,8 @@ import {
   normalizeFreelancerProject,
 } from "@/lib/leads/ingest/freelancer-normalize";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
-import { assertProfileReadyForCuratedLeadAi } from "@/lib/profile/profile-gate";
+import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
+import { assessProfileCompleteness, profileCompletenessGateMessage } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 
@@ -61,9 +62,10 @@ export async function runFreelancerLeadImportAction(
     return { ok: false, error: "Connect Freelancer first (OAuth or personal access token)." };
   }
 
-  const gate = await assertProfileReadyForCuratedLeadAi(supabase, user.id);
-  if (!gate.ok) {
-    return { ok: false, error: gate.message };
+  const profFull = await loadFreelancerProfileForAi(supabase, user.id);
+  const gate = assessProfileCompleteness(profFull);
+  if (!gate.passesCuratedLeadWorkflow) {
+    return { ok: false, error: profileCompletenessGateMessage(gate) };
   }
 
   const limit = Math.min(30, Math.max(1, payload.limit ?? 15));

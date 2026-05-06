@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { toast } from "sonner";
 import {
@@ -91,7 +90,6 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
   const [copied, setCopied] = useState(false);
   const [showFollowUps, setShowFollowUps] = useState(false);
   const [lastEvaluation, setLastEvaluation] = useState<ProposalEvaluationRecord | null>(null);
-  const [profileGateMessage, setProfileGateMessage] = useState<string | null>(null);
   const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const sectionsRef = useRef(sections);
   sectionsRef.current = sections;
@@ -181,14 +179,12 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
           tone,
         }),
       });
-      const data = (await res.json()) as { text?: string; error?: string; gaps?: string[]; code?: string };
-      if (res.status === 412 && data.code === "PROFILE_INCOMPLETE") {
-        const hint = data.gaps?.length ? data.gaps.join(" · ") : data.error ?? "Profile incomplete";
-        setProfileGateMessage(hint);
-        throw new Error(data.error ?? "Complete your profile to generate proposals.");
-      }
-      setProfileGateMessage(null);
+      const data = (await res.json()) as { text?: string; error?: string; code?: string; missing?: string[] };
       if (!res.ok) {
+        if (res.status === 403 && data.code === "PROFILE_INCOMPLETE") {
+          const hint = (data.missing && data.missing.length ? data.missing.join(" ") : null) ?? data.error;
+          toast.error("Profile needs more context for AI", { description: hint, duration: 9000 });
+        }
         throw new Error(data.error ?? "Generation failed");
       }
       if (!data.text?.trim()) {
@@ -227,14 +223,12 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
           tone,
         }),
       });
-      const data = (await res.json()) as { text?: string; error?: string; evaluation?: unknown; gaps?: string[]; code?: string };
-      if (res.status === 412 && data.code === "PROFILE_INCOMPLETE") {
-        const hint = data.gaps?.length ? data.gaps.join(" · ") : data.error ?? "Profile incomplete";
-        setProfileGateMessage(hint);
-        throw new Error(data.error ?? "Complete your profile to generate proposals.");
-      }
-      setProfileGateMessage(null);
+      const data = (await res.json()) as { text?: string; error?: string; evaluation?: unknown; code?: string; missing?: string[] };
       if (!res.ok) {
+        if (res.status === 403 && data.code === "PROFILE_INCOMPLETE") {
+          const hint = (data.missing && data.missing.length ? data.missing.join(" ") : null) ?? data.error;
+          toast.error("Profile needs more context for AI", { description: hint, duration: 9000 });
+        }
         throw new Error(data.error ?? "Generation failed");
       }
       if (!data.text) {
@@ -284,22 +278,8 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      {profileGateMessage ? (
-        <div className="border-b border-primary/20 bg-primary/[0.07] px-4 py-3 sm:px-5">
-          <p className="text-sm font-medium text-foreground">Profile needed for proposal AI</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Add: {profileGateMessage}. Then retry generation — browsing stays open.
-          </p>
-          <Link
-            href="/profile"
-            className="mt-2 inline-block text-xs font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Open profile
-          </Link>
-        </div>
-      ) : null}
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-sidebar/50 px-4 py-3 sm:px-5">
+      <div className="flex items-center justify-between border-b border-border bg-sidebar/50 px-5 py-3">
         <div className="flex items-center gap-2">
           {/* Formatting Tools */}
           <div className="flex items-center gap-1 rounded-lg bg-muted p-1" title="Rich formatting is not applied in-app yet — paste from Docs if you need styles.">

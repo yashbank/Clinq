@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import LeadsPageClient from "@/app/leads/leads-page-client";
@@ -7,6 +8,10 @@ import { parseLeadsSearchParams } from "@/lib/leads/leads-url-params";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { LeadRow } from "@/types/database";
+
+export const metadata: Metadata = {
+  title: "Lead Intelligence",
+};
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const supabase = await createSupabaseServerClient();

@@ -6,8 +6,8 @@ import { buildProposalSystemPrompt, type ProposalTone } from "@/lib/ai/proposal-
 import { inferProposalScenarios } from "@/lib/ai/proposal-scenario";
 import { evaluateProposalWithOpenAi } from "@/lib/ai/evaluators/proposal-quality";
 import { buildFreelancerProfileContext } from "@/lib/profile/build-proposal-context";
-import { evaluateProfileLeadAiReadiness } from "@/lib/profile/profile-completeness";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
+import { assessProfileCompleteness } from "@/lib/profile/profile-completeness";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { canonicalProposalLeadLinesForApi } from "@/lib/leads/canonical-proposal-context";
@@ -56,23 +56,18 @@ export async function POST(req: Request) {
     const { jobDescription, mode, tone, leadId, title } = parsed.data;
 
     const profileRow = await loadFreelancerProfileForAi(supabase, user.id);
-    if (!profileRow) {
-      return NextResponse.json(
-        { error: "Profile not found.", code: "PROFILE_INCOMPLETE", gaps: ["profile"] },
-        { status: 412 },
-      );
-    }
-    const readiness = evaluateProfileLeadAiReadiness(profileRow);
-    if (!readiness.ready) {
+    const completeness = assessProfileCompleteness(profileRow);
+    if (!completeness.passesProposalAi) {
       return NextResponse.json(
         {
-          error: "Profile context is too thin for reliable proposal generation.",
+          error: completeness.missing[0] ?? "Add bio, skills, and tech stack before generating proposals with AI.",
           code: "PROFILE_INCOMPLETE",
-          gaps: readiness.gaps,
+          missing: completeness.missing,
         },
-        { status: 412 },
+        { status: 403 },
       );
     }
+
     const profileBlock = buildFreelancerProfileContext(profileRow);
 
     let leadContext = "";

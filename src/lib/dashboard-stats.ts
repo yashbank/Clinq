@@ -32,10 +32,11 @@ export type DashboardRecentLead = {
   platformLabel: string;
   summaryLine: string;
   proposalHref: string;
-  listingUrl: string | null;
   company: string | null;
   budget: number | null;
   budgetLabel: string;
+  /** Original listing URL when available. */
+  listingUrl: string | null;
   score: number;
   stage: PipelineStage;
   repeat_hire: boolean;
@@ -302,10 +303,10 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
       platformLabel: canonicalPlatformBadge(r),
       summaryLine: canonicalLeadSummaryLine(r).slice(0, 220),
       proposalHref: canonicalProposalHref(r.id),
-      listingUrl: canonicalLeadListingUrl(r),
       company: r.company,
       budget: r.budget,
       budgetLabel: bl.show ? bl.label : "—",
+      listingUrl: canonicalLeadListingUrl(r),
       score: r.score,
       stage: r.stage,
       repeat_hire: r.repeat_hire,

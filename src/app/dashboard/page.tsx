@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -14,6 +15,10 @@ import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { DashboardOnboarding } from "@/components/dashboard/dashboard-onboarding";
 import { getDashboardPageData } from "@/lib/dashboard-stats";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Overview",
+};
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();

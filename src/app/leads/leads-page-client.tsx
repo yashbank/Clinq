@@ -97,7 +97,7 @@ export default function LeadsPageClient({
             currentPage={parsedQuery.page}
           />
 
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-6 sm:py-6">
             <div className="mx-auto max-w-7xl space-y-6">
               <LeadsWorkspaceHints />
 

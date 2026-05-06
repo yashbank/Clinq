@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { normalizeScrapedPayload } from "@/lib/leads/normalize-scraped-payload";
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
-import { assertProfileReadyForCuratedLeadAi } from "@/lib/profile/profile-gate";
+import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
+import { assessProfileCompleteness, profileCompletenessGateMessage } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REVAL_SCRAPED = ["/leads", "/pipeline", "/dashboard", "/integrations", "/integrations/scraped", "/analytics"] as const;
@@ -105,9 +106,10 @@ export async function promoteScrapedLeadManuallyAction(
     return { ok: false, error: "Unauthorized" };
   }
 
-  const gate = await assertProfileReadyForCuratedLeadAi(supabase, user.id);
-  if (!gate.ok) {
-    return { ok: false, error: gate.message };
+  const profFull = await loadFreelancerProfileForAi(supabase, user.id);
+  const gate = assessProfileCompleteness(profFull);
+  if (!gate.passesCuratedLeadWorkflow) {
+    return { ok: false, error: profileCompletenessGateMessage(gate) };
   }
 
   const { data: row, error } = await supabase
@@ -146,11 +148,10 @@ export async function promoteScrapedLeadManuallyAction(
     return { ok: false, error: "Could not normalize this scraped row." };
   }
 
-  const { data: prof } = await supabase.from("profiles").select("tech_stack, niches, skills").eq("id", user.id).maybeSingle();
   const profile = {
-    tech_stack: Array.isArray(prof?.tech_stack) ? (prof!.tech_stack as string[]) : [],
-    niches: Array.isArray(prof?.niches) ? (prof!.niches as string[]) : [],
-    skills: Array.isArray(prof?.skills) ? (prof!.skills as string[]) : [],
+    tech_stack: profFull?.tech_stack ?? [],
+    niches: profFull?.niches ?? [],
+    skills: profFull?.skills ?? [],
   };
 
   const ins = await insertLeadWithIntelligence(supabase, user.id, normalized.input, {

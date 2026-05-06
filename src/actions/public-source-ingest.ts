@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
 import { getPublicIngestAdapter, type PublicIngestSourceId } from "@/lib/leads/sources/registry";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
-import { assertProfileReadyForCuratedLeadAi } from "@/lib/profile/profile-gate";
+import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
+import { assessProfileCompleteness, profileCompletenessGateMessage } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type PublicIngestResult = {
@@ -33,9 +34,10 @@ export async function runPublicSourceIngestAction(
     return { ok: false, error: "Unauthorized" };
   }
 
-  const gate = await assertProfileReadyForCuratedLeadAi(supabase, user.id);
-  if (!gate.ok) {
-    return { ok: false, error: gate.message };
+  const profFull = await loadFreelancerProfileForAi(supabase, user.id);
+  const gate = assessProfileCompleteness(profFull);
+  if (!gate.passesCuratedLeadWorkflow) {
+    return { ok: false, error: profileCompletenessGateMessage(gate) };
   }
 
   const adapter = getPublicIngestAdapter(source);

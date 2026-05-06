@@ -33,10 +33,7 @@ export async function loadFreelancerProfileForAi(
       ? (data.tech_stack as unknown[]).filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean)
       : [],
     portfolio_links: Array.isArray(data.portfolio_links)
-      ? (data.portfolio_links as unknown[])
-          .filter((x): x is string => typeof x === "string")
-          .map((s) => s.trim())
-          .filter(Boolean)
+      ? (data.portfolio_links as unknown[]).filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean)
       : [],
     linkedin_url: typeof data.linkedin_url === "string" ? data.linkedin_url : null,
     github_url: typeof data.github_url === "string" ? data.github_url : null,

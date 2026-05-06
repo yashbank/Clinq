@@ -54,3 +54,31 @@
     box-shadow: inset 0 1px 0 color-mix(in oklch, var(--foreground) 6%, transparent);
   }
 }
+
+@layer utilities {
+  @keyframes clinq-shimmer {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
+
+  .clinq-skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--muted) 35%, transparent) 0%,
+      color-mix(in oklch, var(--muted-foreground) 12%, transparent) 48%,
+      color-mix(in oklch, var(--muted) 35%, transparent) 100%
+    );
+    background-size: 220% 100%;
+    animation: clinq-shimmer 2s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .clinq-skeleton-shimmer {
+      animation: none;
+    }
+  }
+}

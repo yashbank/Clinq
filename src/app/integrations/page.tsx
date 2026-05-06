@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
@@ -8,10 +9,14 @@ import { IntegrationHub } from "@/components/integrations/integration-hub";
 import { getFreelancerIntegrationEnv } from "@/lib/integrations/freelancer/env";
 import { getSourceIngestStats } from "@/lib/integrations/source-ingest-stats";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
-import { evaluateProfileLeadAiReadiness } from "@/lib/profile/profile-completeness";
+import { assessProfileCompleteness } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 import type { IntegrationAccountRow } from "@/types/integrations";
+
+export const metadata: Metadata = {
+  title: "Integrations",
+};
 
 export default async function IntegrationsPage() {
   const supabase = await createSupabaseServerClient();
@@ -43,8 +48,7 @@ export default async function IntegrationsPage() {
     getSourceIngestStats(supabase, user.id),
     loadFreelancerProfileForAi(supabase, user.id),
   ]);
-  const readiness = profileForGate ? evaluateProfileLeadAiReadiness(profileForGate) : null;
-  const profileGaps = readiness?.ready ? [] : readiness?.gaps ?? ["profile"];
+  const profileCompleteness = assessProfileCompleteness(profileForGate);
   const displayCurrency =
     typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
       ? profRow.preferred_currency.trim()
@@ -76,7 +80,7 @@ export default async function IntegrationsPage() {
               freelancerImportReady={freelancerImportReady}
               freelancerImportJobs={flJobs ?? []}
               sourceIngestStats={sourceIngestStats}
-              profileGaps={profileGaps}
+              profileCompleteness={profileCompleteness}
             />
           </Suspense>
         </main>

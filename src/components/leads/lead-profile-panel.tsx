@@ -15,6 +15,7 @@ import {
   DollarSign,
   Zap,
   ChevronDown,
+  ExternalLink,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -168,6 +169,7 @@ function LeadIntelligencePanel({ row }: { row: LeadRow }) {
 export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadProfilePanelProps) {
   const { row, ui } = detail;
   const high = isHighConversionScore(row.score);
+  const listingUrl = canonicalLeadListingUrl(row);
 
   const insights = [ui.aiInsight, row.project_description].filter(Boolean) as string[];
 
@@ -214,33 +216,33 @@ export function LeadProfilePanel({ detail, onClose, freelancerContext }: LeadPro
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            {canonicalLeadListingUrl(row) ? (
-              <Button variant="outline" size="sm" className="h-10 w-full gap-2 sm:w-auto sm:flex-1" asChild>
-                <a href={canonicalLeadListingUrl(row)!} target="_blank" rel="noopener noreferrer">
-                  <Globe className="h-4 w-4 shrink-0" />
-                  Open listing
-                </a>
-              </Button>
-            ) : null}
-            <Button variant="ghost" size="sm" className="h-10 flex-1 gap-2 border border-border" asChild>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" className="min-h-10 min-w-0 flex-1 gap-2 border border-border" asChild>
               <a href={row.email ? `mailto:${row.email}` : "#"} aria-disabled={!row.email}>
                 <Mail className="h-4 w-4" />
                 Email
               </a>
             </Button>
-            <Button variant="ghost" size="sm" className="h-10 flex-1 gap-2 border border-border" asChild>
+            <Button variant="ghost" size="sm" className="min-h-10 min-w-0 flex-1 gap-2 border border-border" asChild>
               <a href={row.phone ? `tel:${row.phone}` : "#"} aria-disabled={!row.phone}>
                 <Phone className="h-4 w-4" />
                 Call
               </a>
             </Button>
-            <Button size="sm" className="h-10 flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+            <Button size="sm" className="min-h-10 min-w-0 flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
               <a href={canonicalProposalHref(row.id)}>
                 <FileText className="h-4 w-4" />
                 Proposal
               </a>
             </Button>
+            {listingUrl ? (
+              <Button variant="outline" size="sm" className="min-h-10 w-full gap-2 sm:w-auto sm:flex-1" asChild>
+                <a href={listingUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+                  Listing
+                </a>
+              </Button>
+            ) : null}
           </div>
         </div>
 

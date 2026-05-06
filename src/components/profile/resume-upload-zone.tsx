@@ -22,7 +22,12 @@ export function ResumeUploadZone({
 }: {
   resumeText: string;
   resumeFilename: string;
-  onExtracted: (text: string, filename: string, extraction?: ParsedResumeAdvanced, profileEnriched?: string[]) => void;
+  onExtracted: (
+    text: string,
+    filename: string,
+    extraction?: ParsedResumeAdvanced,
+    meta?: { profileMergeApplied?: boolean; profileMergeFields?: string[] },
+  ) => void;
   className?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,7 +64,8 @@ export function ResumeUploadZone({
             pages?: number | null;
             error?: string;
             extraction?: ParsedResumeAdvanced;
-            profileEnriched?: string[];
+            profile_merge_applied?: boolean;
+            profile_merge_fields?: string[];
           } | null;
           if (!res.ok) {
             const m = json?.error ?? "Could not parse file";
@@ -69,7 +75,10 @@ export function ResumeUploadZone({
             return;
           }
           const text = (json?.text ?? "").slice(0, 48_000);
-          onExtracted(text, f.name, json?.extraction, json?.profileEnriched);
+          onExtracted(text, f.name, json?.extraction, {
+            profileMergeApplied: json?.profile_merge_applied,
+            profileMergeFields: json?.profile_merge_fields,
+          });
           setPhase("success");
           toast.success("Resume text extracted");
           window.setTimeout(() => setPhase("idle"), 1600);

@@ -1,5 +1,5 @@
 import { AppShellLoading } from "@/components/dashboard/app-shell-loading";
 
 export default function ProposalsLoading() {
-  return <AppShellLoading variant="form" />;
+  return <AppShellLoading variant="table" />;
 }

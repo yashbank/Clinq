@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -6,6 +7,10 @@ import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { WorkflowStudio } from "@/components/automations/workflow-studio";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AutomationWorkflowRow } from "@/types/workflows";
+
+export const metadata: Metadata = {
+  title: "Automations",
+};
 
 export default async function AutomationsPage() {
   const supabase = await createSupabaseServerClient();

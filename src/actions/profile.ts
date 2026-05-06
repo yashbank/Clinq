@@ -1,48 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 
+import { freelancerProfileUpdateSchema, type FreelancerProfileUpdateParsed } from "@/lib/profile/profile-update-schema";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { nullishToUndef, zNullableTrimmedString, zStringArray } from "@/lib/zod/form-coercion";
 import { isSupportedDisplayCurrency } from "@/types/currency";
 
-const profileSchema = z.object({
-  display_name: zNullableTrimmedString(120),
-  bio: zNullableTrimmedString(4_000),
-  website_url: zNullableTrimmedString(2000),
-  resume_text: zNullableTrimmedString(48_000),
-  resume_filename: zNullableTrimmedString(255),
-  skills: zStringArray(80, 80),
-  tech_stack: zStringArray(80, 80),
-  portfolio_links: zStringArray(20, 2000),
-  linkedin_url: zNullableTrimmedString(2000),
-  github_url: zNullableTrimmedString(2000),
-  experience_level: z
-    .preprocess(nullishToUndef, z.union([z.string(), z.null(), z.undefined()]).optional())
-    .transform((s) => {
-      if (s == null || typeof s !== "string") return null;
-      const v = s.trim();
-      if (!v) return null;
-      if (v === "junior" || v === "mid" || v === "senior" || v === "lead") return v;
-      return null;
-    }),
-  niches: zStringArray(40, 80),
-  preferred_currency: z
-    .union([z.string(), z.null(), z.undefined()])
-    .transform((v) => {
-      const raw = v == null || String(v).trim() === "" ? "USD" : String(v).trim().toUpperCase();
-      return isSupportedDisplayCurrency(raw) ? raw : "USD";
-    }),
-  markComplete: z.boolean().optional(),
-});
-
-export type UpdateFreelancerProfileInput = z.infer<typeof profileSchema>;
+export type UpdateFreelancerProfileInput = FreelancerProfileUpdateParsed;
 
 export async function updateFreelancerProfileAction(
   raw: UpdateFreelancerProfileInput,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const parsed = profileSchema.safeParse(raw);
+  const parsed = freelancerProfileUpdateSchema.safeParse(raw);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") };
   }
@@ -59,16 +28,16 @@ export async function updateFreelancerProfileAction(
   const experience_level = v.experience_level ?? null;
 
   const patch: Record<string, unknown> = {
-    display_name: v.display_name?.trim() || null,
-    bio: v.bio?.trim() || null,
-    website_url: v.website_url?.trim() || null,
-    resume_text: v.resume_text?.trim() || null,
-    resume_filename: v.resume_filename?.trim() || null,
+    display_name: v.display_name,
+    bio: v.bio,
+    website_url: v.website_url,
+    resume_text: v.resume_text,
+    resume_filename: v.resume_filename,
     skills: v.skills.map((s) => s.trim()).filter(Boolean),
     tech_stack: v.tech_stack.map((s) => s.trim()).filter(Boolean),
     portfolio_links: v.portfolio_links.map((s) => s.trim()).filter(Boolean),
-    linkedin_url: v.linkedin_url?.trim() || null,
-    github_url: v.github_url?.trim() || null,
+    linkedin_url: v.linkedin_url,
+    github_url: v.github_url,
     experience_level: experience_level ?? null,
     niches: v.niches.map((s) => s.trim()).filter(Boolean),
   };

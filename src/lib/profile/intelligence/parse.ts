@@ -1,53 +1,83 @@
-import type { ProfileIntelligenceSource, ProfileIntelligenceV1 } from "@/types/profile-intelligence";
+import type { ProfileIntelligenceSource } from "@/types/profile-intelligence";
+import type { ProfileIntelligenceV1 } from "@/types/profile-intelligence";
 
-function strArr(v: unknown, max: number): string[] {
+function cleanStringArray(v: unknown, maxLen: number, maxItems: number): string[] {
   if (!Array.isArray(v)) return [];
   return v
     .filter((x): x is string => typeof x === "string")
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, max);
+    .map((s) => s.slice(0, maxLen))
+    .slice(0, maxItems);
 }
 
-function strField(v: unknown, fallback: string): string {
-  return typeof v === "string" && v.trim().length > 0 ? v.trim() : fallback;
+function safeStr(v: unknown, max: number, fallback: string): string {
+  if (typeof v !== "string") return fallback;
+  const t = v.trim();
+  if (!t) return fallback;
+  return t.slice(0, max);
 }
 
-function numField(v: unknown, fallback: number): number {
-  return typeof v === "number" && Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : fallback;
+function safeSource(v: unknown): ProfileIntelligenceSource {
+  if (v === "heuristic" || v === "openai" || v === "merged") return v;
+  return "heuristic";
 }
 
-function sourceField(v: unknown): ProfileIntelligenceSource {
-  return v === "heuristic" || v === "openai" || v === "merged" ? v : "heuristic";
-}
-
-/** Accepts partially invalid DB JSON and returns a safe v1 object or null when unusable. */
+/**
+ * Parses stored JSON from `profiles.profile_intelligence`, tolerating null-ish legacy fields.
+ */
 export function parseStoredProfileIntelligence(raw: unknown): ProfileIntelligenceV1 | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   if (o.version !== 1) return null;
 
-  const normalizedSkills = strArr(o.normalizedSkills, 40);
-  const strengthsRaw = strArr(o.strengths, 12);
-  const inferredNiches = strArr(o.inferredNiches, 12);
-  const updatedAt = typeof o.updatedAt === "string" && o.updatedAt.length > 0 ? o.updatedAt : new Date().toISOString();
+  const updatedAt = typeof o.updatedAt === "string" && o.updatedAt.trim() ? o.updatedAt : new Date().toISOString();
+  const normalizedSkills = cleanStringArray(o.normalizedSkills, 80, 40);
+  let strengths = cleanStringArray(o.strengths, 400, 8);
+  if (strengths.length === 0) strengths = ["Add more resume detail and explicit skills to strengthen positioning."];
+  const inferredNiches = cleanStringArray(o.inferredNiches, 80, 12);
 
-  return {
+  const seniorityRaw = o.seniorityHint;
+  const seniorityHint =
+    seniorityRaw === null || seniorityRaw === undefined
+      ? null
+      : typeof seniorityRaw === "string" && ["junior", "mid", "senior", "lead"].includes(seniorityRaw.trim())
+        ? (seniorityRaw.trim() as "junior" | "mid" | "senior" | "lead")
+        : null;
+
+  const proposalToneHint = safeStr(o.proposalToneHint, 600, "professional: structured, specific, one strong CTA.");
+  const idealProjectSummary = safeStr(
+    o.idealProjectSummary,
+    600,
+    "Projects where scope, budget, and stakeholders are documented early.",
+  );
+  const positioningLine = safeStr(o.positioningLine, 400, "Freelancer profile.");
+
+  const profileQualityScore =
+    typeof o.profileQualityScore === "number" && Number.isFinite(o.profileQualityScore)
+      ? Math.min(100, Math.max(0, o.profileQualityScore))
+      : 0;
+
+  const out: ProfileIntelligenceV1 = {
     version: 1,
     updatedAt,
-    source: sourceField(o.source),
+    source: safeSource(o.source),
     normalizedSkills,
-    strengths: strengthsRaw.length
-      ? strengthsRaw
-      : ["Profile intelligence was recovered from stored data—recompute when your profile is ready."],
+    strengths,
     inferredNiches,
-    seniorityHint: typeof o.seniorityHint === "string" && o.seniorityHint.trim() ? o.seniorityHint.trim() : null,
-    proposalToneHint: strField(o.proposalToneHint, "professional"),
-    idealProjectSummary: strField(o.idealProjectSummary, "Well-scoped projects with clear requirements."),
-    positioningLine: strField(o.positioningLine, "Freelancer"),
-    profileQualityScore: numField(o.profileQualityScore, 10),
-    ...(strArr(o.missingSkillHints, 8).length ? { missingSkillHints: strArr(o.missingSkillHints, 8) } : {}),
-    ...(strArr(o.proposalPositioningNotes, 6).length ? { proposalPositioningNotes: strArr(o.proposalPositioningNotes, 6) } : {}),
-    ...(strArr(o.idealClientNotes, 5).length ? { idealClientNotes: strArr(o.idealClientNotes, 5) } : {}),
+    seniorityHint,
+    proposalToneHint,
+    idealProjectSummary,
+    positioningLine,
+    profileQualityScore,
   };
+
+  const missing = cleanStringArray(o.missingSkillHints, 400, 6);
+  if (missing.length) out.missingSkillHints = missing;
+  const posNotes = cleanStringArray(o.proposalPositioningNotes, 400, 5);
+  if (posNotes.length) out.proposalPositioningNotes = posNotes;
+  const idealNotes = cleanStringArray(o.idealClientNotes, 400, 4);
+  if (idealNotes.length) out.idealClientNotes = idealNotes;
+
+  return out;
 }

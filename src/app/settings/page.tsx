@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -7,6 +8,10 @@ import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { CurrencyPreferences } from "@/components/settings/currency-preferences";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ArrowUpRight } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Settings",
+};
 
 export default async function SettingsPage() {
   const supabase = await createSupabaseServerClient();

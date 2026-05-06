@@ -8,18 +8,18 @@ export type ParsedResumeAdvanced = {
   projects: string[];
   /** Normalized technology tokens detected in the document (best-effort). */
   tech_stack: string[];
-  /** Best-effort headline / role from the first substantive line. */
-  role_line: string | null;
-  /** Short positioning paragraph for empty bios (deterministic, not fabricated employers). */
-  summary_draft: string | null;
-  /** e.g. "8+ years" when phrasing appears in text. */
-  years_experience_hint: string | null;
-  inferred_niches: string[];
   linkedin_url: string | null;
   github_url: string | null;
-  website_url: string | null;
-  /** Additional https URLs suitable for portfolio list (excludes linkedin/github duplicates). */
-  portfolio_urls: string[];
+  /** Additional http(s) URLs (excluding linkedin/github duplicates). */
+  other_urls: string[];
+  /** Draft summary from resume text (deterministic excerpt). */
+  summary_suggestion: string | null;
+  /** First plausible headline / title line. */
+  headline_suggestion: string | null;
+  /** Total years of experience inferred from text (heuristic). */
+  years_experience_hint: number | null;
+  /** Broad niches inferred from detected tech keywords. */
+  niche_suggestions: string[];
 };
 
 const TECH_PATTERN =
@@ -47,92 +47,6 @@ function takeBulletBlock(startIdx: number, all: string[], max: number): string[]
   return out.filter(Boolean);
 }
 
-const URL_RE = /\bhttps?:\/\/[^\s)<>"']{6,2000}/gi;
-
-function extractUrls(text: string): {
-  linkedin_url: string | null;
-  github_url: string | null;
-  website_url: string | null;
-  portfolio_urls: string[];
-} {
-  const raw = text.slice(0, 80_000).match(URL_RE) ?? [];
-  const uniq = [...new Set(raw.map((u) => u.replace(/[),.;]+$/g, "").trim()))].filter(Boolean);
-  let linkedin_url: string | null = null;
-  let github_url: string | null = null;
-  const portfolio_urls: string[] = [];
-  for (const u of uniq) {
-    try {
-      const h = new URL(u).href;
-      if (/linkedin\.com\//i.test(h)) {
-        if (!linkedin_url) linkedin_url = h.slice(0, 2000);
-        continue;
-      }
-      if (/github\.com\//i.test(h)) {
-        if (!github_url) github_url = h.slice(0, 2000);
-        continue;
-      }
-      if (portfolio_urls.length < 8) portfolio_urls.push(h.slice(0, 2000));
-    } catch {
-      /* skip */
-    }
-  }
-  const website_url = portfolio_urls.find((u) => !/linkedin\.com|github\.com|twitter\.com|x\.com/i.test(u)) ?? null;
-  return { linkedin_url, github_url, website_url, portfolio_urls };
-}
-
-function inferRoleLine(all: string[]): string | null {
-  for (const l of all.slice(0, 12)) {
-    if (l.length < 4 || l.length > 90) continue;
-    if (/^(skills|experience|education|projects|employment)/i.test(l)) continue;
-    if (/^[-•*#]/.test(l)) continue;
-    if (/^\d{4}\s*[-–]/.test(l)) continue;
-    if (/[|]{2,}/.test(l)) continue;
-    return l;
-  }
-  return null;
-}
-
-function inferSummaryDraft(text: string, role: string | null): string | null {
-  const body = text.replace(/\r/g, "").trim();
-  if (body.length < 80) return null;
-  const skip = new Set(
-    ["summary", "profile", "objective", "about"].map((s) => s.toLowerCase()),
-  );
-  const lines = body.split(/\n/).map((l) => l.trim()).filter(Boolean);
-  const acc: string[] = [];
-  for (const l of lines) {
-    if (acc.length === 0 && role && l === role) continue;
-    if (/^(work experience|experience|education|skills)/i.test(l)) break;
-    if (skip.has(l.toLowerCase()) && acc.length === 0) continue;
-    if (l.length < 20 && acc.length === 0) continue;
-    acc.push(l);
-    if (acc.join(" ").length > 360) break;
-  }
-  const out = acc.join(" ").replace(/\s+/g, " ").trim();
-  if (out.length < 60) return null;
-  return out.slice(0, 2000);
-}
-
-function inferYearsHint(text: string): string | null {
-  const m =
-    text.match(/\b(\d{1,2})\s*\+\s*years?\b/i) ||
-    text.match(/\b(\d{1,2})\s*[-–]\s*(\d{1,2})\s*years?\b/i) ||
-    text.match(/\bover\s+(\d{1,2})\s+years?\b/i);
-  if (m) return m[0]!.trim().slice(0, 40);
-  return null;
-}
-
-function inferNichesFromText(text: string, tech: string[]): string[] {
-  const t = `${text} ${tech.join(" ")}`.toLowerCase();
-  const out: string[] = [];
-  if (/\b(saas|b2b|subscription)\b/.test(t)) out.push("SaaS");
-  if (/\b(fintech|banking|payment|stripe|ledger)\b/.test(t)) out.push("Fintech");
-  if (/\b(health|medical|hipaa|clinical)\b/.test(t)) out.push("Healthtech");
-  if (/\b(e-?commerce|shopify|retail)\b/.test(t)) out.push("E-commerce");
-  if (/\b(ai|machine learning|mlops|llm)\b/.test(t)) out.push("AI / ML");
-  return [...new Set(out)].slice(0, 12);
-}
-
 function techStackFromText(text: string): string[] {
   const found = new Set<string>();
   const slice = text.slice(0, 80_000);
@@ -143,6 +57,115 @@ function techStackFromText(text: string): string[] {
     if (v.length > 1) found.add(v.replace(/\.js$/i, ".js"));
   }
   return [...found].slice(0, 40);
+}
+
+const LINKEDIN_RE = /https?:\/\/(?:www\.)?linkedin\.com\/(?:in|pub|company)\/[^\s)\]>"']+/gi;
+const GITHUB_RE = /https?:\/\/(?:www\.)?github\.com\/[^\s)\]>"']+/gi;
+const URL_RE = /https?:\/\/[^\s)\]>"']+/gi;
+
+export function extractUrlsFromResumeText(text: string): {
+  linkedin_url: string | null;
+  github_url: string | null;
+  other_urls: string[];
+} {
+  const slice = text.slice(0, 48_000);
+  const li = slice.match(LINKEDIN_RE);
+  const gh = slice.match(GITHUB_RE);
+  const linkedin_url = li?.[0] ? li[0].trim().slice(0, 2000) : null;
+  const github_url = gh?.[0] ? gh[0].trim().slice(0, 2000) : null;
+  const seen = new Set<string>();
+  const other_urls: string[] = [];
+  const mAll = slice.match(URL_RE) ?? [];
+  for (const raw of mAll) {
+    const u = raw.trim().replace(/[,;.]+$/, "").slice(0, 2000);
+    if (!u || u.startsWith("mailto:")) continue;
+    const low = u.toLowerCase();
+    if (linkedin_url && low === linkedin_url.toLowerCase()) continue;
+    if (github_url && low === github_url.toLowerCase()) continue;
+    if (seen.has(low)) continue;
+    seen.add(low);
+    other_urls.push(u);
+    if (other_urls.length >= 12) break;
+  }
+  return { linkedin_url, github_url, other_urls };
+}
+
+export function inferResumeSummaryDraft(text: string): string | null {
+  const all = lines(text.slice(0, 48_000));
+  for (let i = 0; i < all.length; i++) {
+    if (/^(summary|professional summary|profile|about(\s+me)?|objective)\b/i.test(all[i])) {
+      const chunk = all.slice(i + 1, i + 12).join("\n").trim();
+      if (chunk.length > 40) return chunk.slice(0, 900);
+    }
+  }
+  const skip = /^(education|experience|skills|employment|work history|projects)\b/i;
+  const body: string[] = [];
+  for (const l of all) {
+    if (skip.test(l)) break;
+    if (/^\+?\d[\d\s().-]{7,}\d$/.test(l)) continue;
+    if (/^[\w.+-]+@[\w.-]+\.\w{2,}$/i.test(l)) continue;
+    if (/^https?:\/\//i.test(l)) continue;
+    if (l.length > 12) body.push(l);
+    if (body.join(" ").length > 420) break;
+  }
+  const out = body.join("\n").trim();
+  return out.length > 48 ? out.slice(0, 900) : null;
+}
+
+export function inferHeadlineFromResume(text: string): string | null {
+  for (const l of lines(text.slice(0, 4000))) {
+    if (l.length < 6 || l.length > 88) continue;
+    if (/^https?:\/\//i.test(l)) continue;
+    if (/^[\w.+-]+@[\w.-]+\.\w{2,}$/i.test(l)) continue;
+    if (/^(skills|experience|education|summary)\b/i.test(l)) continue;
+    if (/^\d{4}\s*[-–]/.test(l)) continue;
+    return l.trim();
+  }
+  return null;
+}
+
+export function inferYearsExperienceHint(text: string): number | null {
+  const t = text.slice(0, 48_000).toLowerCase();
+  const m1 = t.match(/\b(\d{1,2})\+?\s*years?\s+of\s+experience\b/);
+  if (m1) {
+    const n = parseInt(m1[1]!, 10);
+    if (n > 0 && n < 50) return n;
+  }
+  const years: number[] = [];
+  const re = /\b(19[89]\d|20[0-2]\d)\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(t)) !== null) {
+    years.push(parseInt(m[0]!, 10));
+  }
+  if (years.length >= 2) {
+    years.sort((a, b) => a - b);
+    const span = years[years.length - 1]! - years[0]!;
+    if (span > 0 && span < 45) return span;
+  }
+  return null;
+}
+
+const TECH_TO_NICHE: { re: RegExp; label: string }[] = [
+  { re: /\b(react|vue|angular|next\.?js|typescript|javascript|frontend|front-end)\b/i, label: "Front-end engineering" },
+  { re: /\b(node\.?js|python|java|go\b|rust|c\+\+|backend|api|graphql|microservices)\b/i, label: "Backend & APIs" },
+  { re: /\b(aws|gcp|azure|kubernetes|docker|terraform|devops|ci\/cd)\b/i, label: "Cloud & DevOps" },
+  { re: /\b(mobile|ios|android|react native|flutter|swift|kotlin)\b/i, label: "Mobile development" },
+  { re: /\b(postgres|mysql|mongo|redis|sql|data warehouse|etl|analytics)\b/i, label: "Data & persistence" },
+  { re: /\b(ml|machine learning|pytorch|tensorflow|nlp|llm)\b/i, label: "ML / AI engineering" },
+  { re: /\b(figma|ux|ui|design system)\b/i, label: "Product design" },
+];
+
+export function inferNicheTagsFromTech(techStack: string[]): string[] {
+  const hay = techStack.join(" ").toLowerCase();
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const { re, label } of TECH_TO_NICHE) {
+    if (re.test(hay) && !seen.has(label)) {
+      seen.add(label);
+      out.push(label);
+    }
+  }
+  return out.slice(0, 8);
 }
 
 export function parseResumeAdvanced(text: string): ParsedResumeAdvanced {
@@ -179,24 +202,23 @@ export function parseResumeAdvanced(text: string): ParsedResumeAdvanced {
   }
 
   const tech_stack = dedupe(techStackFromText(text));
-  const urls = extractUrls(text);
-  const role_line = inferRoleLine(all);
-  const summary_draft = inferSummaryDraft(text, role_line);
-  const years_experience_hint = inferYearsHint(text);
-  const inferred_niches = inferNichesFromText(text, tech_stack);
+  const urls = extractUrlsFromResumeText(text);
+  const summary_suggestion = inferResumeSummaryDraft(text);
+  const headline_suggestion = inferHeadlineFromResume(text);
+  const years_experience_hint = inferYearsExperienceHint(text);
+  const niche_suggestions = inferNicheTagsFromTech(tech_stack);
 
   return {
     skills: dedupe(skills),
     experience: dedupe(experience),
     projects: dedupe(projects),
     tech_stack,
-    role_line,
-    summary_draft,
-    years_experience_hint,
-    inferred_niches,
     linkedin_url: urls.linkedin_url,
     github_url: urls.github_url,
-    website_url: urls.website_url,
-    portfolio_urls: urls.portfolio_urls,
+    other_urls: urls.other_urls,
+    summary_suggestion,
+    headline_suggestion,
+    years_experience_hint,
+    niche_suggestions,
   };
 }

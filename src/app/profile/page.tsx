@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -8,6 +9,10 @@ import { ProfileIntelligencePanel } from "@/components/profile/profile-intellige
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FreelancerProfileFields } from "@/types/profile";
+
+export const metadata: Metadata = {
+  title: "Profile",
+};
 
 export default async function ProfilePage() {
   const supabase = await createSupabaseServerClient();

@@ -50,12 +50,7 @@ export function canonicalPlatformBadge(row: LeadRow): string {
   return "—";
 }
 
-/** Proposal studio deep link with lead context. */
-export function canonicalProposalHref(leadId: string): string {
-  return `/proposals?leadId=${encodeURIComponent(leadId)}`;
-}
-
-/** External listing URL when present and valid (e.g. Freelancer project link). */
+/** Original marketplace / listing URL when stored and valid (http/https only). */
 export function canonicalLeadListingUrl(row: LeadRow): string | null {
   const meta = metaRecord(row);
   const raw = typeof meta.project_url === "string" ? meta.project_url.trim() : "";
@@ -63,8 +58,13 @@ export function canonicalLeadListingUrl(row: LeadRow): string | null {
   try {
     const u = new URL(raw);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    return u.href;
+    return u.toString().slice(0, 2000);
   } catch {
     return null;
   }
+}
+
+/** Proposal studio deep link with lead context. */
+export function canonicalProposalHref(leadId: string): string {
+  return `/proposals?leadId=${encodeURIComponent(leadId)}`;
 }

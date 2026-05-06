@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -7,6 +8,10 @@ import { FollowUpsWorkspace } from "@/components/follow-ups/follow-ups-workspace
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { ActivityRow } from "@/types/database";
+
+export const metadata: Metadata = {
+  title: "Follow-ups",
+};
 
 export default async function FollowUpsPage() {
   const supabase = await createSupabaseServerClient();

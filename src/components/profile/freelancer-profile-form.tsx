@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -31,7 +30,6 @@ function splitLines(s: string) {
 }
 
 export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileFields }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const [displayName, setDisplayName] = useState(initial.display_name ?? "");
@@ -151,13 +149,12 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Resume</h2>
         <p className="text-xs text-muted-foreground">
-          PDF and DOCX are parsed on the server (text only). When you upload, we merge honest extractions into empty profile
-          fields on the server, then refresh intelligence (heuristics only—no extra model call on upload).
+          PDF and DOCX are parsed on the server (text only). Stored for proposals on this workspace only.
         </p>
         <ResumeUploadZone
           resumeText={resumeText}
           resumeFilename={resumeFilename}
-          onExtracted={(text, fn, extraction, profileEnriched) => {
+          onExtracted={(text, fn, extraction, meta) => {
             setResumeText(text);
             setResumeFilename(fn);
             const parsed = extraction ?? parseResumeAdvanced(text);
@@ -174,25 +171,12 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
               setTechStack(mergedTs.join(", "));
               mergedParts.push("tech stack");
             }
-            if (parsed.inferred_niches?.length && splitTags(niches).length < 1) {
-              setNiches(parsed.inferred_niches.slice(0, 8).join(", "));
-              mergedParts.push("niches");
-            }
-            if (parsed.summary_draft && bio.trim().length < 40) {
-              setBio(parsed.summary_draft.slice(0, 4000));
-              mergedParts.push("bio draft");
-            }
-            if (!(linkedin ?? "").trim() && parsed.linkedin_url) setLinkedin(parsed.linkedin_url);
-            if (!(github ?? "").trim() && parsed.github_url) setGithub(parsed.github_url);
-            if (!(websiteUrl ?? "").trim() && parsed.website_url) setWebsiteUrl(parsed.website_url);
-            if (mergedParts.length > 0) {
-              toast.message(`Resume merged into ${mergedParts.join(" · ")} — review and save.`);
-            }
-            if (profileEnriched?.length) {
-              toast.message("Saved profile enriched from resume", {
-                description: `Updated: ${profileEnriched.join(" · ")}. Recompute intelligence anytime after you review.`,
+            if (meta?.profileMergeApplied && meta.profileMergeFields?.length) {
+              toast.message("Profile enriched from your resume", {
+                description: `Updated fields: ${meta.profileMergeFields.join(", ")}. Review the form and save to confirm.`,
               });
-              router.refresh();
+            } else if (mergedParts.length > 0) {
+              toast.message(`Resume merged into ${mergedParts.join(" & ")} — review and save.`);
             }
           }}
         />

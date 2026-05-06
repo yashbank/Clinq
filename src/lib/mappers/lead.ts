@@ -73,7 +73,8 @@ export function mapLeadRowToUiLead(
   const isFreelancer = isFreelancerLeadRow(row);
   const int = intelligenceFromMetadata(meta);
   const projectTitle = canonicalLeadProjectTitle(row);
-  const projectUrl = typeof meta.project_url === "string" ? meta.project_url : "";
+  const listingUrl = canonicalLeadListingUrl(row);
+  const projectUrl = listingUrl ?? "";
   const leadTier = (int.tier as LeadTier | undefined) ?? defaultTier(score);
   const confidenceScore = typeof int.confidence === "number" ? int.confidence : 50;
   const intelligenceFlags = Array.isArray(int.flags) ? (int.flags as string[]) : [];
@@ -119,7 +120,7 @@ export function mapLeadRowToUiLead(
     name: projectTitle,
     projectTitle,
     projectUrl,
-    listingUrl: canonicalLeadListingUrl(row),
+    listingUrl,
     shortSummary,
     budgetLine,
     budgetKind,

@@ -14,7 +14,8 @@ import {
 import { PublicIngestForms } from "@/components/integrations/public-ingest-forms";
 import { SourceIngestStatsPanel } from "@/components/integrations/source-ingest-stats-panel";
 import { IntegrationPlatformMark } from "@/components/integrations/integration-platform-mark";
-import { ProfileReadinessCallout } from "@/components/profile/profile-readiness-callout";
+import { ProfileCompletenessBanner } from "@/components/profile/profile-completeness-banner";
+import type { ProfileCompletenessAssessment } from "@/lib/profile/profile-completeness";
 import type { SourceIngestStats } from "@/lib/integrations/source-ingest-stats";
 import { INTEGRATION_PROVIDERS } from "@/lib/integrations/registry";
 import { cn } from "@/lib/utils";
@@ -28,14 +29,14 @@ export function IntegrationHub({
   freelancerImportReady,
   freelancerImportJobs,
   sourceIngestStats,
-  profileGaps = [],
+  profileCompleteness,
 }: {
   initialAccounts: IntegrationAccountRow[];
   freelancerOAuthConfigured: boolean;
   freelancerImportReady: boolean;
   freelancerImportJobs: FreelancerImportJobSummary[];
   sourceIngestStats: SourceIngestStats;
-  profileGaps?: string[];
+  profileCompleteness: ProfileCompletenessAssessment;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -88,7 +89,14 @@ export function IntegrationHub({
           Freelancer.com can import real project listings via OAuth or a temporary personal access token (same REST API).
           Other platforms stay in reserved slots until their modules ship—no scraping and no simulated OAuth.
         </p>
-        {profileGaps.length > 0 ? <ProfileReadinessCallout gaps={profileGaps} /> : null}
+        <ProfileCompletenessBanner assessment={profileCompleteness} />
+        <div className="rounded-xl border border-border/70 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Tip:</span> keep your{" "}
+          <Link href="/profile" className="font-medium text-primary underline-offset-4 hover:underline">
+            freelancer profile
+          </Link>{" "}
+          current so imports and proposals stay aligned with how you pitch.
+        </div>
         <p className="text-sm text-muted-foreground">
           <Link href="/integrations/scraped" className="font-medium text-primary underline-offset-4 hover:underline">
             Scraped leads

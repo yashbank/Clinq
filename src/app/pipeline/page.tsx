@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import PipelinePageClient from "@/app/pipeline/pipeline-page-client";
@@ -5,6 +6,10 @@ import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { LeadRow } from "@/types/database";
+
+export const metadata: Metadata = {
+  title: "Pipeline",
+};
 
 export default async function PipelinePage() {
   const supabase = await createSupabaseServerClient();

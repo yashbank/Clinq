@@ -1,120 +1,99 @@
 import type { ParsedResumeAdvanced } from "@/lib/profile/parse-resume-advanced";
 import type { FreelancerProfileFields } from "@/types/profile";
 
-export type ProfileRowForMerge = Pick<
-  FreelancerProfileFields,
-  | "bio"
-  | "skills"
-  | "tech_stack"
-  | "niches"
-  | "portfolio_links"
-  | "linkedin_url"
-  | "github_url"
-  | "website_url"
->;
-
-export type MergeResumeIntoProfileResult = {
-  patch: Record<string, unknown>;
-  enrichedLabels: string[];
-};
-
-function uniqStrings(items: string[], cap: number): string[] {
+function mergeUniqueStrings(existing: string[], incoming: string[], cap: number): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const s of items.map((x) => x.trim()).filter(Boolean)) {
-    const k = s.toLowerCase();
+  for (const s of [...existing, ...incoming]) {
+    const t = s.trim();
+    if (!t) continue;
+    const k = t.toLowerCase();
     if (seen.has(k)) continue;
     seen.add(k);
-    out.push(s.slice(0, 2000));
+    out.push(t);
     if (out.length >= cap) break;
   }
   return out;
 }
 
+function isWeakBio(bio: string | null | undefined): boolean {
+  const t = (bio ?? "").trim();
+  return t.length < 40;
+}
+
+function isBlank(s: string | null | undefined): boolean {
+  return !s || !String(s).trim();
+}
+
 /**
- * Merges deterministic resume extraction into profile fields without overwriting strong user data.
+ * Non-destructive merge: unions lists, fills empty URLs/bio/headline, never removes user data.
  */
-export function mergeResumeExtractionIntoProfile(
-  current: ProfileRowForMerge,
-  extraction: ParsedResumeAdvanced,
-): MergeResumeIntoProfileResult {
-  const enrichedLabels: string[] = [];
+export function mergeResumeExtractionIntoProfileUpdate(
+  current: FreelancerProfileFields,
+  parsed: ParsedResumeAdvanced,
+): Record<string, unknown> | null {
   const patch: Record<string, unknown> = {};
+  let touched = false;
 
-  const curSkills = current.skills ?? [];
-  const curTech = current.tech_stack ?? [];
-  const curNiches = current.niches ?? [];
-  const curLinks = current.portfolio_links ?? [];
-
-  if (extraction.skills.length > 0) {
-    const strongSkills = curSkills.filter(Boolean).length >= 6;
-    if (strongSkills) {
-      const lower = new Set(curSkills.map((s) => s.toLowerCase()));
-      const onlyNew = extraction.skills.filter((s) => s.trim() && !lower.has(s.trim().toLowerCase()));
-      if (onlyNew.length) {
-        patch.skills = uniqStrings([...curSkills, ...onlyNew.slice(0, 12)], 80);
-        enrichedLabels.push("skills");
-      }
-    } else {
-      const merged = uniqStrings([...curSkills, ...extraction.skills], 80);
-      if (merged.length > curSkills.filter(Boolean).length) {
-        patch.skills = merged;
-        enrichedLabels.push("skills");
-      }
-    }
+  const nextSkills = mergeUniqueStrings(current.skills ?? [], parsed.skills, 80);
+  if (JSON.stringify(nextSkills) !== JSON.stringify(current.skills ?? [])) {
+    patch.skills = nextSkills;
+    touched = true;
   }
 
-  if (extraction.tech_stack.length > 0) {
-    const strongTech = curTech.filter(Boolean).length >= 4;
-    if (strongTech) {
-      const lower = new Set(curTech.map((s) => s.toLowerCase()));
-      const onlyNew = extraction.tech_stack.filter((s) => !lower.has(s.toLowerCase()));
-      if (onlyNew.length) {
-        patch.tech_stack = uniqStrings([...curTech, ...onlyNew.slice(0, 16)], 80);
-        enrichedLabels.push("tech stack");
-      }
-    } else {
-      const merged = uniqStrings([...curTech, ...extraction.tech_stack], 80);
-      if (merged.length > curTech.filter(Boolean).length) {
-        patch.tech_stack = merged;
-        enrichedLabels.push("tech stack");
-      }
-    }
+  const nextTech = mergeUniqueStrings(current.tech_stack ?? [], parsed.tech_stack, 80);
+  if (JSON.stringify(nextTech) !== JSON.stringify(current.tech_stack ?? [])) {
+    patch.tech_stack = nextTech;
+    touched = true;
   }
 
-  if (curNiches.filter(Boolean).length < 1 && extraction.inferred_niches.length > 0) {
-    patch.niches = uniqStrings([...curNiches, ...extraction.inferred_niches], 40);
-    enrichedLabels.push("niches");
+  if ((current.niches ?? []).filter(Boolean).length === 0 && parsed.niche_suggestions.length > 0) {
+    patch.niches = mergeUniqueStrings([], parsed.niche_suggestions, 40);
+    touched = true;
   }
 
-  const bioWeak = (current.bio ?? "").trim().length < 40;
-  const draft = (extraction.summary_draft ?? "").trim();
-  if (bioWeak && draft.length >= 60) {
-    patch.bio = draft.slice(0, 4000);
-    enrichedLabels.push("bio");
+  if (isWeakBio(current.bio) && parsed.summary_suggestion?.trim()) {
+    const suggestion = parsed.summary_suggestion.trim().slice(0, 3_500);
+    const base = (current.bio ?? "").trim();
+    patch.bio = base.length > 0 ? `${base}\n\n${suggestion}` : suggestion;
+    touched = true;
   }
 
-  if (!(current.linkedin_url ?? "").trim() && extraction.linkedin_url) {
-    patch.linkedin_url = extraction.linkedin_url;
-    enrichedLabels.push("LinkedIn");
-  }
-  if (!(current.github_url ?? "").trim() && extraction.github_url) {
-    patch.github_url = extraction.github_url;
-    enrichedLabels.push("GitHub");
-  }
-  if (!(current.website_url ?? "").trim() && extraction.website_url) {
-    patch.website_url = extraction.website_url;
-    enrichedLabels.push("website");
+  if (isBlank(current.display_name) && parsed.headline_suggestion?.trim()) {
+    patch.display_name = parsed.headline_suggestion.trim().slice(0, 120);
+    touched = true;
   }
 
-  const linkCount = curLinks.filter(Boolean).length;
-  if (extraction.portfolio_urls.length > 0 && linkCount < 4) {
-    const mergedLinks = uniqStrings([...curLinks, ...extraction.portfolio_urls], 20);
-    if (mergedLinks.length > linkCount) {
-      patch.portfolio_links = mergedLinks;
-      enrichedLabels.push("portfolio links");
-    }
+  if (isBlank(current.linkedin_url) && parsed.linkedin_url?.trim()) {
+    patch.linkedin_url = parsed.linkedin_url.trim().slice(0, 2000);
+    touched = true;
+  }
+  if (isBlank(current.github_url) && parsed.github_url?.trim()) {
+    patch.github_url = parsed.github_url.trim().slice(0, 2000);
+    touched = true;
   }
 
-  return { patch, enrichedLabels };
+  const prevLinks = (current.portfolio_links ?? []).map((s) => s.trim()).filter(Boolean);
+  const nextLinks = [...prevLinks];
+  for (const u of parsed.other_urls) {
+    const t = u.trim();
+    if (!t) continue;
+    if (!nextLinks.some((x) => x.toLowerCase() === t.toLowerCase())) nextLinks.push(t);
+  }
+  const cappedLinks = nextLinks.slice(0, 20);
+  if (JSON.stringify(cappedLinks) !== JSON.stringify(prevLinks)) {
+    patch.portfolio_links = cappedLinks;
+    touched = true;
+  }
+
+  if (isBlank(current.experience_level) && parsed.years_experience_hint != null && parsed.years_experience_hint > 0) {
+    const y = parsed.years_experience_hint;
+    if (y >= 10) patch.experience_level = "lead";
+    else if (y >= 6) patch.experience_level = "senior";
+    else if (y >= 2) patch.experience_level = "mid";
+    else patch.experience_level = "junior";
+    touched = true;
+  }
+
+  return touched ? patch : null;
 }

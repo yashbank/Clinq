@@ -8,33 +8,38 @@ import type { FreelancerProfileFields } from "@/types/profile";
 
 import type { ProfileIntelligenceV1 } from "@/types/profile-intelligence";
 
-const strList = (max: number) =>
+const stringList = (maxItems: number, itemMax: number) =>
   z.preprocess(
-    (v) => (Array.isArray(v) ? v : []),
-    z.array(z.unknown()).transform((arr) =>
-      arr
-        .map((x) => (typeof x === "string" ? x : "").trim())
+    (v) => {
+      if (!Array.isArray(v)) return [];
+      return v
+        .map((x) => (x === null || x === undefined ? "" : String(x)))
+        .map((s) => s.trim())
         .filter(Boolean)
-        .map((s) => s.slice(0, 600))
-        .slice(0, max),
-    ),
+        .map((s) => s.slice(0, itemMax));
+    },
+    z.array(z.string()).max(maxItems),
   );
 
-const nonNullStr = (max: number, fallback: string) =>
+const nonEmptyString = (max: number, fallback: string) =>
   z.preprocess(
-    (v) => (v == null ? fallback : v),
-    z.union([z.string(), z.number()]).transform((v) => String(v).trim().slice(0, max) || fallback),
+    (v) => {
+      if (v === null || v === undefined) return fallback;
+      const s = String(v).trim().slice(0, max);
+      return s.length ? s : fallback;
+    },
+    z.string().max(max),
   );
 
 const schema = z.object({
-  strengths: strList(8),
-  inferredNiches: strList(12),
-  proposalToneHint: nonNullStr(600, "professional"),
-  idealProjectSummary: nonNullStr(600, "Well-scoped projects with documented requirements."),
-  positioningLine: nonNullStr(400, "Experienced freelancer"),
-  missingSkillHints: strList(6).optional(),
-  proposalPositioningNotes: strList(5).optional(),
-  idealClientNotes: strList(4).optional(),
+  strengths: stringList(8, 400),
+  inferredNiches: stringList(12, 80),
+  proposalToneHint: nonEmptyString(600, "professional: structured, specific, one strong CTA."),
+  idealProjectSummary: nonEmptyString(600, "Projects where scope, budget, and stakeholders are documented early."),
+  positioningLine: nonEmptyString(400, "Freelancer positioning."),
+  missingSkillHints: stringList(6, 400).optional(),
+  proposalPositioningNotes: stringList(5, 400).optional(),
+  idealClientNotes: stringList(4, 400).optional(),
 });
 
 /**
@@ -111,5 +116,12 @@ export async function enrichProfileIntelligenceWithOpenAi(
   }
   const out = schema.safeParse(parsed);
   if (!out.success) return null;
-  return out.data;
+  const d = out.data;
+  if (!d.strengths.length) {
+    return { ...d, strengths: base.strengths.slice(0, 8) };
+  }
+  if (!d.inferredNiches.length) {
+    return { ...d, inferredNiches: base.inferredNiches.slice(0, 12) };
+  }
+  return d;
 }

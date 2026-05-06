@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -7,6 +8,10 @@ import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard";
 import { getAnalyticsSnapshot } from "@/lib/analytics/aggregate";
 import { getSourceQualityMetrics } from "@/lib/integrations/source-quality-metrics";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Analytics",
+};
 
 export default async function AnalyticsPage() {
   const supabase = await createSupabaseServerClient();
