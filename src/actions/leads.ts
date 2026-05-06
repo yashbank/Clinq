@@ -270,6 +270,55 @@ export async function archiveLeadAction(leadId: string, archived: boolean): Prom
   return { ok: true };
 }
 
+export async function keepOnlyPotentialLeadsAction(): Promise<{ ok: true; moved: number } | { ok: false; error: string }> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Unauthorized" };
+
+  const { data: rows, error } = await supabase
+    .from("leads")
+    .select("*")
+    .eq("user_id", user.id)
+    .is("deleted_at", null)
+    .is("archived_at", null);
+
+  if (error) return { ok: false, error: error.message };
+
+  let moved = 0;
+  for (const row of rows ?? []) {
+    const r = row as LeadRow;
+    const keep = r.score >= 60 || r.interest_status === "interested";
+    if (keep) continue;
+
+    const { error: insErr } = await supabase.from("scraped_leads").insert({
+      user_id: user.id,
+      source: "prune",
+      raw_data: { former_lead: row, pruned_at: new Date().toISOString(), reason: "keep_only_potential" },
+      processed: true,
+    });
+    if (insErr) {
+      return { ok: false, error: insErr.message };
+    }
+
+    const { error: delErr } = await supabase
+      .from("leads")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", r.id)
+      .eq("user_id", user.id);
+    if (delErr) {
+      return { ok: false, error: delErr.message };
+    }
+    moved += 1;
+  }
+
+  revalidatePath("/leads");
+  revalidatePath("/pipeline");
+  revalidatePath("/dashboard");
+  return { ok: true, moved };
+}
+
 export async function softDeleteLeadAction(leadId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const id = uuid.safeParse(leadId);
   if (!id.success) return { ok: false, error: "Invalid lead" };

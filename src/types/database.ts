@@ -14,6 +14,8 @@ export type LeadRow = {
   client_name: string;
   platform: string | null;
   project_description: string | null;
+  /** Extractive or cached 1–2 line summary for list UI. */
+  short_description?: string | null;
   budget: number | null;
   score: number;
   stage: PipelineStage;

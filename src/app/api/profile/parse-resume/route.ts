@@ -30,12 +30,24 @@ export async function POST(req: Request) {
     if (file.size > MAX_BYTES) {
       return NextResponse.json({ error: "File too large (max 4MB)" }, { status: 400 });
     }
-    if (!/\.pdf$/i.test(file.name)) {
-      return NextResponse.json({ error: "Only PDF files are accepted" }, { status: 400 });
+    const isPdf = /\.pdf$/i.test(file.name);
+    const isDocx = /\.docx$/i.test(file.name);
+    if (!isPdf && !isDocx) {
+      return NextResponse.json({ error: "Only PDF or .docx files are accepted" }, { status: 400 });
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
-    const { text, pages } = await extractTextFromPdfBuffer(buf);
+    let text: string;
+    let pages: number | null = null;
+    if (isPdf) {
+      const extracted = await extractTextFromPdfBuffer(buf);
+      text = extracted.text;
+      pages = extracted.pages ?? null;
+    } else {
+      const mammoth = await import("mammoth");
+      const doc = await mammoth.extractRawText({ buffer: buf });
+      text = doc.value;
+    }
     const clipped = text.slice(0, 48_000);
 
     const { error: logErr } = await supabase.from("profile_extractions").insert({

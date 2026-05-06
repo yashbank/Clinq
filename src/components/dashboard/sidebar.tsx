@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { LogOut, Pin, PinOff } from "lucide-react";
+import { LogOut, Moon, Pin, PinOff, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 import { ClinqLogo } from "@/components/brand/clinq-logo";
@@ -16,6 +17,7 @@ const PIN_KEY = "clinq-sidebar-pinned";
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { resolvedTheme, setTheme } = useTheme();
   const [user, setUser] = useState<User | null>(null);
   const [pinned, setPinned] = useState(false);
 
@@ -127,6 +129,17 @@ export function Sidebar() {
       <nav className="flex flex-1 flex-col space-y-0.5 overflow-y-auto overflow-x-hidden p-2">
         {DASHBOARD_MAIN_NAV.map(renderLink)}
       </nav>
+
+      <div className="flex justify-center border-t border-clinq-glass-border p-2">
+        <button
+          type="button"
+          title={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+        >
+          {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+      </div>
 
       <div className="shrink-0 space-y-0.5 border-t border-clinq-glass-border p-2">
         {DASHBOARD_BOTTOM_NAV.map((item) => (

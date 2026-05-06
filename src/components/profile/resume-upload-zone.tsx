@@ -7,7 +7,7 @@ import { FileText, Loader2, Upload, CheckCircle2, AlertCircle } from "lucide-rea
 import { cn } from "@/lib/utils";
 
 const MAX_BYTES = 4 * 1024 * 1024;
-const ACCEPT = ".pdf,.txt,.md,application/pdf,text/plain";
+const ACCEPT = ".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain";
 
 type Phase = "idle" | "drag" | "reading" | "parsing" | "success" | "error";
 
@@ -28,8 +28,8 @@ export function ResumeUploadZone({
 
   const validateFile = (f: File): string | null => {
     if (f.size > MAX_BYTES) return "File is too large (max 4 MB).";
-    const ok = /\.(pdf|txt|md)$/i.test(f.name);
-    if (!ok) return "Use a PDF, .txt, or .md file.";
+    const ok = /\.(pdf|docx|txt|md)$/i.test(f.name);
+    if (!ok) return "Use a PDF, .docx, .txt, or .md file.";
     return null;
   };
 
@@ -46,14 +46,14 @@ export function ResumeUploadZone({
       setPhase("reading");
 
       try {
-        if (/\.pdf$/i.test(f.name)) {
+        if (/\.pdf$/i.test(f.name) || /\.docx$/i.test(f.name)) {
           setPhase("parsing");
           const fd = new FormData();
           fd.append("file", f);
           const res = await fetch("/api/profile/parse-resume", { method: "POST", body: fd });
           const json = (await res.json().catch(() => null)) as { text?: string; pages?: number | null; error?: string } | null;
           if (!res.ok) {
-            const m = json?.error ?? "Could not parse PDF";
+            const m = json?.error ?? "Could not parse file";
             setMessage(m);
             setPhase("error");
             toast.error(m);
@@ -144,9 +144,9 @@ export function ResumeUploadZone({
             )}
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">
-            {busy ? (phase === "parsing" ? "Extracting text from PDF…" : "Reading file…") : "Drop a resume here, or click to browse"}
+            {busy ? (phase === "parsing" ? "Extracting text…" : "Reading file…") : "Drop a resume here, or click to browse"}
           </p>
-          <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">PDF (server parse), or plain .txt / .md · max 4 MB</p>
+          <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">PDF or DOCX (server parse), or .txt / .md · max 4 MB</p>
           {message ? <p className="mt-3 text-xs text-destructive">{message}</p> : null}
         </div>
       </div>

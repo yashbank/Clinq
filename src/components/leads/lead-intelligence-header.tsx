@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { Search, Target } from "lucide-react";
 
+import { keepOnlyPotentialLeadsAction } from "@/actions/leads";
 import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -76,6 +80,8 @@ export function LeadIntelligenceHeader({
   totalPages: number;
   currentPage: number;
 }) {
+  const router = useRouter();
+  const [prunePending, startPrune] = useTransition();
   const avgScoreLabel = leadCount === 0 ? "—" : avgScore.toFixed(1);
   const base = { ...parsedQuery };
 
@@ -96,6 +102,35 @@ export function LeadIntelligenceHeader({
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={prunePending || leadCount === 0}
+            className="border-border text-xs"
+            onClick={() => {
+              if (
+                !window.confirm(
+                  "Move low-score leads (under 60, not marked Interested) off your board? They will be stored as scraped history and hidden from lists.",
+                )
+              ) {
+                return;
+              }
+              startPrune(() => {
+                void (async () => {
+                  const res = await keepOnlyPotentialLeadsAction();
+                  if (!res.ok) {
+                    toast.error(res.error);
+                    return;
+                  }
+                  toast.success(res.moved ? `Moved ${res.moved} lead(s)` : "Nothing to move");
+                  router.refresh();
+                })();
+              });
+            }}
+          >
+            Keep only potential & interested
+          </Button>
           {onAddLead ? (
             <Button type="button" onClick={onAddLead} className="gap-2 bg-primary text-primary-foreground shadow-none hover:bg-primary/90">
               <Target className="h-4 w-4" />

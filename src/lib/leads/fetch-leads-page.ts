@@ -22,6 +22,8 @@ export type LeadsQueryParams = {
   stage?: PipelineStage | "all";
   view?: LeadsPageView;
   sort?: LeadsSortMode;
+  /** Profile tokens used to rank search hits (skill match > title > description). */
+  profileSearchTokens?: string[];
 };
 
 export type LeadTabCounts = {
@@ -40,30 +42,45 @@ function sortKey(row: LeadRow): number {
   return typeof r.sort_key === "number" && Number.isFinite(r.sort_key) ? r.sort_key : row.score;
 }
 
-/** Higher = better match for ordering with primary sort key. */
-function searchRankBonus(row: LeadRow, q: string): number {
+/**
+ * Search ranking: skill/profile token overlap > title/query match > description match.
+ * Returns a secondary sort score (larger = better match to query + profile).
+ */
+function searchRankBonus(row: LeadRow, q: string, profileTokens: string[]): number {
   const qq = q.trim().toLowerCase();
-  if (!qq) return 0;
-  const name = row.client_name.toLowerCase();
   const meta =
     row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? (row.metadata as Record<string, unknown>) : {};
   const title = typeof meta.project_title === "string" ? meta.project_title.toLowerCase() : "";
-  let s = 0;
-  if (name === qq) s += 40;
-  else if (name.includes(qq)) s += 25;
-  if (title === qq) s += 35;
-  else if (title.includes(qq)) s += 18;
+  const name = row.client_name.toLowerCase();
   const desc = (row.project_description ?? "").toLowerCase();
-  if (desc.includes(qq)) s += 10;
-  const metaStr = JSON.stringify(meta).toLowerCase();
-  if (metaStr.includes(qq)) s += 5;
-  return s;
+  const hay = `${title} ${name} ${desc}`.toLowerCase();
+
+  let skill = 0;
+  for (const tok of profileTokens) {
+    const t = tok.toLowerCase().trim();
+    if (t.length < 2) continue;
+    if (hay.includes(t)) skill += 1;
+  }
+  skill = Math.min(24, skill * 4);
+
+  let titlePart = 0;
+  let descPart = 0;
+  if (qq) {
+    if (title === qq || name === qq) titlePart += 50;
+    else if (title.includes(qq) || name.includes(qq)) titlePart += 32;
+    else if (title.length > 0 && qq.split(/\s+/).some((w) => w.length > 1 && title.includes(w))) titlePart += 18;
+
+    if (desc.includes(qq)) descPart += 14;
+    else if (qq.split(/\s+/).some((w) => w.length > 2 && desc.includes(w))) descPart += 8;
+  }
+
+  return skill * 1000 + titlePart * 40 + descPart;
 }
 
-function combinedListSort(a: LeadRow, b: LeadRow, q: string): number {
+function combinedListSort(a: LeadRow, b: LeadRow, q: string, profileTokens: string[]): number {
   const sink = (r: LeadRow) => (r.interest_status === "not_interested" ? -8000 : 0);
-  const ka = sortKey(a) + searchRankBonus(a, q) * 5000 + sink(a);
-  const kb = sortKey(b) + searchRankBonus(b, q) * 5000 + sink(b);
+  const ka = sortKey(a) + searchRankBonus(a, q, profileTokens) * 50 + sink(a);
+  const kb = sortKey(b) + searchRankBonus(b, q, profileTokens) * 50 + sink(b);
   if (kb !== ka) return kb - ka;
   return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
 }
@@ -118,6 +135,10 @@ export async function fetchLeadsPage(
   const view = params.view ?? "main";
   const q = (params.q ?? "").trim();
   const sort = params.sort ?? "default";
+  const profileSearchTokens = (params.profileSearchTokens ?? [])
+    .map((s) => s.trim())
+    .filter((s) => s.length > 1)
+    .slice(0, 80);
 
   let query = supabase.from("leads").select("*", { count: "exact" });
 
@@ -164,8 +185,8 @@ export async function fetchLeadsPage(
     const fullCount = count ?? pool.length;
     const cappedTotal = Math.min(fullCount, RECOMMENDED_SORT_CAP);
     const sorted = [...pool].sort((a, b) => {
-      const pa = computeLeadPriorityScore(a) + searchRankBonus(a, q) * 0.02;
-      const pb = computeLeadPriorityScore(b) + searchRankBonus(b, q) * 0.02;
+      const pa = computeLeadPriorityScore(a) + searchRankBonus(a, q, profileSearchTokens) * 0.02;
+      const pb = computeLeadPriorityScore(b) + searchRankBonus(b, q, profileSearchTokens) * 0.02;
       if (pb !== pa) return pb - pa;
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
@@ -179,6 +200,6 @@ export async function fetchLeadsPage(
   if (error) {
     throw new Error(error.message);
   }
-  const rows = [...((rawRows ?? []) as LeadRow[])].sort((a, b) => combinedListSort(a, b, q));
+  const rows = [...((rawRows ?? []) as LeadRow[])].sort((a, b) => combinedListSort(a, b, q, profileSearchTokens));
   return { rows, total: count ?? 0 };
 }

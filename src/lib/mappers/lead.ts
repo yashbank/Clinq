@@ -1,7 +1,9 @@
 import { formatDistanceToNow } from "date-fns";
 
+import { generateShortLeadDescription } from "@/lib/ai/short-lead-description";
 import { intelligenceFromMetadata, type LeadTier } from "@/lib/ai/lead-intelligence";
 import { isHighConversionScore } from "@/lib/ai/lead-score";
+import { leadBudgetDisplayFromMetadata, leadBudgetFallback } from "@/lib/leads/budget-display";
 import { getLeadImportedAtIso, isFreelancerLeadRow, isImportedLeadRow } from "@/lib/leads/source-filters";
 import type { LeadRow } from "@/types/database";
 import type { Lead } from "@/types/leads-ui";
@@ -90,12 +92,27 @@ export function mapLeadRowToUiLead(row: LeadRow, extras?: { proposalStatus?: Lea
       ? "Strong fit on score—tailor proof points to the brief and your saved profile."
       : "Review brief and competition. Add strategy notes when you research the buyer.");
 
+  const shortFromDb = typeof row.short_description === "string" ? row.short_description.trim() : "";
+  const shortSummary =
+    shortFromDb ||
+    generateShortLeadDescription(row.project_description ?? "") ||
+    generateShortLeadDescription(projectTitle) ||
+    "";
+
+  const budgetMeta = leadBudgetDisplayFromMetadata(meta);
+  const budgetFallback = leadBudgetFallback(row.budget, row.platform);
+  const budgetLine = budgetMeta.hide ? (budgetFallback.hide ? "" : budgetFallback.label) : budgetMeta.label;
+  const budgetKind = budgetMeta.hide ? budgetFallback.kind : budgetMeta.kind;
+
   return {
     id: row.id,
     interest_status: row.interest_status ?? null,
     name: row.client_name,
     projectTitle,
     projectUrl,
+    shortSummary,
+    budgetLine,
+    budgetKind,
     leadTier,
     confidenceScore,
     intelligenceFlags,

@@ -11,7 +11,7 @@ import {
   collectImportExternalIds,
   normalizeFreelancerProject,
 } from "@/lib/leads/ingest/freelancer-normalize";
-import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
+import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 
@@ -122,11 +122,12 @@ export async function runFreelancerLeadImportAction(
   }
 
   const importedAt = new Date().toISOString();
-  const normalized = api.data.projects
-    .map((p) => normalizeFreelancerProject(p, importedAt))
-    .filter((x): x is NonNullable<typeof x> => Boolean(x));
 
-  const extIds = collectImportExternalIds(normalized);
+  const extIds = collectImportExternalIds(
+    api.data.projects
+      .map((p) => normalizeFreelancerProject(p, importedAt))
+      .filter((x): x is NonNullable<typeof x> => Boolean(x)),
+  );
   const existing = new Set<string>();
   if (extIds.length > 0) {
     const { data: existingArr, error: rpcErr } = await supabase.rpc("lead_import_ext_ids_existing", {
@@ -170,7 +171,12 @@ export async function runFreelancerLeadImportAction(
     skills: Array.isArray(prof?.skills) ? (prof!.skills as string[]) : [],
   };
 
-  for (const n of normalized) {
+  for (const p of api.data.projects) {
+    const n = normalizeFreelancerProject(p, importedAt);
+    if (!n) {
+      failed += 1;
+      continue;
+    }
     const ext = n.metadataExtra.import_external_id;
     if (typeof ext !== "string") {
       failed += 1;
@@ -181,19 +187,29 @@ export async function runFreelancerLeadImportAction(
       continue;
     }
 
-    const ins = await insertLeadWithIntelligence(supabase, user.id, n.input, {
-      profile,
-      metadataExtra: n.metadataExtra,
-      revalidatePaths: [],
+    const { error: scrapeErr } = await supabase.from("scraped_leads").insert({
+      user_id: user.id,
+      source: "freelancer",
+      raw_data: {
+        import_external_id: ext,
+        imported_at: importedAt,
+        freelancer_project: p,
+      },
+      processed: false,
     });
-    if (!ins.ok) {
+    if (scrapeErr) {
       failed += 1;
-      errors.push(ins.error);
+      errors.push(scrapeErr.message);
       continue;
     }
-    imported += 1;
     existing.add(ext);
   }
+
+  const proc = await processScrapedLeads(supabase, user.id, { profile });
+  if (proc.errors.length) {
+    errors.push(...proc.errors.slice(0, 5));
+  }
+  imported = proc.promoted;
 
   await supabase
     .from("integration_sync_jobs")

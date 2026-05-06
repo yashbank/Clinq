@@ -61,18 +61,24 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
   const projectUrl = seoUrl ? `https://www.freelancer.com/projects/${seoUrl}` : `https://www.freelancer.com/projects/${id}`;
 
   const budgetObj = asRecord(p.budget);
+  const currencyObj = asRecord(p.currency);
+  const currencyCode = currencyObj ? str(currencyObj.code, 8)?.toUpperCase() ?? null : null;
+
+  const budgetMin = budgetObj ? num(budgetObj.minimum) : null;
+  const budgetMax = budgetObj ? num(budgetObj.maximum) : null;
+
   let budget: number | null = null;
-  if (budgetObj) {
-    const min = num(budgetObj.minimum);
-    const max = num(budgetObj.maximum);
-    if (min !== null && max !== null) {
-      budget = Math.round(((min + max) / 2) * 100) / 100;
-    } else if (min !== null) {
-      budget = min;
-    } else if (max !== null) {
-      budget = max;
-    }
+  if (budgetMin !== null && budgetMax !== null) {
+    budget = Math.round(((budgetMin + budgetMax) / 2) * 100) / 100;
+  } else if (budgetMin !== null) {
+    budget = budgetMin;
+  } else if (budgetMax !== null) {
+    budget = budgetMax;
   }
+
+  const projectTypeRaw = str(p.type, 32)?.toLowerCase() ?? "";
+  const budgetType: "fixed" | "hourly" | "unknown" =
+    projectTypeRaw.includes("hourly") ? "hourly" : projectTypeRaw.includes("fixed") ? "fixed" : "unknown";
 
   const ownerId = num(p.owner_id) ?? num(p.ownerId);
   const clientName =
@@ -104,8 +110,10 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
     type: projectType,
     submitdate,
     currency_id: currencyId,
-    budget_min: budgetObj ? num(budgetObj.minimum) : null,
-    budget_max: budgetObj ? num(budgetObj.maximum) : null,
+    currency_code: currencyCode,
+    budget_min: budgetMin,
+    budget_max: budgetMax,
+    budget_type: budgetType,
     owner_id: ownerId,
     bid_count: bidCount,
     seo_url: seoUrl,
@@ -146,6 +154,10 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
       tags,
       client_signals: clientSignals,
       raw_snapshot: rawSnapshot,
+      budget_min: budgetMin,
+      budget_max: budgetMax,
+      currency_code: currencyCode,
+      budget_type: budgetType,
     },
   };
 

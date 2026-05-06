@@ -26,6 +26,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   let loadError: string | null = null;
 
   const { data: profileRow } = await supabase.from("profiles").select("skills, tech_stack, niches").eq("id", user.id).maybeSingle();
+  const profileSearchTokens = [
+    ...(Array.isArray(profileRow?.skills) ? (profileRow.skills as string[]) : []),
+    ...(Array.isArray(profileRow?.tech_stack) ? (profileRow.tech_stack as string[]) : []),
+    ...(Array.isArray(profileRow?.niches) ? (profileRow.niches as string[]) : []),
+  ];
 
   try {
     const [pageRes, counts, summary] = await Promise.all([
@@ -39,6 +44,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         stage: parsed.stage,
         view: parsed.view,
         sort: parsed.sort,
+        profileSearchTokens,
       }),
       fetchLeadTabCounts(supabase),
       fetchLeadsListSummary(supabase),

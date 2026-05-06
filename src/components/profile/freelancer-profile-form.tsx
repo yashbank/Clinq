@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { refreshProfileIntelligenceAction } from "@/actions/profile-intelligence";
 import { updateFreelancerProfileAction } from "@/actions/profile";
 import { ResumeUploadZone } from "@/components/profile/resume-upload-zone";
+import { parseResumeAdvanced } from "@/lib/profile/parse-resume-advanced";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,7 +114,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
             id="experience"
             value={experience}
             onChange={(ev) => setExperience(ev.target.value)}
-            className="flex h-10 w-full max-w-xs rounded-md border border-input bg-secondary/90 px-3 text-sm text-foreground shadow-xs focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="flex h-10 w-full max-w-xs rounded-md border border-border bg-popover px-3 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
           >
             <option value="">Not specified</option>
             <option value="junior">Junior</option>
@@ -127,7 +128,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Resume</h2>
         <p className="text-xs text-muted-foreground">
-          PDFs are parsed on the server (text only). Stored for proposals on this workspace only.
+          PDF and DOCX are parsed on the server (text only). Stored for proposals on this workspace only.
         </p>
         <ResumeUploadZone
           resumeText={resumeText}
@@ -135,6 +136,13 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
           onExtracted={(text, fn) => {
             setResumeText(text);
             setResumeFilename(fn);
+            const parsed = parseResumeAdvanced(text);
+            if (parsed.skills.length > 0) {
+              const existing = splitTags(skills);
+              const merged = [...new Set([...existing, ...parsed.skills])].slice(0, 48);
+              setSkills(merged.join(", "));
+              toast.message("Detected skills merged into the skills field — review and save.");
+            }
           }}
         />
         <div className="space-y-2">

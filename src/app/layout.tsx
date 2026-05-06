@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { GlobalSiteBackground } from "@/components/layout/global-site-background";
 import { LeadCaptureProvider } from "@/components/leads/lead-quick-capture-root";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -38,13 +39,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="relative min-h-screen font-sans antialiased">
-        <LeadCaptureProvider>
-          <GlobalSiteBackground />
-          {children}
-        </LeadCaptureProvider>
-        <Toaster richColors position="top-center" />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <LeadCaptureProvider>
+            <GlobalSiteBackground />
+            {children}
+          </LeadCaptureProvider>
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
         {process.env.NODE_ENV === "production" ? <Analytics /> : null}
       </body>
     </html>

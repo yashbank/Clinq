@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 
+import { generateShortLeadDescription } from "@/lib/ai/short-lead-description";
 import { analyzeLead } from "@/lib/ai/lead-intelligence";
 import { buildLeadIntelligenceRecord } from "@/lib/ai/lead-intelligence-pipeline";
 import { deriveLeadWorkflowSignals } from "@/lib/ai/lead-workflow";
@@ -48,6 +49,8 @@ export async function insertLeadWithIntelligence(
     skipActivity?: boolean;
     /** Merged into metadata after core scoring fields (e.g. import ids, raw snapshot refs). */
     metadataExtra?: Record<string, unknown>;
+    /** Cached extractive summary; avoids empty column when migration adds `short_description`. */
+    shortDescription?: string | null;
     /** If omitted, revalidates leads, pipeline, dashboard. Pass [] to skip. */
     revalidatePaths?: string[] | null;
   },
@@ -127,11 +130,15 @@ export async function insertLeadWithIntelligence(
     ...(options?.metadataExtra ?? {}),
   };
 
+  const shortDescRaw = (options?.shortDescription?.trim() || generateShortLeadDescription(input.project_description ?? "")).trim();
+  const short_description = shortDescRaw.length > 0 ? shortDescRaw : null;
+
   const row = {
     user_id: userId,
     client_name: input.client_name.trim(),
     platform: input.platform?.trim() || null,
     project_description: input.project_description?.trim() || null,
+    short_description,
     budget: input.budget ?? null,
     score: intel.score,
     email: input.email?.trim() || null,

@@ -18,10 +18,17 @@ type Ctx = {
 
 const ProposalStudioContext = createContext<Ctx | null>(null);
 
-export function ProposalStudioProvider({ children }: { children: React.ReactNode }) {
+export function ProposalStudioProvider({
+  children,
+  initialRfpText = "",
+}: {
+  children: React.ReactNode;
+  /** Optional seed (e.g. opened from a lead deep link). */
+  initialRfpText?: string;
+}) {
   const [mode, setMode] = useState<ProposalModeId>("premium");
   const [tone, setTone] = useState<ProposalToneId>("professional");
-  const [rfpText, setRfpText] = useState("");
+  const [rfpText, setRfpText] = useState(initialRfpText);
 
   const mapModeToApi = useCallback(() => {
     return mode === "concise" ? "short" : "long";

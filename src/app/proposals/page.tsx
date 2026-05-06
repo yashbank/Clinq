@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import { ProposalStudioProvider } from "@/context/proposal-studio";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { ProposalLeadHydrate } from "@/components/proposals/proposal-lead-hydrate";
 import { ProposalStudioHeader } from "@/components/proposals/proposal-studio-header";
 import { JobDescriptionInput } from "@/components/proposals/job-description-input";
 import { AIWritingPanel } from "@/components/proposals/ai-writing-panel";
@@ -20,6 +21,9 @@ export default function ProposalsPage() {
     <ProposalStudioProvider>
       <div className="flex min-h-screen bg-background gradient-mesh">
         <Sidebar />
+        <Suspense fallback={null}>
+          <ProposalLeadHydrate />
+        </Suspense>
         <main className="flex flex-1 flex-col overflow-hidden">
           <ProposalStudioHeader
             onOpenSnippets={() => setShowSnippets(true)}

@@ -7,6 +7,11 @@ export interface Lead {
   name: string;
   projectTitle: string;
   projectUrl: string;
+  /** Short list blurb (DB or extractive). */
+  shortSummary: string;
+  /** Display line for budget; empty when hidden. */
+  budgetLine: string;
+  budgetKind: "fixed" | "hourly" | "unknown";
   leadTier: LeadTier;
   confidenceScore: number;
   intelligenceFlags: string[];
