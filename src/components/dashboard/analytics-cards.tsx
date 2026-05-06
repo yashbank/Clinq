@@ -8,6 +8,8 @@ export type DashboardAnalyticsSnapshot = {
   activeLeads: number;
   highConversionLeads: number;
   revenueMtd: number;
+  /** Revenue from completed projects, formatted in preferred currency. */
+  revenueMtdDisplay: string;
   pipelineValue: number;
   /** Total pipeline in preferred currency (matches Leads). */
   pipelineValueDisplay: string;
@@ -15,16 +17,10 @@ export type DashboardAnalyticsSnapshot = {
   winRatePct: number;
 };
 
-function formatUsd(n: number) {
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  if (n > 0) return `$${Math.round(n).toLocaleString()}`;
-  return "$0";
-}
-
 function buildStats(snapshot: DashboardAnalyticsSnapshot) {
   const s = snapshot;
   const hasLeads = s.activeLeads > 0;
-  const pipelineLabel = s.pipelineValueDisplay || formatUsd(s.pipelineValue);
+  const pipelineLabel = s.pipelineValueDisplay;
   return [
     {
       label: "Leads",
@@ -42,7 +38,7 @@ function buildStats(snapshot: DashboardAnalyticsSnapshot) {
     },
     {
       label: "Revenue (completed projects)",
-      value: formatUsd(s.revenueMtd),
+      value: s.revenueMtdDisplay,
       subValue: hasLeads ? `${pipelineLabel} in lead budgets` : "From Projects marked completed",
       icon: DollarSign,
       accentColor: "from-accent to-accent/50",

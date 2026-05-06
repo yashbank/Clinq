@@ -1,4 +1,8 @@
-import { convertUsdToDisplayCurrency, formatCurrencyAmount } from "@/lib/currency/display-currency";
+import {
+  convertUsdToDisplayCurrency,
+  formatCurrencyAmount,
+  mergeUsdToForeignRates,
+} from "@/lib/currency/display-currency";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
 
 function resolvePref(preferredCurrency: string | null | undefined): SupportedDisplayCurrency {
@@ -41,10 +45,9 @@ export function formatBudgetUsdForDisplay(
     return { label: "", show: false };
   }
   const pref = resolvePref(preferredCurrency);
-  const rates = usdToForeignRates && Object.keys(usdToForeignRates).length > 0 ? usdToForeignRates : null;
-  const hasFx = Boolean(rates && pref !== "USD");
-  const local = hasFx ? convertUsdToDisplayCurrency(budgetUsd, pref, rates!) : budgetUsd;
-  const displayCur: SupportedDisplayCurrency = hasFx ? pref : "USD";
+  const merged = mergeUsdToForeignRates(usdToForeignRates);
+  const local = convertUsdToDisplayCurrency(budgetUsd, pref, merged);
+  const displayCur: SupportedDisplayCurrency = pref;
   const kind = budgetKind === "hourly" ? "hourly" : "fixed";
   if (kind === "hourly") {
     const per = formatCurrencyAmount(local, displayCur);

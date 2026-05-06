@@ -130,18 +130,18 @@ export function Sidebar() {
         {DASHBOARD_MAIN_NAV.map(renderLink)}
       </nav>
 
-      <div className="flex justify-center border-t border-border p-2">
+      <div className="flex justify-center border-t border-border px-2 pb-2 pt-2.5">
         <button
           type="button"
           title={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
           onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/80 bg-background/40 text-muted-foreground shadow-sm transition-colors duration-150 hover:border-border hover:bg-muted/45 hover:text-foreground dark:border-border/60 dark:bg-muted/20 dark:hover:bg-muted/35"
         >
           {resolvedTheme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
       </div>
 
-      <div className="shrink-0 space-y-0.5 border-t border-border p-2">
+      <div className="shrink-0 space-y-1 border-t border-border px-2 pb-2 pt-2">
         {DASHBOARD_BOTTOM_NAV.map((item) => (
           <Link
             key={item.href}
@@ -149,23 +149,25 @@ export function Sidebar() {
             title={item.label}
             className={cn(
               linkBase,
-              "justify-center px-0 text-muted-foreground hover:bg-muted/60 hover:text-foreground group-hover/sidebar:justify-start group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:justify-start group-data-[expanded=true]/sidebar:px-2.5",
+              "justify-center px-0 text-muted-foreground transition-colors duration-150 hover:border-border/80 hover:bg-muted/40 hover:text-foreground group-hover/sidebar:justify-start group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:justify-start group-data-[expanded=true]/sidebar:px-2.5",
             )}
           >
-            <item.icon className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover/nav:text-primary" />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-transparent bg-transparent transition-colors duration-150 group-hover/nav:border-border/60 group-hover/nav:bg-muted/35 group-data-[expanded=true]/sidebar:group-hover/nav:border-border/60">
+              <item.icon className="h-[1.125rem] w-[1.125rem] shrink-0 text-muted-foreground transition-colors duration-150 group-hover/nav:text-primary" />
+            </span>
             <span className={cn(labelClass, "flex-1 truncate text-left text-foreground")}>{item.label}</span>
           </Link>
         ))}
       </div>
 
-      <div className="shrink-0 border-t border-border p-2">
+      <div className="shrink-0 space-y-1.5 border-t border-border px-2 pb-3 pt-2">
         <div
           className={cn(
-            "flex items-center gap-0 rounded-md py-2 transition-[gap,padding] duration-300 group-hover/sidebar:gap-2.5 group-hover/sidebar:px-2.5 group-data-[expanded=true]/sidebar:gap-2.5 group-data-[expanded=true]/sidebar:px-2.5",
+            "flex cursor-default items-center gap-0 rounded-lg border border-transparent py-1.5 transition-[gap,padding,border-color,background-color] duration-150 group-hover/sidebar:gap-2.5 group-hover/sidebar:border-border/50 group-hover/sidebar:bg-muted/25 group-hover/sidebar:px-2 group-data-[expanded=true]/sidebar:gap-2.5 group-data-[expanded=true]/sidebar:border-border/50 group-data-[expanded=true]/sidebar:bg-muted/25 group-data-[expanded=true]/sidebar:px-2",
             "justify-center group-hover/sidebar:justify-start group-data-[expanded=true]/sidebar:justify-start",
           )}
         >
-          <div className="relative h-9 w-9 shrink-0">
+          <div className="relative h-9 w-9 shrink-0 rounded-full ring-1 ring-border/40 transition-shadow duration-150 group-hover/sidebar:ring-primary/25 dark:ring-border/30">
             <div className="h-full w-full rounded-full bg-gradient-to-br from-primary/90 to-accent/80" />
             <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-sidebar bg-clinq-success" />
           </div>
@@ -176,7 +178,7 @@ export function Sidebar() {
             <p className="truncate text-xs text-muted-foreground">Workspace</p>
           </div>
         </div>
-        <div className="mt-1.5 flex justify-center group-hover/sidebar:justify-stretch group-data-[expanded=true]/sidebar:justify-stretch">
+        <div className="flex justify-center group-hover/sidebar:justify-stretch group-data-[expanded=true]/sidebar:justify-stretch">
           <button
             type="button"
             title="Sign out"
@@ -185,9 +187,9 @@ export function Sidebar() {
               await supabase.auth.signOut();
               router.push("/login");
             }}
-            className="flex w-full max-w-[2.25rem] items-center justify-center gap-2 rounded-md border border-border py-2 text-muted-foreground transition-[max-width] duration-300 hover:bg-muted/60 hover:text-foreground group-hover/sidebar:max-w-none group-data-[expanded=true]/sidebar:max-w-none"
+            className="flex w-full max-w-[2.25rem] items-center justify-center gap-2 rounded-lg border border-border/80 bg-background/30 py-2 text-muted-foreground transition-[max-width,background-color,border-color,color] duration-150 hover:border-border hover:bg-muted/40 hover:text-foreground group-hover/sidebar:max-w-none group-data-[expanded=true]/sidebar:max-w-none dark:border-border/55 dark:bg-muted/15 dark:hover:bg-muted/30"
           >
-            <LogOut className="h-4 w-4 shrink-0" />
+            <LogOut className="h-4 w-4 shrink-0 opacity-90" />
             <span className={cn("hidden whitespace-nowrap text-xs font-medium group-hover/sidebar:inline group-data-[expanded=true]/sidebar:inline")}>
               Sign out
             </span>

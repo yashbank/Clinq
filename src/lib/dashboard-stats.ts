@@ -142,6 +142,7 @@ function buildSnapshot(
     activeLeads,
     highConversionLeads,
     revenueMtd,
+    revenueMtdDisplay: formatUsdTotalForDisplay(revenueMtd, display.preferredCurrency, display.usdToForeignRates),
     pipelineValue,
     pipelineValueDisplay: formatUsdTotalForDisplay(pipelineValue, display.preferredCurrency, display.usdToForeignRates),
     proposalsSent,

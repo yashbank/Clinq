@@ -1,4 +1,8 @@
-import { convertUsdToDisplayCurrency, formatCurrencyAmount } from "@/lib/currency/display-currency";
+import {
+  convertUsdToDisplayCurrency,
+  formatCurrencyAmount,
+  mergeUsdToForeignRates,
+} from "@/lib/currency/display-currency";
 import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
 import type { LeadRow } from "@/types/database";
@@ -8,7 +12,7 @@ export function leadBudgetAsUsd(
   row: Pick<LeadRow, "budget" | "budget_usd" | "budget_avg" | "budget_min" | "budget_max" | "currency_original" | "metadata">,
   usdToForeignRates?: Record<string, number> | null,
 ): number {
-  return resolveEffectiveBudgetUsd(row, usdToForeignRates ?? null) ?? 0;
+  return resolveEffectiveBudgetUsd(row, mergeUsdToForeignRates(usdToForeignRates)) ?? 0;
 }
 
 export function formatUsdTotalForDisplay(
@@ -17,11 +21,7 @@ export function formatUsdTotalForDisplay(
   usdToForeignRates: Record<string, number> | null,
 ): string {
   const pref: SupportedDisplayCurrency = isSupportedDisplayCurrency(preferredCurrency) ? preferredCurrency : "USD";
-  if (!usdToForeignRates || Object.keys(usdToForeignRates).length === 0) {
-    if (totalUsd >= 1000) return `$${(totalUsd / 1000).toFixed(1)}k`;
-    if (totalUsd > 0) return `$${Math.round(totalUsd).toLocaleString("en-US")}`;
-    return "$0";
-  }
-  const local = convertUsdToDisplayCurrency(totalUsd, pref, usdToForeignRates);
+  const merged = mergeUsdToForeignRates(usdToForeignRates);
+  const local = convertUsdToDisplayCurrency(totalUsd, pref, merged);
   return formatCurrencyAmount(local, pref);
 }

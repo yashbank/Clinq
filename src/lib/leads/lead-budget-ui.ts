@@ -1,3 +1,4 @@
+import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
 import { formatBudgetUsdForDisplay } from "@/lib/currency/format-display-budget";
 import { leadBudgetDisplayFromMetadata, leadBudgetFallback, type BudgetType } from "@/lib/leads/budget-display";
 import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
@@ -26,20 +27,15 @@ export function computeLeadBudgetUiLine(
 
   const prefRaw = preferredCurrency ?? "USD";
   const pref: SupportedDisplayCurrency = isSupportedDisplayCurrency(prefRaw) ? prefRaw : "USD";
-  const rates = usdToForeignRates;
+  const mergedFx = mergeUsdToForeignRates(usdToForeignRates);
 
-  const usd = resolveEffectiveBudgetUsd(row, rates);
+  const usd = resolveEffectiveBudgetUsd(row, mergedFx);
 
-  if (usd !== null && rates && Object.keys(rates).length > 0) {
-    const fd = formatBudgetUsdForDisplay(usd, pref, rates, kind === "hourly" ? "hourly" : "fixed");
+  if (usd !== null) {
+    const fd = formatBudgetUsdForDisplay(usd, pref, usdToForeignRates, kind === "hourly" ? "hourly" : "fixed");
     if (fd.show) {
       return { label: fd.label, show: true, kind };
     }
-  }
-
-  if (usd !== null && (!rates || Object.keys(rates).length === 0) && pref === "USD") {
-    const fd = formatBudgetUsdForDisplay(usd, "USD", null, kind === "hourly" ? "hourly" : "fixed");
-    if (fd.show) return { label: fd.label, show: true, kind };
   }
 
   const label = budgetMeta.hide ? (budgetFallback.hide ? "" : budgetFallback.label) : budgetMeta.label;

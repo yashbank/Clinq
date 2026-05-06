@@ -46,8 +46,6 @@ const SORT_OPTIONS: { value: ParsedLeadsSearchParams["sort"]; label: string }[] 
 export function LeadIntelligenceHeader({
   onAddLead,
   leadCount = 0,
-  highScoreCount = 0,
-  repeatCount = 0,
   totalBudget = 0,
   avgScore = 0,
   preferredCurrency = "USD",
@@ -63,8 +61,6 @@ export function LeadIntelligenceHeader({
 }: {
   onAddLead?: () => void;
   leadCount?: number;
-  highScoreCount?: number;
-  repeatCount?: number;
   /** Sum of canonical USD across active leads (for FX display). */
   totalBudget?: number;
   avgScore?: number;
@@ -211,12 +207,6 @@ export function LeadIntelligenceHeader({
               All · {leadCount}
             </span>
           )}
-          <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-            80+ · {highScoreCount}
-          </span>
-          <span className="shrink-0 rounded-full bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-            Repeat · {repeatCount}
-          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 gap-y-2 sm:gap-3">
@@ -270,12 +260,6 @@ export function LeadIntelligenceHeader({
 
         {importSummaryLine ? (
           <p className="text-[11px] leading-snug text-muted-foreground">{importSummaryLine}</p>
-        ) : null}
-
-        {parsedQuery.sort === "recommended" ? (
-          <p className="text-[11px] text-muted-foreground">
-            Sorted by Clinq priority (up to 800 most recent rows loaded for ranking).
-          </p>
         ) : null}
 
         {totalPages > 1 ? (

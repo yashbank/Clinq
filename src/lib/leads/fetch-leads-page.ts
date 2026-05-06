@@ -6,6 +6,7 @@ import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
 import { loadFeedbackSignalsSummary, type FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
 import type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
 import type { LeadSourceFilter } from "@/lib/leads/source-filters";
+import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
 import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import type { LeadRow, PipelineStage } from "@/types/database";
@@ -208,7 +209,8 @@ export async function fetchLeadsListSummary(supabase: SupabaseClient): Promise<L
   const activeCount = list.length;
   const highScore80Plus = list.filter((r) => r.score >= 80).length;
   const repeatCount = list.filter((r) => r.repeat_hire).length;
-  const totalBudget = list.reduce((s, r) => s + (resolveEffectiveBudgetUsd(r, usdToForeignRates) ?? 0), 0);
+  const mergedFx = mergeUsdToForeignRates(usdToForeignRates);
+  const totalBudget = list.reduce((s, r) => s + (resolveEffectiveBudgetUsd(r, mergedFx) ?? 0), 0);
   const avgScore = activeCount ? list.reduce((s, r) => s + r.score, 0) / activeCount : 0;
   return { activeCount, highScore80Plus, repeatCount, totalBudget, avgScore };
 }

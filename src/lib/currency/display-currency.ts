@@ -1,5 +1,20 @@
 import type { SupportedDisplayCurrency } from "@/types/currency";
 
+/**
+ * Approximate USD→foreign rates (foreign currency per 1 USD) for display only when the API
+ * returns nothing. Live Frankfurter rates override these keys when present.
+ */
+export const DISPLAY_FX_FALLBACK_USD: Record<string, number> = {
+  EUR: 0.92,
+  GBP: 0.79,
+  INR: 84,
+  CAD: 1.36,
+};
+
+export function mergeUsdToForeignRates(rates: Record<string, number> | null | undefined): Record<string, number> {
+  return { ...DISPLAY_FX_FALLBACK_USD, ...(rates ?? {}) };
+}
+
 export function convertUsdToDisplayCurrency(
   usd: number,
   target: SupportedDisplayCurrency,

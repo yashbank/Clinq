@@ -78,8 +78,6 @@ export default function LeadsPageClient({
           <LeadIntelligenceHeader
             onAddLead={openCapture}
             leadCount={listSummary.activeCount}
-            highScoreCount={listSummary.highScore80Plus}
-            repeatCount={listSummary.repeatCount}
             totalBudget={listSummary.totalBudget}
             preferredCurrency={preferredCurrency}
             usdToForeignRates={usdToForeignRates}
