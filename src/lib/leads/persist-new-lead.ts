@@ -68,20 +68,33 @@ export async function insertLeadWithIntelligence(
   const budgetForIntel = input.budget ?? budgetCols.budget_avg ?? null;
 
   let mergedBudgetCols = { ...budgetCols };
+
+  const noImportStructuredBudget =
+    mergedBudgetCols.budget_min == null &&
+    mergedBudgetCols.budget_max == null &&
+    mergedBudgetCols.budget_avg == null &&
+    mergedBudgetCols.currency_original == null;
+
+  // Manual / legacy USD-only path: never treat `input.budget` as USD when import metadata already
+  // defined a non-USD average (Freelancer passes the marketplace average in original currency).
   if (
     mergedBudgetCols.budget_usd == null &&
-    budgetForIntel != null &&
-    Number.isFinite(budgetForIntel) &&
-    budgetForIntel > 0
+    noImportStructuredBudget &&
+    typeof input.budget === "number" &&
+    Number.isFinite(input.budget) &&
+    input.budget > 0
   ) {
-    const n = Math.round(budgetForIntel * 100) / 100;
+    const n = Math.round(input.budget * 100) / 100;
     mergedBudgetCols = {
       ...mergedBudgetCols,
       budget_usd: n,
-      currency_original: mergedBudgetCols.currency_original ?? "USD",
-      budget_avg: mergedBudgetCols.budget_avg ?? n,
+      currency_original: "USD",
+      budget_avg: n,
     };
   }
+
+  const legacyBudgetUsdColumn =
+    mergedBudgetCols.budget_usd != null && mergedBudgetCols.budget_usd > 0 ? mergedBudgetCols.budget_usd : null;
 
   const intel = analyzeLead({
     budget: budgetForIntel,
@@ -155,15 +168,13 @@ export async function insertLeadWithIntelligence(
   const shortDescRaw = (options?.shortDescription?.trim() || generateShortLeadDescription(input.project_description ?? "")).trim();
   const short_description = shortDescRaw.length > 0 ? shortDescRaw : null;
 
-  const resolvedBudget = budgetForIntel;
-
   const row = {
     user_id: userId,
     client_name: input.client_name.trim(),
     platform: input.platform?.trim() || null,
     project_description: input.project_description?.trim() || null,
     short_description,
-    budget: resolvedBudget,
+    budget: legacyBudgetUsdColumn,
     budget_min: mergedBudgetCols.budget_min,
     budget_max: mergedBudgetCols.budget_max,
     budget_avg: mergedBudgetCols.budget_avg,

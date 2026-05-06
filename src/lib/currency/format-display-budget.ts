@@ -10,7 +10,7 @@ function resolvePref(preferredCurrency: string | null | undefined): SupportedDis
   return isSupportedDisplayCurrency(raw) ? raw : "USD";
 }
 
-/** Compact fixed budgets: 1.2k, 2M style in display currency (Binance-like). */
+/** Compact fixed budgets: 1.2k, 2M style in display currency (Binance-like). INR uses full grouping under 10L. */
 export function formatFixedBudgetCompact(amount: number, currency: SupportedDisplayCurrency): string {
   const n = Math.round(amount * 100) / 100;
   const abs = Math.abs(n);
@@ -18,6 +18,15 @@ export function formatFixedBudgetCompact(amount: number, currency: SupportedDisp
     if (abs >= 1_000_000) return `C$${(n / 1_000_000).toFixed(1)}M`;
     if (abs >= 1000) return `C$${(n / 1000).toFixed(abs >= 10_000 ? 0 : 1)}k`;
     return `C$${n.toLocaleString("en-US", { maximumFractionDigits: abs < 100 ? 2 : 0 })}`;
+  }
+  if (currency === "INR") {
+    if (abs >= 10_000_000) {
+      return `₹${(n / 10_000_000).toFixed(n >= 100_000_000 ? 0 : 1)}Cr`;
+    }
+    if (abs >= 1_000_000) {
+      return `₹${(n / 100_000).toFixed(abs >= 10_000_000 ? 0 : 1)}L`;
+    }
+    return formatCurrencyAmount(n, "INR");
   }
   if (abs >= 1_000_000) {
     const sym = currency === "USD" ? "$" : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "";
@@ -27,7 +36,6 @@ export function formatFixedBudgetCompact(amount: number, currency: SupportedDisp
     if (currency === "USD") return `$${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k`;
     if (currency === "EUR") return `€${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k`;
     if (currency === "GBP") return `£${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k`;
-    if (currency === "INR") return `₹${(n / 1000).toFixed(0)}k`;
   }
   return formatCurrencyAmount(n, currency);
 }

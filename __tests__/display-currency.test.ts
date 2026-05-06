@@ -15,6 +15,12 @@ describe("display-currency", () => {
     expect(s).toMatch(/\$1,?235/);
   });
 
+  it("formats INR with en-IN grouping", () => {
+    const s = formatCurrencyAmount(7000, "INR");
+    expect(s).toMatch(/7/);
+    expect(s).toMatch(/000/);
+  });
+
   it("mergeUsdToForeignRates overlays live rates on fallbacks", () => {
     const merged = mergeUsdToForeignRates({ EUR: 0.88 });
     expect(merged.EUR).toBe(0.88);

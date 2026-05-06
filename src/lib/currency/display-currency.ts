@@ -30,11 +30,11 @@ export function convertUsdToDisplayCurrency(
 export function formatCurrencyAmount(amount: number, currency: SupportedDisplayCurrency): string {
   const rounded = Math.round(amount * 100) / 100;
   try {
-    const locale = currency === "CAD" ? "en-CA" : "en-US";
+    const locale = currency === "CAD" ? "en-CA" : currency === "INR" ? "en-IN" : "en-US";
     const formatted = new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
-      maximumFractionDigits: rounded >= 1000 && currency !== "INR" ? 0 : 2,
+      maximumFractionDigits: currency === "INR" ? 0 : rounded >= 1000 ? 0 : 2,
     }).format(rounded);
     if (currency === "CAD") {
       return formatted.replace(/\bCA\$\b/g, "C$").replace(/\bCAD\s/g, "C$ ");

@@ -1,3 +1,5 @@
+import { extractImportBudgetFields } from "@/lib/currency/import-budget-fields";
+
 export type BudgetType = "fixed" | "hourly" | "unknown";
 
 export type LeadBudgetDisplay = {
@@ -18,9 +20,14 @@ function fmtPlain(n: number): string {
   return Math.round(n).toLocaleString("en-US");
 }
 
-/** USD-style prefix; non-USD keeps ISO code + space. */
+function inrPlain(n: number): string {
+  return Math.round(n).toLocaleString("en-IN");
+}
+
+/** USD-style prefix; INR uses ₹ + en-IN grouping. */
 function moneyToken(n: number, cur: string): string {
   if (!cur || cur === "USD") return `$${fmtPlain(n)}`;
+  if (cur === "INR") return `₹${inrPlain(n)}`;
   return `${cur} ${fmtPlain(n)}`;
 }
 
@@ -28,44 +35,49 @@ function moneyToken(n: number, cur: string): string {
  * Reads `metadata.import` budget fields set by Freelancer normalize.
  */
 export function leadBudgetDisplayFromMetadata(metadata: Record<string, unknown> | null | undefined): LeadBudgetDisplay {
-  const meta = metadata && typeof metadata === "object" ? metadata : {};
+  const meta = (metadata && typeof metadata === "object" ? metadata : {}) as Record<string, unknown>;
   const imp = meta.import && typeof meta.import === "object" && !Array.isArray(meta.import) ? (meta.import as Record<string, unknown>) : {};
-  const min = typeof imp.budget_min === "number" && Number.isFinite(imp.budget_min) ? imp.budget_min : null;
-  const max = typeof imp.budget_max === "number" && Number.isFinite(imp.budget_max) ? imp.budget_max : null;
-  const cur = typeof imp.currency_code === "string" && imp.currency_code.trim() ? imp.currency_code.trim().toUpperCase() : "";
+  const { min, max, currency: curIso } = extractImportBudgetFields(meta);
+  const minN = min;
+  const maxN = max;
+  const cur = curIso ?? "";
 
   const btRaw = typeof imp.budget_type === "string" ? imp.budget_type.toLowerCase() : "";
   let kind: BudgetType = btRaw === "hourly" ? "hourly" : btRaw === "fixed" ? "fixed" : "unknown";
 
-  if (min == null && max == null) {
+  if (minN == null && maxN == null) {
     return { label: "", kind: "unknown", hide: true };
   }
 
-  if (kind === "unknown" && (min != null || max != null)) {
+  if (kind === "unknown" && (minN != null || maxN != null)) {
     kind = "fixed";
   }
 
-  if (min != null && max != null && min === max) {
-    const token = moneyToken(min, cur);
+  if (minN != null && maxN != null && minN === maxN) {
+    const token = moneyToken(minN, cur);
     if (kind === "hourly") return { label: `${token}/hr`, kind: "hourly", hide: false };
     return { label: token, kind: "fixed", hide: false };
   }
 
-  if (min != null && max != null && min !== max) {
+  if (minN != null && maxN != null && minN !== maxN) {
     const en = "\u2013";
     const label =
-      cur && cur !== "USD" ? `${cur} ${fmtPlain(min)}${en}${fmtPlain(max)}` : `$${fmtPlain(min)}${en}$${fmtPlain(max)}`;
+      cur === "INR"
+        ? `₹${inrPlain(minN)}${en}₹${inrPlain(maxN)}`
+        : cur && cur !== "USD"
+          ? `${cur} ${fmtPlain(minN)}${en}${fmtPlain(maxN)}`
+          : `$${fmtPlain(minN)}${en}$${fmtPlain(maxN)}`;
     if (kind === "hourly") return { label: `${label}/hr`, kind: "hourly", hide: false };
     return { label, kind: "fixed", hide: false };
   }
 
-  if (min != null) {
-    const token = moneyToken(min, cur);
+  if (minN != null) {
+    const token = moneyToken(minN, cur);
     if (kind === "hourly") return { label: `${token}/hr`, kind: "hourly", hide: false };
     return { label: token, kind, hide: false };
   }
-  if (max != null) {
-    const token = moneyToken(max, cur);
+  if (maxN != null) {
+    const token = moneyToken(maxN, cur);
     if (kind === "hourly") return { label: `${token}/hr`, kind: "hourly", hide: false };
     return { label: token, kind, hide: false };
   }

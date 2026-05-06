@@ -1,6 +1,7 @@
 import "server-only";
 
 import { averageBudgetAmount } from "@/lib/currency/budget-math";
+import { extractImportBudgetFields } from "@/lib/currency/import-budget-fields";
 import { convertAmountToUsd } from "@/lib/currency/exchange-rates";
 
 export type LeadBudgetColumns = {
@@ -23,18 +24,22 @@ export async function resolveLeadBudgetColumnsFromImportMetadata(
   };
   if (!metadataExtra || typeof metadataExtra !== "object") return empty;
 
-  const imp = metadataExtra.import;
-  if (!imp || typeof imp !== "object" || Array.isArray(imp)) return empty;
-
-  const r = imp as Record<string, unknown>;
-  const min = typeof r.budget_min === "number" && Number.isFinite(r.budget_min) ? r.budget_min : null;
-  const max = typeof r.budget_max === "number" && Number.isFinite(r.budget_max) ? r.budget_max : null;
-  const curRaw = typeof r.currency_code === "string" ? r.currency_code.trim().toUpperCase() : "";
-  const currency = curRaw.length === 3 ? curRaw : "USD";
+  const { min, max, currency } = extractImportBudgetFields(metadataExtra);
+  if (min == null && max == null) return empty;
 
   const budget_avg = averageBudgetAmount(min, max);
   if (budget_avg == null) {
-    return { ...empty, budget_min: min, budget_max: max, currency_original: curRaw || null };
+    return { ...empty, budget_min: min, budget_max: max, currency_original: currency };
+  }
+
+  if (!currency) {
+    return {
+      budget_min: min,
+      budget_max: max,
+      budget_avg,
+      currency_original: null,
+      budget_usd: null,
+    };
   }
 
   let budget_usd: number | null = null;
