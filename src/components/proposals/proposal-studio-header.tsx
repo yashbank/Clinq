@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Sparkles, History, BookOpen, Send, Save } from "lucide-react";
+import { FileText, History, BookOpen, Send, Save } from "lucide-react";
 import { MobileAppNav } from "@/components/dashboard/mobile-app-nav";
 import { Button } from "@/components/ui/button";
 import { CLINQ_PROPOSAL_COPY_FOR_SEND, CLINQ_PROPOSAL_SAVE_DRAFT } from "@/lib/proposal/studio-events";
@@ -23,17 +23,9 @@ export function ProposalStudioHeader({
             <FileText className="h-4 w-4 text-primary" />
           </div>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
-                AI Proposal Studio
-              </h1>
-              <span className="hidden items-center gap-1 rounded-full bg-muted/30 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:flex">
-                <Sparkles className="h-3 w-3 text-primary" />
-                Workspace
-              </span>
-            </div>
-            <p className="hidden text-xs text-muted-foreground sm:block sm:text-sm">
-              Draft from your RFP with profile-grounded generation and quality scoring.
+            <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">Proposal studio</h1>
+            <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground sm:text-xs sm:line-clamp-none">
+              Paste the RFP on the left, generate in the center, copy into the marketplace. Save draft stays on this device.
             </p>
           </div>
         </div>
@@ -64,13 +56,6 @@ export function ProposalStudioHeader({
 
           <div className="hidden h-5 w-px bg-muted-border sm:block" />
 
-          <div className="hidden items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 sm:flex">
-            <span className="h-2 w-2 rounded-full bg-clinq-success" />
-            <span className="text-[11px] text-muted-foreground">Ready</span>
-          </div>
-
-          <div className="hidden h-5 w-px bg-muted-border md:block" />
-
           <Button
             type="button"
             variant="ghost"
@@ -95,16 +80,6 @@ export function ProposalStudioHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/40 bg-background/50 px-4 py-2 text-xs sm:px-6 sm:text-sm">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Studio</span>
-          <span className="text-muted-foreground">/</span>
-          <span className="text-foreground">Current session</span>
-        </div>
-        <p className="max-w-md text-right text-[11px] leading-snug text-muted-foreground sm:text-xs">
-          Paste the RFP on the left, generate in the center, then copy into the marketplace. Save draft stores this device only.
-        </p>
-      </div>
     </header>
   );
 }

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { formatCredentialError } from "@/lib/errors/format-user-error";
 import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export default function ForgotPasswordPage() {
@@ -21,12 +22,12 @@ export default function ForgotPasswordPage() {
         <div className="mb-8 text-center">
           <ClinqLogo width={52} height={52} priority className="mx-auto mb-4 h-[52px] w-[52px]" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reset password</h1>
-          <p className="mt-2 text-sm text-muted-foreground">We will email you a secure link to choose a new password.</p>
+          <p className="mt-2 text-sm text-muted-foreground">We will email a secure link to set a new password.</p>
         </div>
 
         {sent ? (
           <div className="space-y-4 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-foreground">
-            <p>If an account exists for that email, you will receive a reset link shortly.</p>
+            <p>If an account exists for that address, a reset link is on the way.</p>
             <p className="text-muted-foreground">Check spam, then return to sign in.</p>
             <Button variant="outline" className="w-full border-border" asChild>
               <Link href="/login">Back to sign in</Link>
@@ -53,7 +54,7 @@ export default function ForgotPasswordPage() {
                   redirectTo: `${site}/auth/callback?next=/dashboard`,
                 });
                 if (resetErr) {
-                  setError(resetErr.message);
+                  setError(formatCredentialError("Password reset", resetErr.message));
                   return;
                 }
                 setSent(true);

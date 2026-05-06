@@ -16,7 +16,12 @@ function InsightColumn({
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
       <ul className="mt-3 space-y-2.5">
         {lines.length === 0 ? (
-          <li className="text-sm text-muted-foreground">{empty}</li>
+          <li className="text-sm leading-relaxed text-muted-foreground">
+            {empty}{" "}
+            <Link href="/leads" className="font-medium text-primary underline-offset-4 hover:underline">
+              Leads
+            </Link>
+          </li>
         ) : (
           lines.map((line, i) => (
             <li key={`${line.href}-${i}`}>
@@ -41,18 +46,18 @@ export function DashboardInsightsStrip({ insights }: { insights: DashboardInsigh
       <InsightColumn
         title="Top leads to apply"
         lines={insights.topApply}
-        empty="No saved leads with a strong score yet."
+        empty="No strong-score leads yet — save a few on Leads."
       />
-      <InsightColumn title="High score (80+)" lines={insights.highScore} empty="No high-score leads in recent activity." />
+      <InsightColumn title="High score (80+)" lines={insights.highScore} empty="Nothing in the 80+ band recently." />
       <InsightColumn
         title="Weak proposals"
         lines={insights.weakProposals}
-        empty="No recent drafts scored below threshold."
+        empty="No low-scoring drafts in the window — good."
       />
       <InsightColumn
         title="Suggestions"
         lines={insights.suggestions}
-        empty="You are caught up — check back after new leads or drafts."
+        empty="Caught up. New imports or drafts will show here."
       />
     </section>
   );

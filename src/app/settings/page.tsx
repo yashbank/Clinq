@@ -31,31 +31,37 @@ export default async function SettingsPage() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopNavbar title="Settings" subtitle="Workspace preferences" displayCurrency={preferred} />
         <main className="flex-1 overflow-y-auto p-3 pb-10 sm:p-6">
-          <div className="mx-auto max-w-lg space-y-6">
-            <p className="text-sm text-muted-foreground">
-              Auth and API keys stay in Supabase / Vercel. Use the links below for profile and integrations.
+          <div className="mx-auto max-w-lg space-y-8">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Account credentials and API keys are managed outside this screen (Supabase / hosting). Use Profile and
+              Integrations for workspace data.
             </p>
-            <div className="rounded-2xl border border-border bg-card/40 p-5">
-              <h2 className="text-sm font-semibold text-foreground">Currency</h2>
-              <div className="mt-4">
+            <div className="rounded-2xl border border-border/70 bg-card/35 p-5 sm:p-6">
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">Display currency</h2>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Lead budgets stay in USD; we convert for display using ECB reference rates (Frankfurter). Applies on Leads,
+                Pipeline, and Overview.
+              </p>
+              <div className="mt-5">
                 <CurrencyPreferences initial={preferred} />
               </div>
             </div>
-            <div className="rounded-2xl border border-border bg-card/40 p-5">
-              <ul className="space-y-3 text-sm">
+            <div className="rounded-2xl border border-border/70 bg-card/35 p-5 sm:p-6">
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">Workspace</h2>
+              <ul className="mt-4 space-y-4 text-sm">
                 <li>
                   <Link href="/profile" className="inline-flex items-center gap-2 font-medium text-primary hover:underline">
                     Freelancer profile
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
-                  <p className="mt-1 text-xs text-muted-foreground">Resume, skills, stack, portfolio — powers AI.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Resume, skills, stack — used for scoring and drafts.</p>
                 </li>
-                <li className="pt-2">
+                <li>
                   <Link href="/integrations" className="inline-flex items-center gap-2 font-medium text-primary hover:underline">
                     Integrations
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
-                  <p className="mt-1 text-xs text-muted-foreground">Connect Freelancer and import leads.</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Freelancer import and scraped review.</p>
                 </li>
               </ul>
             </div>

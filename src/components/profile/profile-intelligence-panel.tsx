@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Sparkles } from "lucide-react";
 
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import type { ProfileIntelligenceV1 } from "@/types/profile-intelligence";
 import {
   Collapsible,
@@ -33,15 +34,18 @@ export function ProfileIntelligencePanel({ intelligence }: { intelligence: Profi
       <div>
         <h2 className="text-sm font-semibold text-foreground">Profile intelligence</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Derived from your saved profile and resume. Use &quot;Refresh intelligence&quot; below after edits.
+          Derived from your saved profile and resume. Use Recompute below after meaningful edits.
         </p>
       </div>
 
       {!intelligence ? (
-        <div className="rounded-2xl border border-border/60 bg-background/30 px-5 py-8 text-sm text-muted-foreground">
-          No intelligence blob stored yet. Save your profile, then refresh—Clinq runs a deterministic pass over your
-          skills and resume text.
-        </div>
+        <PremiumEmpty
+          icon={Sparkles}
+          title="Intelligence not built yet"
+          description="Save your profile, then run Recompute — Clinq summarizes skills, niches, and tone from what you store (no external lookups)."
+          primary={{ label: "Resume and text", href: "#resume-section" }}
+          className="border-border/60 bg-background/25 py-10"
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-border/60 bg-background/30 p-4 sm:p-5">
@@ -59,7 +63,7 @@ export function ProfileIntelligencePanel({ intelligence }: { intelligence: Profi
 
           <Collapsible defaultOpen className="group/c0 sm:col-span-2">
             <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border/60 bg-background/30 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/20">
-              Positioning &amp; proposal tone
+              Positioning and proposal tone
               <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/c0:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0">
@@ -82,7 +86,7 @@ export function ProfileIntelligencePanel({ intelligence }: { intelligence: Profi
 
           <Collapsible className="group/c1 sm:col-span-2">
             <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border/60 bg-background/30 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/20">
-              Strengths &amp; signals
+              Strengths and signals
               <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/c1:rotate-180" />
             </CollapsibleTrigger>
             <CollapsibleContent>
@@ -123,7 +127,7 @@ export function ProfileIntelligencePanel({ intelligence }: { intelligence: Profi
             intelligence.idealClientNotes?.length) ? (
             <Collapsible className="group/c2 sm:col-span-2">
               <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border/60 bg-background/30 px-4 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/20">
-                Client fit &amp; gaps
+                Client fit and gaps
                 <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/c2:rotate-180" />
               </CollapsibleTrigger>
               <CollapsibleContent>

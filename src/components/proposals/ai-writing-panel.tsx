@@ -25,6 +25,7 @@ import { ProposalQualityPanel } from "@/components/proposals/proposal-quality-pa
 import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
 import type { ProposalEvaluationRecord } from "@/lib/ai/evaluators/proposal-quality";
 import { CLINQ_PROPOSAL_COPY_FOR_SEND, CLINQ_PROPOSAL_SAVE_DRAFT } from "@/lib/proposal/studio-events";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 
 type WritingSection = "greeting" | "hook" | "experience" | "approach" | "closing";
 
@@ -182,8 +183,12 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
       const data = (await res.json()) as { text?: string; error?: string; code?: string; missing?: string[] };
       if (!res.ok) {
         if (res.status === 403 && data.code === "PROFILE_INCOMPLETE") {
-          const hint = (data.missing && data.missing.length ? data.missing.join(" ") : null) ?? data.error;
-          toast.error("Profile needs more context for AI", { description: hint, duration: 9000 });
+          const raw = (data.missing && data.missing.length ? data.missing.join(" · ") : null) ?? data.error ?? "";
+          const hint = raw.length > 220 ? `${raw.slice(0, 220)}…` : raw;
+          toast.error("Complete your freelancer profile first", {
+            description: hint || "Open Profile and fill the highlighted fields, then try again.",
+            duration: 8500,
+          });
         }
         throw new Error(data.error ?? "Generation failed");
       }
@@ -196,7 +201,9 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
       toast.success(`${section.label} generated`);
     } catch (e) {
       setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, isGenerating: false } : s)));
-      toast.error(e instanceof Error ? e.message : "Could not generate section");
+      toast.error(
+        e instanceof Error ? formatActionFailure("Generating section", e.message) : "Could not generate this section.",
+      );
     }
   };
 
@@ -226,8 +233,12 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
       const data = (await res.json()) as { text?: string; error?: string; evaluation?: unknown; code?: string; missing?: string[] };
       if (!res.ok) {
         if (res.status === 403 && data.code === "PROFILE_INCOMPLETE") {
-          const hint = (data.missing && data.missing.length ? data.missing.join(" ") : null) ?? data.error;
-          toast.error("Profile needs more context for AI", { description: hint, duration: 9000 });
+          const raw = (data.missing && data.missing.length ? data.missing.join(" · ") : null) ?? data.error ?? "";
+          const hint = raw.length > 220 ? `${raw.slice(0, 220)}…` : raw;
+          toast.error("Complete your freelancer profile first", {
+            description: hint || "Open Profile and fill the highlighted fields, then try again.",
+            duration: 8500,
+          });
         }
         throw new Error(data.error ?? "Generation failed");
       }
@@ -242,7 +253,7 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
       setActiveSection("greeting");
       toast.success("Draft ready — review before sending");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not generate");
+      toast.error(e instanceof Error ? formatActionFailure("Generating proposal", e.message) : "Could not generate proposal.");
     } finally {
       setIsGeneratingAll(false);
     }

@@ -1,7 +1,10 @@
 import Link from "next/link";
 
+import { Sparkles } from "lucide-react";
+
 import type { DashboardPriorityLead } from "@/lib/dashboard-stats";
 import type { DashboardSourceBullet } from "@/lib/dashboard-source-signals";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import { cn } from "@/lib/utils";
 
 export function OpportunityCommandCenter({
@@ -39,7 +42,16 @@ export function OpportunityCommandCenter({
       </div>
 
       {leads.length === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">Add or import leads to populate this view.</p>
+        <div className="mt-4">
+          <PremiumEmpty
+            icon={Sparkles}
+            title="No ranked opportunities yet"
+            description="Once leads are in your workspace, this row highlights the best fits by score, budget, and recency."
+            primary={{ label: "Add or import leads", href: "/leads" }}
+            secondary={{ label: "Integrations", href: "/integrations" }}
+            className="border-border/60 bg-background/20 py-10"
+          />
+        </div>
       ) : (
         <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {leads.map((lead) => (

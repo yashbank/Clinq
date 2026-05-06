@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FreelancerProfileFields } from "@/types/profile";
@@ -34,10 +36,13 @@ export default async function OnboardingPage({
 
   if (error || !row) {
     return (
-      <div className="gradient-mesh flex min-h-[100dvh] flex-col items-center justify-center p-8 text-center">
-        <p className="max-w-md text-sm text-muted-foreground">
-          Could not load profile ({error?.message ?? "unknown"}).
+      <div className="gradient-mesh flex min-h-[100dvh] flex-col items-center justify-center gap-4 p-8 text-center">
+        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+          {formatWorkspaceLoadError("onboarding", error?.message ?? null)}
         </p>
+        <Link href="/login" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+          Back to sign in
+        </Link>
       </div>
     );
   }

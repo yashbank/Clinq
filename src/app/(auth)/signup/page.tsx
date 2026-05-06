@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { formatCredentialError } from "@/lib/errors/format-user-error";
 import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export default function SignupPage() {
@@ -22,7 +23,7 @@ export default function SignupPage() {
         <div className="relative mb-8 text-center">
           <ClinqLogo width={52} height={52} priority className="mx-auto mb-4 h-[52px] w-[52px]" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Create your Clinq account</h1>
-          <p className="mt-2 text-sm text-muted-foreground">AI operating system for serious freelancers</p>
+          <p className="mt-2 text-sm text-muted-foreground">Leads, proposals, and pipeline in one workspace.</p>
         </div>
 
         <form
@@ -38,7 +39,7 @@ export default function SignupPage() {
             setError(null);
             startTransition(async () => {
               if (!email || password.length < 8) {
-                setError("Valid email and password (8+ chars) are required.");
+                setError("Use a valid email and a password of at least 8 characters.");
                 return;
               }
               const supabase = createSupabaseBrowserClient();
@@ -52,7 +53,7 @@ export default function SignupPage() {
                 },
               });
               if (signErr) {
-                setError(signErr.message);
+                setError(formatCredentialError("Sign up", signErr.message));
                 return;
               }
               if (data.session) {
@@ -101,7 +102,7 @@ export default function SignupPage() {
           </Link>
         </p>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          If email confirmation is enabled in Supabase, check your inbox before signing in.
+          If your project requires email confirmation, check your inbox before signing in.
         </p>
       </div>
     </div>

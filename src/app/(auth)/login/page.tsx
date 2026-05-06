@@ -8,16 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
+import { formatCredentialError } from "@/lib/errors/format-user-error";
 import { ClinqLogo } from "@/components/brand/clinq-logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function authErrorMessage(code: string | null): string | null {
   if (!code) return null;
   if (code === "otp_expired") {
-    return "This link has expired or was already used. Sign in with your password, or request a new magic link from Supabase (Auth → email templates).";
+    return "This sign-in link expired or was already used. Use your password, or request a fresh link from your email provider.";
   }
   if (code === "auth") {
-    return "We could not complete sign-in. Try again, or use email and password.";
+    return "Sign-in could not be completed. Try email and password again.";
   }
   return null;
 }
@@ -36,7 +37,7 @@ function LoginForm() {
         <div className="relative mb-8 text-center">
           <ClinqLogo width={52} height={52} priority className="mx-auto mb-4 h-[52px] w-[52px]" />
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Sign in to your Clinq workspace</p>
+          <p className="mt-2 text-sm text-muted-foreground">Sign in to continue to your workspace.</p>
         </div>
 
         {urlError ? (
@@ -46,7 +47,7 @@ function LoginForm() {
         ) : null}
         {searchParams.get("confirmed") ? (
           <p className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
-            Check your email to confirm your account, then sign in.
+            Confirm your email from the inbox link, then sign in here.
           </p>
         ) : null}
 
@@ -65,7 +66,7 @@ function LoginForm() {
               const supabase = createSupabaseBrowserClient();
               const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
               if (signErr) {
-                setError(signErr.message);
+                setError(formatCredentialError("Sign in", signErr.message));
                 return;
               }
               router.push(next);
@@ -112,7 +113,7 @@ function LoginForm() {
         </p>
         <p className="mt-4 text-center text-sm">
           <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
-            ← Back to marketing site
+            ← Clinq home
           </Link>
         </p>
       </div>
@@ -124,8 +125,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-          Loading…
+        <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 bg-background gradient-mesh px-4">
+          <div className="h-10 w-10 animate-pulse rounded-2xl bg-muted/50" />
+          <p className="text-sm text-muted-foreground">Loading…</p>
         </div>
       }
     >

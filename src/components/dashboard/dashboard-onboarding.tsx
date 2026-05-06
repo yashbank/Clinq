@@ -74,7 +74,7 @@ export function DashboardOnboarding({
           href="/profile"
           className="inline-flex items-center justify-center rounded-lg border border-border bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/40"
         >
-          Profile &amp; intelligence
+          Profile and intelligence
         </Link>
       </div>
     </div>

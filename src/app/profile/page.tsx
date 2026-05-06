@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
@@ -6,6 +7,7 @@ import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { FreelancerProfileForm } from "@/components/profile/freelancer-profile-form";
 import { ProfileIntelligencePanel } from "@/components/profile/profile-intelligence-panel";
+import { formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FreelancerProfileFields } from "@/types/profile";
@@ -33,10 +35,16 @@ export default async function ProfilePage() {
 
   if (error || !row) {
     return (
-      <div className="gradient-mesh flex min-h-screen flex-col items-center justify-center p-8 text-center">
-        <p className="max-w-md text-sm text-muted-foreground">
-          Could not load profile ({error?.message ?? "unknown"}). Apply the Phase 2 migration adding profile columns, then refresh.
+      <div className="gradient-mesh flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
+        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+          {formatWorkspaceLoadError("your profile", error?.message ?? null)}
         </p>
+        <Link
+          href="/login"
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Back to sign in
+        </Link>
       </div>
     );
   }

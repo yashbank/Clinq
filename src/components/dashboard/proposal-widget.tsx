@@ -16,8 +16,8 @@ export function ProposalWidget({ proposals }: { proposals: DashboardRecentPropos
             <FileText className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">Proposals</h3>
-            <p className="text-xs text-muted-foreground">Saved from your workspace</p>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">Recent proposals</h2>
+            <p className="text-xs text-muted-foreground">Saved from Proposal studio</p>
           </div>
         </div>
         <Button size="sm" className="gap-2 bg-primary/15 text-primary hover:bg-primary/25" asChild>
@@ -35,6 +35,7 @@ export function ProposalWidget({ proposals }: { proposals: DashboardRecentPropos
             title="No proposals logged"
             description="When you generate and save from Proposal studio, drafts land here for quick access."
             primary={{ label: "Open studio", href: "/proposals" }}
+            secondary={{ label: "Leads", href: "/leads" }}
             className="border-dashed border-border/80 bg-background/30 py-10"
           />
         ) : (

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { ListTodo } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import type { DailyAction } from "@/lib/ai/daily-actions";
 import type { DashboardRecentLead, DashboardRecentProposal } from "@/lib/dashboard-stats";
 import { useDismissedSuggestionIds } from "@/hooks/use-dismissed-suggestions";
@@ -79,11 +81,15 @@ export function TodayFocusSection({
 
   if (!actions.length) {
     return (
-      <section className="rounded-xl border border-border bg-card/30 px-3 py-3 sm:px-4" aria-label="Today focus">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Action queue</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          No items yet — add leads or log proposals and Clinq will surface the next best moves here.
-        </p>
+      <section aria-label="Today focus">
+        <PremiumEmpty
+          icon={ListTodo}
+          title="Action queue is quiet"
+          description="Save leads, log proposals, or run an import — suggestions appear here from your real workspace data."
+          primary={{ label: "Leads", href: "/leads" }}
+          secondary={{ label: "Integrations", href: "/integrations" }}
+          className="border-border/70 bg-card/25 py-10 sm:py-12"
+        />
       </section>
     );
   }
@@ -95,7 +101,13 @@ export function TodayFocusSection({
         <span className="text-[10px] text-muted-foreground">Dismiss hides on this device only</span>
       </div>
       {visible.length === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">All items dismissed for now.</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Everything here is dismissed on this device.{" "}
+          <Link href="/leads" className="font-medium text-primary underline-offset-4 hover:underline">
+            Open Leads
+          </Link>{" "}
+          to keep working, or revisit tomorrow.
+        </p>
       ) : (
         <ul className="mt-3 space-y-2.5">
           {visible.map((a, i) => {

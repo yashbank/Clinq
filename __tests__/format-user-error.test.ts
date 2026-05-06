@@ -1,4 +1,4 @@
-import { formatActionFailure, formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
+import { formatActionFailure, formatCredentialError, formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 
 describe("formatWorkspaceLoadError", () => {
   it("returns calm default when message empty", () => {
@@ -13,5 +13,11 @@ describe("formatWorkspaceLoadError", () => {
 describe("formatActionFailure", () => {
   it("handles network-ish copy", () => {
     expect(formatActionFailure("save", "TypeError: Failed to fetch")).toMatch(/connection/i);
+  });
+});
+
+describe("formatCredentialError", () => {
+  it("softens invalid login copy", () => {
+    expect(formatCredentialError("Sign in", "Invalid login credentials")).toMatch(/check the email/i);
   });
 });

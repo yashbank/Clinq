@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 
 import { refreshProfileIntelligenceAction } from "@/actions/profile-intelligence";
 import { updateFreelancerProfileAction } from "@/actions/profile";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { ResumeUploadZone } from "@/components/profile/resume-upload-zone";
 import { parseResumeAdvanced } from "@/lib/profile/parse-resume-advanced";
 import { Button } from "@/components/ui/button";
@@ -70,7 +71,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
           markComplete,
         });
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Saving profile", res.error));
           return;
         }
         toast.success("Profile saved");
@@ -79,8 +80,8 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-10 pb-16">
-      <section className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-8 pb-16 sm:space-y-10">
+      <section className="space-y-4 rounded-2xl border border-border/50 bg-background/25 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-foreground">Identity</h2>
         <div className="space-y-2">
           <Label htmlFor="preferred_currency">Preferred currency</Label>
@@ -146,10 +147,10 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section id="resume-section" className="scroll-mt-24 space-y-4 rounded-2xl border border-border/50 bg-background/25 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-foreground">Resume</h2>
         <p className="text-xs text-muted-foreground">
-          PDF and DOCX are parsed on the server (text only). Stored for proposals on this workspace only.
+          PDF and DOCX are parsed on the server (text only). Kept in this workspace for proposals and scoring.
         </p>
         <ResumeUploadZone
           resumeText={resumeText}
@@ -193,7 +194,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-4 rounded-2xl border border-border/50 bg-background/25 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-foreground">Positioning</h2>
         <div className="space-y-2">
           <Label htmlFor="skills">Skills</Label>
@@ -209,7 +210,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-4 rounded-2xl border border-border/50 bg-background/25 p-4 sm:p-5">
         <h2 className="text-sm font-semibold text-foreground">Links</h2>
         <div className="space-y-2">
           <Label htmlFor="portfolio">Portfolio URLs</Label>
@@ -234,7 +235,7 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
         </div>
       </section>
 
-      <section className="flex items-start gap-3 rounded-xl border border-border/80 bg-background/40 p-4">
+      <section className="flex items-start gap-3 rounded-2xl border border-border/50 bg-background/20 p-4 sm:p-5">
         <input
           id="mark_complete"
           type="checkbox"
@@ -268,10 +269,10 @@ export function FreelancerProfileForm({ initial }: { initial: FreelancerProfileF
               void (async () => {
                 const res = await refreshProfileIntelligenceAction();
                 if (!res.ok) {
-                  toast.error(res.error);
+                  toast.error(formatActionFailure("Recomputing intelligence", res.error));
                   return;
                 }
-                toast.success("Intelligence recomputed from your profile");
+                toast.success("Intelligence updated from your profile");
               })();
             })
           }

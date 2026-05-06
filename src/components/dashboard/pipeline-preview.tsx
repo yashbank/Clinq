@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, LayoutGrid } from "lucide-react";
 import { formatUsdTotalForDisplay } from "@/lib/currency/format-pipeline-budget";
+import { PremiumEmpty } from "@/components/ui/premium-empty";
 import { cn } from "@/lib/utils";
 import type { DashboardStageRow } from "@/lib/dashboard-stats";
 
@@ -33,20 +34,14 @@ export function PipelinePreview({
 
   if (totalLeads === 0) {
     return (
-      <div className="flex flex-col justify-center overflow-hidden rounded-2xl border border-border bg-card/95 p-8 text-center shadow-sm">
-        <h3 className="text-sm font-semibold text-foreground">Pipeline</h3>
-        <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Stages reflect your saved leads. Add one on <span className="text-foreground">Leads</span>, then move cards on{" "}
-          <span className="text-foreground">Pipeline</span>.
-        </p>
-        <Link
-          href="/leads"
-          className="mt-6 inline-flex items-center justify-center gap-2 self-center rounded-lg border border-border bg-background/60 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/50 active:scale-[0.99]"
-        >
-          Add a lead
-          <ArrowUpRight className="h-4 w-4 opacity-70" />
-        </Link>
-      </div>
+      <PremiumEmpty
+        icon={LayoutGrid}
+        title="Pipeline preview is empty"
+        description="Stages mirror saved leads. Add work on Leads, then drag cards on Pipeline — totals update here."
+        primary={{ label: "Open Leads", href: "/leads" }}
+        secondary={{ label: "Pipeline", href: "/pipeline" }}
+        className="overflow-hidden rounded-2xl border border-border bg-card/95 py-12 shadow-sm"
+      />
     );
   }
 

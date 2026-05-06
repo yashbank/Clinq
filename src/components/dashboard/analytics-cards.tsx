@@ -46,7 +46,7 @@ function buildStats(snapshot: DashboardAnalyticsSnapshot) {
     {
       label: "Proposals logged",
       value: String(s.proposalsSent),
-      subValue: "Rows in your proposals table",
+      subValue: "From Proposal studio saves",
       icon: Sparkles,
       accentColor: "from-clinq-warning to-clinq-warning/50",
     },

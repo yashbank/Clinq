@@ -35,7 +35,8 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
         title="No leads on the board"
         description="Capture an opportunity on Leads so this snapshot shows your latest opportunities."
         primary={{ label: "Open Leads", href: "/leads" }}
-        className="overflow-hidden rounded-2xl border border-border bg-card/90 py-16 shadow-sm"
+        secondary={{ label: "Integrations", href: "/integrations" }}
+        className="overflow-hidden rounded-2xl border border-border bg-card/90 py-14 shadow-sm"
       />
     );
   }
@@ -44,8 +45,8 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
     <div className="overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm">
       <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Recent leads</h3>
-          <p className="text-sm text-muted-foreground">Project-focused snapshot · same data as Leads</p>
+          <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">Recent leads</h2>
+          <p className="text-xs text-muted-foreground sm:text-sm">Same rows as Leads — quick scan from Overview.</p>
         </div>
         <div className="relative w-full sm:w-56">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

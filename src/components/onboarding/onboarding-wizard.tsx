@@ -17,6 +17,7 @@ import {
   updateFreelancerProfileAction,
 } from "@/actions/profile";
 import { refreshProfileIntelligenceAction } from "@/actions/profile-intelligence";
+import { formatActionFailure } from "@/lib/errors/format-user-error";
 import type { FreelancerProfileFields } from "@/types/profile";
 import { isSupportedDisplayCurrency } from "@/types/currency";
 
@@ -141,7 +142,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
             github_url: github.trim() || null,
             experience_level: experience ? (experience as "junior" | "mid" | "senior" | "lead") : null,
           });
-          if (!res.ok) toast.error(res.error);
+          if (!res.ok) toast.error(formatActionFailure("Saving profile", res.error));
         })();
       });
     }, 700);
@@ -207,7 +208,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           markComplete: true,
         });
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Saving profile", res.error));
           return;
         }
         await refreshProfileIntelligenceAction().catch(() => null);
@@ -228,12 +229,12 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
       void (async () => {
         const saveRes = await persist();
         if (!saveRes.ok) {
-          toast.error(saveRes.error);
+          toast.error(formatActionFailure("Saving profile", saveRes.error));
           return;
         }
         const res = await markProfileOnboardingCompleteAction();
         if (!res.ok) {
-          toast.error(res.error);
+          toast.error(formatActionFailure("Completing onboarding", res.error));
           return;
         }
         try {
@@ -280,8 +281,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Welcome</p>
               <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">Set up your workspace</h1>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                A short guided pass so Clinq can score leads and tailor proposals to how you actually work. Everything
-                saves as you go.
+                A short guided pass so scoring and drafts match how you work. Progress saves as you move through the steps.
               </p>
             </>
           ) : null}
@@ -289,7 +289,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           {step === 1 ? (
             <>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Role</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">How should we refer to you?</h1>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">How should we refer to you?</h2>
               <div className="mt-6 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="ob_name">Display name</Label>
@@ -319,7 +319,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           {step === 2 ? (
             <>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Skills</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">What do you ship with?</h1>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">What do you ship with?</h2>
               <p className="mt-2 text-sm text-muted-foreground">Comma-separated is fine. Used for lead overlap hints.</p>
               <div className="mt-6 space-y-2">
                 <Label htmlFor="ob_skills">Skills</Label>
@@ -336,7 +336,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           {step === 3 ? (
             <>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Niches</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Where do you prefer to work?</h1>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Where do you prefer to work?</h2>
               <div className="mt-6 space-y-2">
                 <Label htmlFor="ob_niches">Industries / categories</Label>
                 <Input
@@ -352,7 +352,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           {step === 4 ? (
             <>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Experience</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Typical engagement level</h1>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Typical engagement level</h2>
               <div className="mt-6 space-y-2">
                 <Label htmlFor="ob_exp">Level</Label>
                 <select
@@ -374,8 +374,8 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           {step === 5 ? (
             <>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Resume</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Optional resume</h1>
-              <p className="mt-2 text-sm text-muted-foreground">PDFs are parsed on the server. You can paste or edit text after.</p>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Optional resume</h2>
+              <p className="mt-2 text-sm text-muted-foreground">PDF or DOCX is parsed on the server; you can paste or edit the text after.</p>
               <div className="mt-6 min-h-0 flex-1 space-y-4">
                 <ResumeUploadZone
                   resumeText={resumeText}
@@ -408,7 +408,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           {step === 6 ? (
             <>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Links</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Proof and presence</h1>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Proof and presence</h2>
               <div className="mt-6 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="ob_site">Website (optional)</Label>
@@ -442,7 +442,7 @@ export function OnboardingWizard({ initial }: { initial: FreelancerProfileFields
           {step === 7 ? (
             <>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Goals</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">What should Clinq optimize for?</h1>
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">What should Clinq optimize for?</h2>
               <p className="mt-2 text-sm text-muted-foreground">Short note—appended to your bio as “Focus areas” so proposals stay aligned.</p>
               <div className="mt-6 space-y-2">
                 <Label htmlFor="ob_goals">Priorities</Label>
