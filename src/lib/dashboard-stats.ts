@@ -3,6 +3,7 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytics-cards";
+import { buildDailyActions, type DailyAction } from "@/lib/ai/daily-actions";
 import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
 import { buildDashboardRecommendations, type DashboardRecommendation } from "@/lib/dashboard-recommendations";
 import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
@@ -72,6 +73,7 @@ export type DashboardPageData = {
   recommendations: DashboardRecommendation[];
   insights: DashboardInsights;
   topPriorityLeads: DashboardPriorityLead[];
+  dailyActions: DailyAction[];
 };
 
 const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
@@ -161,6 +163,8 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     return null;
   }
 
+  const MS_DAY = 86_400_000;
+
   const [
     { data: profile },
     { data: leadsAgg },
@@ -169,6 +173,7 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     { data: recentProposalRows },
     { data: projects },
     { data: proposalLeadRows },
+    { data: activityRows },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -191,6 +196,13 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
       .limit(6),
     supabase.from("projects").select("earnings, status"),
     supabase.from("proposals").select("lead_id").not("lead_id", "is", null),
+    supabase
+      .from("activities")
+      .select("lead_id, created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", new Date(Date.now() - 10 * MS_DAY).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
 
   const agg = leadsAgg ?? [];
@@ -241,6 +253,18 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   const proposalLeadIds = new Set(
     (proposalLeadRows ?? []).map((r) => r.lead_id).filter((id): id is string => typeof id === "string" && id.length > 0),
   );
+  const dailyActions = buildDailyActions({
+    leads: fullLeadRows,
+    proposals: (recentProposalRows ?? []) as Array<{
+      id: string;
+      lead_id: string | null;
+      title: string | null;
+      created_at: string;
+      evaluation?: unknown;
+    }>,
+    activities: (activityRows ?? []) as Array<{ lead_id: string | null; created_at: string }>,
+    leadIdsWithProposal: proposalLeadIds,
+  });
   const recommendations = buildDashboardRecommendations({
     recentLeads,
     recentProposals,
@@ -302,5 +326,6 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     recommendations,
     insights,
     topPriorityLeads,
+    dailyActions,
   };
 }

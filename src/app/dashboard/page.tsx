@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
 import { DashboardInsightsStrip } from "@/components/dashboard/dashboard-insights";
+import { TodayFocusSection } from "@/components/dashboard/today-focus-section";
 import { TopPriorityLeads } from "@/components/dashboard/top-priority-leads";
 import { DashboardLeadsSnapshot } from "@/components/dashboard/leads-table";
 import { PipelinePreview } from "@/components/dashboard/pipeline-preview";
@@ -38,6 +39,7 @@ export default async function DashboardPage() {
     recommendations,
     insights,
     topPriorityLeads,
+    dailyActions,
   } = data;
   if (needsProfileOnboarding) {
     redirect("/onboarding");
@@ -60,6 +62,8 @@ export default async function DashboardPage() {
               ) : null}
 
               <AnalyticsCards snapshot={snapshot} />
+
+              <TodayFocusSection actions={dailyActions} recentLeads={recentLeads} recentProposals={recentProposals} />
 
               <TopPriorityLeads leads={topPriorityLeads} />
 
