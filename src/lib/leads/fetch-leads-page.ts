@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
+import { loadFeedbackSignalsSummary, type FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
 import type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
 import type { LeadSourceFilter } from "@/lib/leads/source-filters";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
@@ -243,6 +244,17 @@ export async function fetchLeadsPage(
   let query = buildFilteredLeadsQuery(supabase, params);
 
   if (sort === "recommended") {
+    let feedbackSummary: FeedbackSignalsSummary | null = null;
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user) {
+      feedbackSummary = await loadFeedbackSignalsSummary(supabase, auth.user.id);
+    }
+    const prio = (row: LeadRow) =>
+      computeLeadPriorityScore(row, {
+        feedbackSummary: feedbackSummary ?? undefined,
+        openFollowUpCount: feedbackSummary?.openFollowUpsByLeadId.get(row.id) ?? 0,
+      });
+
     query = query.order("updated_at", { ascending: false });
     const { data: poolRows, error, count } = await query.range(0, RECOMMENDED_SORT_CAP - 1);
     if (error) {
@@ -253,10 +265,10 @@ export async function fetchLeadsPage(
     const cappedTotal = Math.min(fullCount, RECOMMENDED_SORT_CAP);
     const sorted = [...pool].sort((a, b) => {
       const pa =
-        computeLeadPriorityScore(a) * (q ? 0.82 : 1) +
+        prio(a) * (q ? 0.82 : 1) +
         (q ? searchRelevanceScore(a, q, profileSearchTokens) * 0.22 : searchRankBonus(a, q, profileSearchTokens) * 0.02);
       const pb =
-        computeLeadPriorityScore(b) * (q ? 0.82 : 1) +
+        prio(b) * (q ? 0.82 : 1) +
         (q ? searchRelevanceScore(b, q, profileSearchTokens) * 0.22 : searchRankBonus(b, q, profileSearchTokens) * 0.02);
       if (pb !== pa) return pb - pa;
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();

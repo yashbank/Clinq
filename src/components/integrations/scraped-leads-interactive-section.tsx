@@ -10,16 +10,21 @@ import { ScrapedDismissButton } from "@/components/integrations/scraped-dismiss-
 import { ScrapedPromoteButton } from "@/components/integrations/scraped-promote-button";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
 export type ScrapedInteractiveRow = {
   id: string;
   source: string;
   title: string;
   summary: string;
   skipReason: string;
+  skipChips: string[];
   scoreLabel: string;
   createdLabel: string;
   canPromote: boolean;
   canDismiss: boolean;
+  worthReview: boolean;
 };
 
 export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteractiveRow[] }) {
@@ -47,8 +52,16 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
   const canBulkPromote = selectedIds.some((id) => rows.find((r) => r.id === id)?.canPromote);
   const canBulkDismiss = selectedIds.some((id) => rows.find((r) => r.id === id)?.canDismiss);
 
+  const anyWorthReview = rows.some((r) => r.worthReview);
+
   return (
     <div className="space-y-3">
+      {anyWorthReview ? (
+        <p className="rounded-lg border border-primary/35 bg-primary/5 px-3 py-2 text-xs leading-snug text-muted-foreground">
+          <span className="font-medium text-foreground">Worth reviewing</span> — highlighted rows scored high on relevance but were not auto-promoted; consider manual{" "}
+          <span className="font-medium">Promote</span> if the fit is real.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-muted/10 px-3 py-2 text-xs">
         <label className="flex cursor-pointer items-center gap-2 text-muted-foreground">
           <Checkbox
@@ -135,7 +148,13 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
                 const sel = Boolean(selected[row.id]);
                 const canSelect = row.canPromote || row.canDismiss;
                 return (
-                  <tr key={row.id} className="align-top hover:bg-muted/15">
+                  <tr
+                    key={row.id}
+                    className={cn(
+                      "align-top hover:bg-muted/15",
+                      row.worthReview && "border-l-2 border-primary/55 bg-primary/[0.045]",
+                    )}
+                  >
                     <td className="px-2 py-3">
                       {canSelect ? (
                         <Checkbox checked={sel} onCheckedChange={(v) => toggle(row.id, v === true)} className="border-border" />
@@ -151,8 +170,21 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
                       <span className="line-clamp-3 text-xs leading-snug">{row.summary}</span>
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 tabular-nums text-muted-foreground">{row.scoreLabel}</td>
-                    <td className="max-w-[180px] px-3 py-3 text-muted-foreground">
-                      <span className="line-clamp-3 text-xs leading-snug">{row.skipReason}</span>
+                    <td className="max-w-[200px] px-3 py-3 text-muted-foreground">
+                      <div className="flex flex-wrap gap-1">
+                        {row.skipChips.map((c, i) => (
+                          <Badge
+                            key={`${row.id}-chip-${i}`}
+                            variant="secondary"
+                            className="max-w-[140px] truncate px-1.5 py-0 text-[10px] font-normal text-muted-foreground"
+                          >
+                            {c}
+                          </Badge>
+                        ))}
+                      </div>
+                      {row.skipReason !== "—" && row.skipReason !== "Pending" ? (
+                        <span className="mt-1 line-clamp-2 text-[10px] leading-snug opacity-90">{row.skipReason}</span>
+                      ) : null}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-right text-xs tabular-nums text-muted-foreground">{row.createdLabel}</td>
                     <td className="px-3 py-3 text-right">

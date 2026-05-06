@@ -6,6 +6,7 @@ import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { ScrapedLeadsInteractiveSection, type ScrapedInteractiveRow } from "@/components/integrations/scraped-leads-interactive-section";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { skipReasonChips } from "@/lib/leads/scraped-skip-chips";
 import { cn } from "@/lib/utils";
 
 type ScrapedRow = {
@@ -185,20 +186,24 @@ export default async function ScrapedLeadsReviewPage({
 
   const canDismiss = (row: ScrapedRow) => !isDismissedRow(row);
 
-  const interactiveRows: ScrapedInteractiveRow[] = rows.map((row) => ({
-    id: row.id,
-    source: platformLabel(row.source),
-    title: listingTitle(row),
-    summary: rawSnippet(row),
-    skipReason: row.skip_reason?.trim() ? row.skip_reason : row.processed ? "—" : "Pending",
-    scoreLabel:
-      row.relevance_score != null && Number.isFinite(Number(row.relevance_score))
-        ? Number(row.relevance_score).toFixed(0)
-        : "—",
-    createdLabel: new Date(row.created_at).toLocaleString(),
-    canPromote: canManualPromote(row),
-    canDismiss: canDismiss(row),
-  }));
+  const interactiveRows: ScrapedInteractiveRow[] = rows.map((row) => {
+    const rel = row.relevance_score != null && Number.isFinite(Number(row.relevance_score)) ? Number(row.relevance_score) : null;
+    const worthReview =
+      row.processed && !skipIndicatesPromoted(row.skip_reason) && !isDismissedRow(row) && rel != null && rel >= 62;
+    return {
+      id: row.id,
+      source: platformLabel(row.source),
+      title: listingTitle(row),
+      summary: rawSnippet(row),
+      skipReason: row.skip_reason?.trim() ? row.skip_reason : row.processed ? "—" : "Pending",
+      skipChips: skipReasonChips(row.skip_reason),
+      scoreLabel: rel != null ? rel.toFixed(0) : "—",
+      createdLabel: new Date(row.created_at).toLocaleString(),
+      canPromote: canManualPromote(row),
+      canDismiss: canDismiss(row),
+      worthReview,
+    };
+  });
 
   return (
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">

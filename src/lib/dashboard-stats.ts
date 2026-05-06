@@ -15,6 +15,8 @@ import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { buildDailyActions, type DailyAction } from "@/lib/ai/daily-actions";
 import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
 import { getDashboardSourceSignals, type DashboardSourceSignals } from "@/lib/dashboard-source-signals";
+import { loadFeedbackSignalsSummary, type FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
+import { computeLeadOpportunityState } from "@/lib/opportunity/opportunity-state";
 import { buildDashboardRecommendations, type DashboardRecommendation } from "@/lib/dashboard-recommendations";
 import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
@@ -79,6 +81,8 @@ export type DashboardPriorityLead = {
   priorityScore: number;
   reason: string;
   href: string;
+  opportunityLabel: string;
+  opportunityWhy: string;
 };
 
 export type DashboardPageData = {
@@ -96,6 +100,7 @@ export type DashboardPageData = {
   preferredCurrency: string;
   usdToForeignRates: Record<string, number> | null;
   sourceSignals: DashboardSourceSignals | null;
+  feedbackSummary: FeedbackSignalsSummary | null;
 };
 
 const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
@@ -172,14 +177,30 @@ function buildTopPriorityLeads(
   rows: LeadRow[],
   freelancer: { skills: string[]; techStack: string[]; niches: string[] },
   currency: { preferredCurrency: string; usdToForeignRates: Record<string, number> | null },
+  opts: {
+    feedbackSummary: FeedbackSignalsSummary;
+    proposalLeadIds: Set<string>;
+    sourceSignals: Pick<DashboardSourceSignals, "bestPromotionSource">;
+  },
 ): DashboardPriorityLead[] {
   const ranked = rows.map((row) => {
     const match = computeLeadFreelancerMatch(row, freelancer);
-    const priorityScore = computeLeadPriorityScore(row);
+    const openFu = opts.feedbackSummary.openFollowUpsByLeadId.get(row.id) ?? 0;
+    const priorityScore = computeLeadPriorityScore(row, {
+      skillMatchPct: match.skillMatchPct,
+      feedbackSummary: opts.feedbackSummary,
+      openFollowUpCount: openFu,
+    });
     const reason = generatePriorityReason(row, { skillMatchPct: match.skillMatchPct });
     const title = canonicalLeadProjectTitle(row);
     const href = `/leads?sort=recommended&q=${encodeURIComponent(title)}`;
     const budgetUi = computeLeadBudgetUiLine(row, currency.preferredCurrency, currency.usdToForeignRates);
+    const hasProposal = opts.proposalLeadIds.has(row.id);
+    const opp = computeLeadOpportunityState(row, {
+      hasProposal,
+      openFollowUpCount: openFu,
+      sourceSignals: { bestPromotionSource: opts.sourceSignals.bestPromotionSource },
+    });
     return {
       id: row.id,
       title,
@@ -189,6 +210,8 @@ function buildTopPriorityLeads(
       priorityScore,
       reason,
       href,
+      opportunityLabel: opp.label,
+      opportunityWhy: opp.why,
     };
   });
   return ranked.sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 5);
@@ -287,10 +310,6 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     };
   });
 
-  const topPriorityLeads = buildTopPriorityLeads(fullLeadRows, freelancerForPriority, {
-    preferredCurrency,
-    usdToForeignRates,
-  });
   const pc = proposalCount ?? 0;
   const snapshot = buildSnapshot(agg, pc, projects ?? [], { preferredCurrency, usdToForeignRates });
 
@@ -320,13 +339,24 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   const proposalLeadIds = new Set(
     (proposalLeadRows ?? []).map((r) => r.lead_id).filter((id): id is string => typeof id === "string" && id.length > 0),
   );
-  const sourceSignals = await getDashboardSourceSignals(supabase, user.id, {
+  const [feedbackSummary, sourceSignals] = await Promise.all([
+    loadFeedbackSignalsSummary(supabase, user.id),
+    getDashboardSourceSignals(supabase, user.id, {
+      proposalLeadIds,
+      leadHints: fullLeadRows.map((r) => ({
+        id: r.id,
+        stage: r.stage,
+        score: Number(r.score) || 0,
+      })),
+    }),
+  ]);
+  const topPriorityLeads = buildTopPriorityLeads(fullLeadRows, freelancerForPriority, {
+    preferredCurrency,
+    usdToForeignRates,
+  }, {
+    feedbackSummary,
     proposalLeadIds,
-    leadHints: fullLeadRows.map((r) => ({
-      id: r.id,
-      stage: r.stage,
-      score: Number(r.score) || 0,
-    })),
+    sourceSignals,
   });
   const dailyActions = buildDailyActions({
     leads: fullLeadRows,
@@ -407,5 +437,6 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     preferredCurrency,
     usdToForeignRates,
     sourceSignals,
+    feedbackSummary,
   };
 }

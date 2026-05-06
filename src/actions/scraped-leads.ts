@@ -149,7 +149,10 @@ export async function promoteScrapedLeadManuallyAction(
 
   const ins = await insertLeadWithIntelligence(supabase, user.id, normalized.input, {
     profile,
-    metadataExtra: normalized.metadataExtra,
+    metadataExtra: {
+      ...(normalized.metadataExtra as Record<string, unknown>),
+      clinq_promotion_source: "manual_scrape_review",
+    },
     revalidatePaths: ["/leads", "/pipeline", "/dashboard", "/integrations/scraped", "/analytics"],
   });
   if (!ins.ok) {

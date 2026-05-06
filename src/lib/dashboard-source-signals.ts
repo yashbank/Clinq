@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSourceQualityMetrics, type SourceQualityMetrics, type SourceQualityRow } from "@/lib/integrations/source-quality-metrics";
+import { bestPromotionSourceLabel } from "@/lib/opportunity/opportunity-state";
 
 function skipIndicatesPromoted(skipReason: string | null | undefined): boolean {
   const s = (skipReason ?? "").toLowerCase();
@@ -23,6 +24,8 @@ export type DashboardSourceBullet = {
 export type DashboardSourceSignals = {
   sinceIso: string;
   metrics7d: SourceQualityMetrics;
+  /** Best import source by promotion rate (7d metrics), for copy in opportunity hints. */
+  bestPromotionSource: string | null;
   highRelevanceSkippedCount: number;
   importedSavedNoProposalCount: number;
   bullets: DashboardSourceBullet[];
@@ -121,6 +124,7 @@ export async function getDashboardSourceSignals(
   return {
     sinceIso: since,
     metrics7d,
+    bestPromotionSource: bestPromotionSourceLabel(metrics7d.rows),
     highRelevanceSkippedCount,
     importedSavedNoProposalCount,
     bullets: bullets.slice(0, 4),

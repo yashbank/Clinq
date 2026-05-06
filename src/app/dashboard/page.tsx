@@ -4,9 +4,8 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
 import { DashboardInsightsStrip } from "@/components/dashboard/dashboard-insights";
-import { DashboardSourceIntelligence } from "@/components/dashboard/dashboard-source-intelligence";
+import { OpportunityCommandCenter } from "@/components/dashboard/opportunity-command-center";
 import { TodayFocusSection } from "@/components/dashboard/today-focus-section";
-import { TopPriorityLeads } from "@/components/dashboard/top-priority-leads";
 import { DashboardLeadsSnapshot } from "@/components/dashboard/leads-table";
 import { PipelinePreview } from "@/components/dashboard/pipeline-preview";
 import { ProposalWidget } from "@/components/dashboard/proposal-widget";
@@ -69,9 +68,15 @@ export default async function DashboardPage() {
 
               <TodayFocusSection actions={dailyActions} recentLeads={recentLeads} recentProposals={recentProposals} />
 
-              <DashboardSourceIntelligence signals={sourceSignals} />
-
-              <TopPriorityLeads leads={topPriorityLeads} />
+              <OpportunityCommandCenter
+                leads={topPriorityLeads}
+                sourceBullets={sourceSignals?.bullets ?? []}
+                worthReviewHref={
+                  sourceSignals && sourceSignals.highRelevanceSkippedCount > 0
+                    ? "/integrations/scraped?state=skipped&minScore=62"
+                    : "/integrations/scraped?state=skipped"
+                }
+              />
 
               <DashboardInsightsStrip insights={insights} />
 
@@ -86,7 +91,7 @@ export default async function DashboardPage() {
                 <ProposalWidget proposals={recentProposals} />
               </div>
 
-              <DashboardLeadsSnapshot leads={recentLeads.slice(0, 12)} />
+              <DashboardLeadsSnapshot leads={recentLeads.slice(0, 6)} />
             </div>
           </main>
         </div>

@@ -1,4 +1,6 @@
 import { parseStoredLeadIntelligence } from "@/lib/ai/parse-stored-lead-intelligence";
+import type { FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
+import { feedbackPriorityDelta } from "@/lib/opportunity/feedback-signals";
 import type { LeadRow } from "@/types/database";
 
 function clamp(n: number, lo = 0, hi = 100): number {
@@ -16,7 +18,7 @@ export function budgetQualityScore(budget: number | null): number {
 }
 
 /** Hours since the more recent of created_at / updated_at. */
-function hoursSinceLeadActivity(row: LeadRow): number {
+export function hoursSinceLeadActivity(row: LeadRow): number {
   const tUp = new Date(row.updated_at).getTime();
   const tCr = new Date(row.created_at).getTime();
   const t = Math.max(Number.isFinite(tUp) ? tUp : 0, Number.isFinite(tCr) ? tCr : 0);
@@ -49,10 +51,16 @@ export type LeadPriorityContext = {
   skillMatchPct?: number;
 };
 
+export type LeadPriorityOptions = LeadPriorityContext & {
+  feedbackSummary?: FeedbackSignalsSummary | null;
+  /** Extra bump when user created an open follow-up on this lead. */
+  openFollowUpCount?: number;
+};
+
 /**
  * Weighted 0–100 priority: lead score, recency, budget quality, competition ease, interest_status.
  */
-export function computeLeadPriorityScore(lead: LeadRow): number {
+export function computeLeadPriorityScore(lead: LeadRow, options?: LeadPriorityOptions | null): number {
   const scoreW = 0.4 * clamp(Number(lead.score) || 0, 0, 100);
   const recW = 0.2 * recencyScore(lead);
   const budW = 0.18 * budgetQualityScore(lead.budget);
@@ -67,6 +75,14 @@ export function computeLeadPriorityScore(lead: LeadRow): number {
     p -= 52;
   }
 
+  if (options?.feedbackSummary) {
+    p += feedbackPriorityDelta(lead, options.feedbackSummary);
+  }
+  const fu = options?.openFollowUpCount ?? 0;
+  if (fu > 0) {
+    p += Math.min(6, 2 + fu);
+  }
+
   return clamp(Math.round(p), 0, 100);
 }
 
@@ -76,6 +92,12 @@ export function computeLeadPriorityScore(lead: LeadRow): number {
 export function generatePriorityReason(lead: LeadRow, context?: LeadPriorityContext): string {
   if (lead.interest_status === "not_interested") {
     return "Marked not interested — deprioritized";
+  }
+
+  const meta =
+    lead.metadata && typeof lead.metadata === "object" && !Array.isArray(lead.metadata) ? (lead.metadata as Record<string, unknown>) : {};
+  if (meta.clinq_promotion_source === "manual_scrape_review") {
+    return "Manually promoted from scraped review — you already passed it through human triage.";
   }
 
   const intel = parseStoredLeadIntelligence(lead.intelligence);
