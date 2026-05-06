@@ -2,11 +2,15 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { LeadsPageView, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
+import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
+import type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
 import type { LeadSourceFilter } from "@/lib/leads/source-filters";
 import type { LeadRow, PipelineStage } from "@/types/database";
 
-export type { LeadsPageView, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
+export type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
+
+/** Max rows loaded for “Recommended” sort before in-memory priority ordering (server-only). */
+export const RECOMMENDED_SORT_CAP = 800;
 
 export type LeadsQueryParams = {
   page: number;
@@ -17,6 +21,7 @@ export type LeadsQueryParams = {
   scoreBand?: ScoreBandFilter;
   stage?: PipelineStage | "all";
   view?: LeadsPageView;
+  sort?: LeadsSortMode;
 };
 
 export type LeadTabCounts = {
@@ -112,6 +117,7 @@ export async function fetchLeadsPage(
   const offset = (page - 1) * pageSize;
   const view = params.view ?? "main";
   const q = (params.q ?? "").trim();
+  const sort = params.sort ?? "default";
 
   let query = supabase.from("leads").select("*", { count: "exact" });
 
@@ -146,6 +152,25 @@ export async function fetchLeadsPage(
     query = query.or(
       `client_name.ilike.${like},company.ilike.${like},project_description.ilike.${like},metadata->>project_title.ilike.${like}`,
     );
+  }
+
+  if (sort === "recommended") {
+    query = query.order("updated_at", { ascending: false });
+    const { data: poolRows, error, count } = await query.range(0, RECOMMENDED_SORT_CAP - 1);
+    if (error) {
+      throw new Error(error.message);
+    }
+    const pool = (poolRows ?? []) as LeadRow[];
+    const fullCount = count ?? pool.length;
+    const cappedTotal = Math.min(fullCount, RECOMMENDED_SORT_CAP);
+    const sorted = [...pool].sort((a, b) => {
+      const pa = computeLeadPriorityScore(a) + searchRankBonus(a, q) * 0.02;
+      const pb = computeLeadPriorityScore(b) + searchRankBonus(b, q) * 0.02;
+      if (pb !== pa) return pb - pa;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+    const rows = sorted.slice(offset, offset + pageSize);
+    return { rows, total: cappedTotal };
   }
 
   query = query.order("sort_key", { ascending: false }).order("updated_at", { ascending: false });

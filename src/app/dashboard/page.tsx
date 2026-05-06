@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { AnalyticsCards } from "@/components/dashboard/analytics-cards";
 import { DashboardInsightsStrip } from "@/components/dashboard/dashboard-insights";
+import { TopPriorityLeads } from "@/components/dashboard/top-priority-leads";
 import { DashboardLeadsSnapshot } from "@/components/dashboard/leads-table";
 import { PipelinePreview } from "@/components/dashboard/pipeline-preview";
 import { ProposalWidget } from "@/components/dashboard/proposal-widget";
@@ -27,8 +28,17 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const { snapshot, recentLeads, recentProposals, stages, displayName, needsProfileOnboarding, recommendations, insights } =
-    data;
+  const {
+    snapshot,
+    recentLeads,
+    recentProposals,
+    stages,
+    displayName,
+    needsProfileOnboarding,
+    recommendations,
+    insights,
+    topPriorityLeads,
+  } = data;
   if (needsProfileOnboarding) {
     redirect("/onboarding");
   }
@@ -50,6 +60,8 @@ export default async function DashboardPage() {
               ) : null}
 
               <AnalyticsCards snapshot={snapshot} />
+
+              <TopPriorityLeads leads={topPriorityLeads} />
 
               <DashboardInsightsStrip insights={insights} />
 

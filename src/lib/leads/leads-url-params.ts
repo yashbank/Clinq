@@ -4,11 +4,13 @@ import type { PipelineStage } from "@/types/database";
 export type LeadsPageView = "main" | "archived" | "high_potential";
 export type PlatformFilter = "all" | "freelancer" | "manual";
 export type ScoreBandFilter = "all" | "low" | "mid" | "high";
+export type LeadsSortMode = "default" | "recommended";
 
 const SOURCE_SET = new Set<LeadSourceFilter>(["all", "imported", "manual", "freelancer"]);
 const VIEW_SET = new Set<LeadsPageView>(["main", "archived", "high_potential"]);
 const PLATFORM_SET = new Set<PlatformFilter>(["all", "freelancer", "manual"]);
 const SCORE_SET = new Set<ScoreBandFilter>(["all", "low", "mid", "high"]);
+const SORT_SET = new Set<LeadsSortMode>(["default", "recommended"]);
 const STAGES: PipelineStage[] = ["saved", "applied", "replied", "interview", "active", "completed"];
 
 export type ParsedLeadsSearchParams = {
@@ -19,6 +21,7 @@ export type ParsedLeadsSearchParams = {
   platform: PlatformFilter;
   scoreBand: ScoreBandFilter;
   stage: PipelineStage | "all";
+  sort: LeadsSortMode;
 };
 
 function pick<T extends string>(raw: string | undefined, allowed: Set<T>, fallback: T): T {
@@ -40,7 +43,8 @@ export function parseLeadsSearchParams(sp: Record<string, string | string[] | un
   const scoreBand = pick(g("score"), SCORE_SET, "all");
   const stageRaw = (g("stage") ?? "all").trim();
   const stage = STAGES.includes(stageRaw as PipelineStage) ? (stageRaw as PipelineStage) : "all";
-  return { page, q, source, view, platform, scoreBand, stage };
+  const sort = pick(g("sort"), SORT_SET, "default");
+  return { page, q, source, view, platform, scoreBand, stage, sort };
 }
 
 export function serializeLeadsParams(params: ParsedLeadsSearchParams): string {
@@ -52,6 +56,7 @@ export function serializeLeadsParams(params: ParsedLeadsSearchParams): string {
   if (params.platform !== "all") p.set("platform", params.platform);
   if (params.scoreBand !== "all") p.set("score", params.scoreBand);
   if (params.stage !== "all") p.set("stage", params.stage);
+  if (params.sort !== "default") p.set("sort", params.sort);
   return p.toString();
 }
 
@@ -85,6 +90,7 @@ export function mergeLeadsListHref(currentQs: string, patch: Partial<ParsedLeads
   if (patch.platform !== undefined) setOrDel("platform", patch.platform, "all");
   if (patch.scoreBand !== undefined) setOrDel("score", patch.scoreBand, "all");
   if (patch.stage !== undefined) setOrDel("stage", patch.stage, "all");
+  if (patch.sort !== undefined) setOrDel("sort", patch.sort, "default");
 
   const s = p.toString();
   return s ? `/leads?${s}` : "/leads";

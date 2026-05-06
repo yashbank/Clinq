@@ -38,6 +38,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         scoreBand: parsed.scoreBand,
         stage: parsed.stage,
         view: parsed.view,
+        sort: parsed.sort,
       }),
       fetchLeadTabCounts(supabase),
       fetchLeadsListSummary(supabase),

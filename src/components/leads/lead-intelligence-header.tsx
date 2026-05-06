@@ -40,6 +40,11 @@ const STAGE_OPTIONS: { value: PipelineStage | "all"; label: string }[] = [
   { value: "completed", label: "Completed" },
 ];
 
+const SORT_OPTIONS: { value: ParsedLeadsSearchParams["sort"]; label: string }[] = [
+  { value: "default", label: "Sort: Default" },
+  { value: "recommended", label: "Recommended" },
+];
+
 export function LeadIntelligenceHeader({
   onAddLead,
   leadCount = 0,
@@ -104,6 +109,7 @@ export function LeadIntelligenceHeader({
             <input type="hidden" name="platform" value={parsedQuery.platform} />
             <input type="hidden" name="score" value={parsedQuery.scoreBand} />
             <input type="hidden" name="stage" value={parsedQuery.stage} />
+            <input type="hidden" name="sort" value={parsedQuery.sort} />
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -215,10 +221,27 @@ export function LeadIntelligenceHeader({
               </option>
             ))}
           </select>
+          <select
+            value={parsedQuery.sort}
+            onChange={(e) => onNavigate({ sort: e.target.value as ParsedLeadsSearchParams["sort"], page: 1 })}
+            className="h-9 min-w-[10rem] rounded-md border border-border bg-popover px-3 py-1.5 text-sm text-foreground shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {importSummaryLine ? (
           <p className="text-[11px] leading-snug text-muted-foreground">{importSummaryLine}</p>
+        ) : null}
+
+        {parsedQuery.sort === "recommended" ? (
+          <p className="text-[11px] text-muted-foreground">
+            Sorted by Clinq priority (up to 800 most recent rows loaded for ranking).
+          </p>
         ) : null}
 
         {totalPages > 1 ? (

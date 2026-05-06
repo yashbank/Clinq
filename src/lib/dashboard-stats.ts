@@ -3,10 +3,12 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { DashboardAnalyticsSnapshot } from "@/components/dashboard/analytics-cards";
+import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
 import { buildDashboardRecommendations, type DashboardRecommendation } from "@/lib/dashboard-recommendations";
+import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
 import { parseStoredProfileIntelligence } from "@/lib/profile/intelligence/parse";
 import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
-import type { PipelineStage } from "@/types/database";
+import type { LeadRow, PipelineStage } from "@/types/database";
 
 export type DashboardRecentLead = {
   id: string;
@@ -49,6 +51,16 @@ export type DashboardInsights = {
   suggestions: DashboardInsightLine[];
 };
 
+export type DashboardPriorityLead = {
+  id: string;
+  title: string;
+  budget: number | null;
+  score: number;
+  priorityScore: number;
+  reason: string;
+  href: string;
+};
+
 export type DashboardPageData = {
   displayName: string | null;
   /** True when profile wizard has not been completed or skipped. */
@@ -59,6 +71,7 @@ export type DashboardPageData = {
   stages: DashboardStageRow[];
   recommendations: DashboardRecommendation[];
   insights: DashboardInsights;
+  topPriorityLeads: DashboardPriorityLead[];
 };
 
 const STAGE_ORDER: { stage: PipelineStage; label: string }[] = [
@@ -122,6 +135,23 @@ function buildStages(
   });
 }
 
+function buildTopPriorityLeads(
+  rows: LeadRow[],
+  freelancer: { skills: string[]; techStack: string[]; niches: string[] },
+): DashboardPriorityLead[] {
+  const ranked = rows.map((row) => {
+    const match = computeLeadFreelancerMatch(row, freelancer);
+    const priorityScore = computeLeadPriorityScore(row);
+    const reason = generatePriorityReason(row, { skillMatchPct: match.skillMatchPct });
+    const meta = (row.metadata && typeof row.metadata === "object" ? row.metadata : {}) as Record<string, unknown>;
+    const projectTitle = typeof meta.project_title === "string" ? meta.project_title.trim() : "";
+    const title = projectTitle.length > 0 ? projectTitle : row.client_name;
+    const href = `/leads?sort=recommended&q=${encodeURIComponent(row.client_name)}`;
+    return { id: row.id, title, budget: row.budget, score: row.score, priorityScore, reason, href };
+  });
+  return ranked.sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 5);
+}
+
 export async function getDashboardPageData(): Promise<DashboardPageData | null> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -142,17 +172,17 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, profile_onboarding_completed_at, profile_intelligence")
+      .select("display_name, profile_onboarding_completed_at, profile_intelligence, skills, tech_stack, niches")
       .eq("id", user.id)
       .maybeSingle(),
     supabase.from("leads").select("score, budget, stage, repeat_hire").is("deleted_at", null).is("archived_at", null),
     supabase
       .from("leads")
-      .select("id, client_name, company, budget, score, stage, repeat_hire, metadata, updated_at")
+      .select("*")
       .is("deleted_at", null)
       .is("archived_at", null)
       .order("updated_at", { ascending: false })
-      .limit(40),
+      .limit(70),
     supabase.from("proposals").select("id", { count: "exact", head: true }),
     supabase
       .from("proposals")
@@ -164,7 +194,24 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
   ]);
 
   const agg = leadsAgg ?? [];
-  const recentLeads = (recentLeadRows ?? []) as DashboardRecentLead[];
+  const fullLeadRows = (recentLeadRows ?? []) as LeadRow[];
+  const recentLeads: DashboardRecentLead[] = fullLeadRows.map((r) => ({
+    id: r.id,
+    client_name: r.client_name,
+    company: r.company,
+    budget: r.budget,
+    score: r.score,
+    stage: r.stage,
+    repeat_hire: r.repeat_hire,
+    updated_at: r.updated_at,
+    metadata: (r.metadata && typeof r.metadata === "object" ? r.metadata : {}) as Record<string, unknown>,
+  }));
+  const freelancerForPriority = {
+    skills: Array.isArray(profile?.skills) ? (profile?.skills as string[]) : [],
+    techStack: Array.isArray(profile?.tech_stack) ? (profile?.tech_stack as string[]) : [],
+    niches: Array.isArray(profile?.niches) ? (profile?.niches as string[]) : [],
+  };
+  const topPriorityLeads = buildTopPriorityLeads(fullLeadRows, freelancerForPriority);
   const pc = proposalCount ?? 0;
   const snapshot = buildSnapshot(agg, pc, projects ?? []);
 
@@ -254,5 +301,6 @@ export async function getDashboardPageData(): Promise<DashboardPageData | null> 
     stages: buildStages(agg),
     recommendations,
     insights,
+    topPriorityLeads,
   };
 }
