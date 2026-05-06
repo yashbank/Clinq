@@ -9,7 +9,7 @@ import {
   canonicalPlatformBadge,
 } from "@/lib/leads/canonical-lead-display";
 import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
-import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
+import { resolveTrustedBudgetUsd } from "@/lib/currency/budget-evidence";
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { getLeadImportedAtIso, isFreelancerLeadRow, isImportedLeadRow } from "@/lib/leads/source-filters";
 import type { LeadRow } from "@/types/database";
@@ -59,7 +59,7 @@ export function mapLeadRowToUiLead(
     usdToForeignRates?: Record<string, number> | null;
   },
 ): Lead {
-  const budget = resolveEffectiveBudgetUsd(row, mergeUsdToForeignRates(extras?.usdToForeignRates ?? null)) ?? 0;
+  const budget = resolveTrustedBudgetUsd(row, mergeUsdToForeignRates(extras?.usdToForeignRates ?? null)) ?? 0;
   const score = row.score;
   const { bidUrgency, bestTimeToBid } = scoreToUrgency(score, row.competition_level);
   const high = isHighConversionScore(score);

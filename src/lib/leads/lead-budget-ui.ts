@@ -1,7 +1,6 @@
-import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
+import { BUDGET_UNAVAILABLE_LABEL, buildBudgetEvidence } from "@/lib/currency/budget-evidence";
 import { formatBudgetUsdForDisplay } from "@/lib/currency/format-display-budget";
 import { leadBudgetDisplayFromMetadata, leadBudgetFallback, type BudgetType } from "@/lib/leads/budget-display";
-import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
 import type { LeadRow } from "@/types/database";
 
@@ -27,11 +26,16 @@ export function computeLeadBudgetUiLine(
 
   const prefRaw = preferredCurrency ?? "USD";
   const pref: SupportedDisplayCurrency = isSupportedDisplayCurrency(prefRaw) ? prefRaw : "USD";
-  const mergedFx = mergeUsdToForeignRates(usdToForeignRates);
 
-  const usd = resolveEffectiveBudgetUsd(row, mergedFx);
+  const ev = buildBudgetEvidence(row, pref, usdToForeignRates);
 
-  if (usd !== null) {
+  if (ev.confidence === "low") {
+    return { label: BUDGET_UNAVAILABLE_LABEL, show: true, kind };
+  }
+
+  const usd = ev.canonicalBudgetUsd;
+
+  if (usd !== null && usd > 0) {
     const fd = formatBudgetUsdForDisplay(usd, pref, usdToForeignRates, kind === "hourly" ? "hourly" : "fixed");
     if (fd.show) {
       return { label: fd.label, show: true, kind };

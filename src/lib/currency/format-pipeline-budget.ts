@@ -3,7 +3,7 @@ import {
   formatCurrencyAmount,
   mergeUsdToForeignRates,
 } from "@/lib/currency/display-currency";
-import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
+import { resolveTrustedBudgetUsd } from "@/lib/currency/budget-evidence";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
 import type { LeadRow } from "@/types/database";
 
@@ -12,7 +12,7 @@ export function leadBudgetAsUsd(
   row: Pick<LeadRow, "budget" | "budget_usd" | "budget_avg" | "budget_min" | "budget_max" | "currency_original" | "metadata">,
   usdToForeignRates?: Record<string, number> | null,
 ): number {
-  return resolveEffectiveBudgetUsd(row, mergeUsdToForeignRates(usdToForeignRates)) ?? 0;
+  return resolveTrustedBudgetUsd(row, mergeUsdToForeignRates(usdToForeignRates)) ?? 0;
 }
 
 export function formatUsdTotalForDisplay(

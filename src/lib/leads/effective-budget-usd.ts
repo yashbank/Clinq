@@ -24,7 +24,7 @@ export function foreignAmountToUsd(amount: number, currency: string, rates: Reco
 }
 
 /** Detect rows where `budget_usd` was mistakenly copied from `budget_avg` in a non-USD currency. */
-function isLikelyMisstoredForeignAvgAsUsd(
+export function isLikelyMisstoredForeignAvgAsUsd(
   budgetUsd: number,
   budgetAvg: number | null,
   currencyOriginal: string | null,

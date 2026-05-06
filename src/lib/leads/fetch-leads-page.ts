@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
 import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
 import { getUsdToForeignRates } from "@/lib/currency/exchange-rates";
-import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
+import { resolveTrustedBudgetUsd } from "@/lib/currency/budget-evidence";
 import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
 import { loadFeedbackSignalsSummary, type FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
 import type { LeadsPageView, LeadsSortMode, PlatformFilter, ScoreBandFilter } from "@/lib/leads/leads-url-params";
@@ -213,7 +213,7 @@ export async function fetchLeadsListSummary(supabase: SupabaseClient): Promise<L
   const highScore80Plus = list.filter((r) => r.score >= 80).length;
   const repeatCount = list.filter((r) => r.repeat_hire).length;
   const mergedFx = mergeUsdToForeignRates(usdToForeignRates);
-  const totalBudget = list.reduce((s, r) => s + (resolveEffectiveBudgetUsd(r, mergedFx) ?? 0), 0);
+  const totalBudget = list.reduce((s, r) => s + (resolveTrustedBudgetUsd(r, mergedFx) ?? 0), 0);
   const avgScore = activeCount ? list.reduce((s, r) => s + r.score, 0) / activeCount : 0;
   return { activeCount, highScore80Plus, repeatCount, totalBudget, avgScore };
 }
@@ -295,7 +295,7 @@ export async function fetchLeadsPage(
         skillMatchPct = m.skillMatchPct;
         nicheMatchPct = m.nicheMatchPct;
       }
-      const effectiveUsd = Object.keys(mergedFx).length > 0 ? resolveEffectiveBudgetUsd(row, mergedFx) : resolveEffectiveBudgetUsd(row, null);
+      const effectiveUsd = resolveTrustedBudgetUsd(row, mergedFx);
       return computeLeadPriorityScore(row, {
         feedbackSummary: feedbackSummary ?? undefined,
         openFollowUpCount: feedbackSummary?.openFollowUpsByLeadId.get(row.id) ?? 0,

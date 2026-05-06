@@ -1,7 +1,7 @@
 import { computeLeadPriorityScore } from "@/lib/ai/lead-priority";
 import { mergeUsdToForeignRates } from "@/lib/currency/display-currency";
 import { canonicalLeadProjectTitle } from "@/lib/leads/canonical-lead-display";
-import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
+import { resolveTrustedBudgetUsd } from "@/lib/currency/budget-evidence";
 import { computeLeadFreelancerMatch } from "@/lib/leads/lead-freelancer-match";
 import type { FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
 import { parseProposalEvaluation } from "@/lib/proposal/parse-evaluation";
@@ -177,7 +177,7 @@ export function buildWorkflowSuggestions(input: WorkflowIntelligenceInput): Work
       matchSkill = m.skillMatchPct;
       matchNiche = m.nicheMatchPct;
     }
-    const effectiveUsd = resolveEffectiveBudgetUsd(lead, mergedFx);
+    const effectiveUsd = resolveTrustedBudgetUsd(lead, mergedFx);
     const openFu = feedbackSummary?.openFollowUpsByLeadId.get(lead.id) ?? 0;
     const priorityScore = computeLeadPriorityScore(lead, {
       feedbackSummary: feedbackSummary ?? undefined,

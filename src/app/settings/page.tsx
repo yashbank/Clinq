@@ -63,6 +63,18 @@ export default async function SettingsPage() {
                   </Link>
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Freelancer import and scraped review.</p>
                 </li>
+                <li>
+                  <Link
+                    href="/settings/budget-audit"
+                    className="inline-flex items-center gap-2 font-medium text-primary hover:underline"
+                  >
+                    Budget audit (imports)
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Internal evidence: source range, USD, display confidence — not shown on main routes.
+                  </p>
+                </li>
               </ul>
             </div>
           </div>

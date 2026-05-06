@@ -6,6 +6,8 @@ import {
   recencyScore,
 } from "@/lib/ai/lead-ranking-base";
 import { canonicalLeadProjectTitle } from "@/lib/leads/canonical-lead-display";
+import { isLikelyMisstoredForeignAvgAsUsd } from "@/lib/leads/effective-budget-usd";
+import { isImportedLeadRow } from "@/lib/leads/source-filters";
 import { feedbackPriorityDelta, type FeedbackSignalsSummary } from "@/lib/opportunity/feedback-signals";
 import type { LeadRow } from "@/types/database";
 
@@ -31,11 +33,21 @@ function metaRecord(lead: LeadRow): Record<string, unknown> {
 
 /** 0–100: structured budget fields score higher than legacy-only budget. */
 export function budgetClaritySignal(lead: LeadRow, effectiveUsd: number | null): number {
+  const avgCol =
+    typeof lead.budget_avg === "number" && lead.budget_avg > 0 && Number.isFinite(lead.budget_avg) ? lead.budget_avg : null;
+  const curCol =
+    typeof lead.currency_original === "string" && lead.currency_original.trim()
+      ? lead.currency_original.trim().toUpperCase()
+      : null;
+
   if (typeof lead.budget_usd === "number" && lead.budget_usd > 0 && Number.isFinite(lead.budget_usd)) {
+    if (isLikelyMisstoredForeignAvgAsUsd(lead.budget_usd, avgCol, curCol)) {
+      return effectiveUsd != null && effectiveUsd > 0 ? 72 : 32;
+    }
     return 96;
   }
-  const avg = typeof lead.budget_avg === "number" && lead.budget_avg > 0;
-  const cur = typeof lead.currency_original === "string" && lead.currency_original.trim().length > 0;
+  const avg = avgCol != null;
+  const cur = Boolean(curCol);
   if (avg && cur) return 86;
 
   const meta = metaRecord(lead);
@@ -45,6 +57,16 @@ export function budgetClaritySignal(lead: LeadRow, effectiveUsd: number | null):
   if (min != null && max != null && min > 0 && max > 0) return 72;
 
   if (effectiveUsd != null && effectiveUsd > 0) return 64;
+
+  if (isImportedLeadRow(lead)) {
+    const hasNums =
+      typeof lead.budget_min === "number" ||
+      typeof lead.budget_max === "number" ||
+      avgCol != null ||
+      (typeof lead.budget === "number" && lead.budget > 0);
+    if (hasNums) return 28;
+  }
+
   const leg = Number(lead.budget);
   if (leg > 0 && Number.isFinite(leg)) return 52;
   return 28;
@@ -107,7 +129,7 @@ export function computeLeadRankingV3Score(lead: LeadRow, options?: LeadRankingV3
     opts.effectiveBudgetUsd != null && Number.isFinite(opts.effectiveBudgetUsd) && opts.effectiveBudgetUsd > 0
       ? opts.effectiveBudgetUsd
       : null;
-  const budgetValue = budgetQualityScore(effectiveUsd ?? (Number(lead.budget) > 0 ? Number(lead.budget) : null));
+  const budgetValue = budgetQualityScore(effectiveUsd);
   const budgetClear = budgetClaritySignal(lead, effectiveUsd);
   const budgetBlend = clamp(0.55 * budgetValue + 0.45 * budgetClear, 0, 100);
 

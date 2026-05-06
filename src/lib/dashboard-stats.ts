@@ -13,7 +13,7 @@ import {
   canonicalPlatformBadge,
   canonicalProposalHref,
 } from "@/lib/leads/canonical-lead-display";
-import { resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
+import { resolveTrustedBudgetUsd } from "@/lib/currency/budget-evidence";
 import { computeLeadBudgetUiLine } from "@/lib/leads/lead-budget-ui";
 import { buildDailyActions, type DailyAction } from "@/lib/ai/daily-actions";
 import { computeLeadPriorityScore, generatePriorityReason } from "@/lib/ai/lead-priority";
@@ -198,7 +198,7 @@ function buildTopPriorityLeads(
   const ranked = rows.map((row) => {
     const match = computeLeadFreelancerMatch(row, freelancer);
     const openFu = opts.feedbackSummary.openFollowUpsByLeadId.get(row.id) ?? 0;
-    const effectiveUsd = resolveEffectiveBudgetUsd(row, mergedFx);
+    const effectiveUsd = resolveTrustedBudgetUsd(row, mergedFx);
     const hasProposal = opts.proposalLeadIds.has(row.id);
     const priorityScore = computeLeadPriorityScore(row, {
       skillMatchPct: match.skillMatchPct,
