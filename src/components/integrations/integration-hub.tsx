@@ -11,7 +11,10 @@ import {
   FreelancerIntegrationCard,
   type FreelancerImportJobSummary,
 } from "@/components/integrations/freelancer-integration-card";
+import { PublicIngestForms } from "@/components/integrations/public-ingest-forms";
+import { SourceIngestStatsPanel } from "@/components/integrations/source-ingest-stats-panel";
 import { IntegrationPlatformMark } from "@/components/integrations/integration-platform-mark";
+import type { SourceIngestStats } from "@/lib/integrations/source-ingest-stats";
 import { INTEGRATION_PROVIDERS } from "@/lib/integrations/registry";
 import { cn } from "@/lib/utils";
 import type { IntegrationAccountRow, IntegrationProviderId } from "@/types/integrations";
@@ -23,11 +26,13 @@ export function IntegrationHub({
   freelancerOAuthConfigured,
   freelancerImportReady,
   freelancerImportJobs,
+  sourceIngestStats,
 }: {
   initialAccounts: IntegrationAccountRow[];
   freelancerOAuthConfigured: boolean;
   freelancerImportReady: boolean;
   freelancerImportJobs: FreelancerImportJobSummary[];
+  sourceIngestStats: SourceIngestStats;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -101,6 +106,10 @@ export function IntegrationHub({
         oauthConfigured={freelancerOAuthConfigured}
         importRuntimeReady={freelancerImportReady}
       />
+
+      <SourceIngestStatsPanel stats={sourceIngestStats} />
+
+      <PublicIngestForms />
 
       <div className="grid gap-4 sm:grid-cols-2">
         {OTHER_PROVIDERS.map((p) => {

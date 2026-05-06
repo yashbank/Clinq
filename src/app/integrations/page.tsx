@@ -6,6 +6,7 @@ import { TopNavbar } from "@/components/dashboard/top-navbar";
 import { FloatingAIOrb } from "@/components/dashboard/floating-ai-orb";
 import { IntegrationHub } from "@/components/integrations/integration-hub";
 import { getFreelancerIntegrationEnv } from "@/lib/integrations/freelancer/env";
+import { getSourceIngestStats } from "@/lib/integrations/source-ingest-stats";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 import type { IntegrationAccountRow } from "@/types/integrations";
@@ -23,7 +24,7 @@ export default async function IntegrationsPage() {
   /** PAT + OAuth token storage and imports require the service role; OAuth app env is optional when using a personal token. */
   const freelancerImportReady = hasSupabaseServiceRoleKey();
 
-  const [{ data: rows, error }, { data: flJobs }, { data: profRow }] = await Promise.all([
+  const [{ data: rows, error }, { data: flJobs }, { data: profRow }, sourceIngestStats] = await Promise.all([
     supabase
       .from("integration_accounts")
       .select("id, user_id, provider, status, meta, sync_status, last_sync_at, import_stats, created_at, updated_at")
@@ -37,6 +38,7 @@ export default async function IntegrationsPage() {
       .order("scheduled_at", { ascending: false })
       .limit(15),
     supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
+    getSourceIngestStats(supabase, user.id),
   ]);
   const displayCurrency =
     typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
@@ -68,6 +70,7 @@ export default async function IntegrationsPage() {
               freelancerOAuthConfigured={freelancerOAuthConfigured}
               freelancerImportReady={freelancerImportReady}
               freelancerImportJobs={flJobs ?? []}
+              sourceIngestStats={sourceIngestStats}
             />
           </Suspense>
         </main>

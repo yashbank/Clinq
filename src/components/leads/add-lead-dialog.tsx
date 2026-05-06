@@ -30,6 +30,8 @@ const sourceLabels: Record<LeadSource, string> = {
   upwork: "Upwork",
   linkedin: "LinkedIn",
   fiverr: "Fiverr",
+  reddit: "Reddit",
+  github: "GitHub",
   other: "Other",
 };
 
