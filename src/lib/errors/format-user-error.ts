@@ -25,7 +25,23 @@ export function formatActionFailure(context: string, rawMessage?: string | null)
   const m = (rawMessage ?? "").trim();
   if (!m) return `${context} could not be completed. Try again.`;
   if (/network|fetch failed|Failed to fetch/i.test(m)) return `Connection issue during ${context}. Check your network and retry.`;
-  return `${context} did not complete: ${m.slice(0, 160)}${m.length > 160 ? "…" : ""}`;
+  if (/JWT|jwt|session|auth|401|403|not authenticated/i.test(m)) {
+    return `Your session may have expired. Sign in again, then retry ${context}.`;
+  }
+  if (/PGRST301|connection.*(refused|reset)|ECONNREFUSED|ECONNRESET|ETIMEDOUT|timeout/i.test(m)) {
+    return `We could not reach the database for ${context}. Wait a moment and try again.`;
+  }
+  if (/duplicate|unique constraint|23505/i.test(m)) {
+    return `${context} hit a duplicate record. Refresh the page — it may already be saved.`;
+  }
+  if (/relation\s+"[^"]+"\s+does not exist|42P01|42703|column .* does not exist/i.test(m)) {
+    return `${context} needs a newer database migration. Apply pending migrations and refresh.`;
+  }
+  if (/violates foreign key|23503/i.test(m)) {
+    return `${context} referenced data that is no longer available. Refresh and try again.`;
+  }
+  const short = m.replace(/\s+/g, " ").slice(0, 160);
+  return `${context} did not complete. ${short}${m.length > 160 ? "…" : ""}`;
 }
 
 /** Calm copy for sign-in / sign-up style errors; avoids dumping raw provider strings when possible. */

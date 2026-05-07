@@ -7,6 +7,7 @@ import { getGithubImportPatForUser } from "@/lib/integrations/github/github-impo
 import { publicIngestCapForSource } from "@/lib/integrations/source-batch-caps";
 import { isRedditOAuthAccessTokenConfigured } from "@/lib/integrations/reddit-import-env";
 import { getPublicIngestAdapter, type PublicIngestSourceId } from "@/lib/leads/sources/registry";
+import { loadLeadImportExternalIdsExistingFallback } from "@/lib/leads/ingest/lead-import-ext-ids-fallback";
 import { loadScrapedImportExternalIdsForSource } from "@/lib/leads/ingest/scraped-import-dedupe";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
@@ -92,13 +93,23 @@ export async function runPublicSourceIngestAction(
     const { data: existingArr, error: rpcErr } = await supabase.rpc("lead_import_ext_ids_existing", {
       p_ext_ids: extIds,
     });
-    if (rpcErr) {
-      return { ok: false, error: rpcErr.message };
-    }
-    if (Array.isArray(existingArr)) {
+    if (!rpcErr && Array.isArray(existingArr)) {
       for (const x of existingArr as string[]) {
         if (typeof x === "string" && x) existing.add(x);
       }
+    } else {
+      console.info(
+        JSON.stringify({
+          scope: "public_import.lead_ext_ids",
+          source,
+          rpcFailed: Boolean(rpcErr),
+          rpcMessage: rpcErr?.message?.slice(0, 200) ?? null,
+          extIdCount: extIds.length,
+          usedFallbackQueries: true,
+        }),
+      );
+      const fb = await loadLeadImportExternalIdsExistingFallback(supabase, user.id, extIds);
+      for (const id of fb) existing.add(id);
     }
   }
 
@@ -141,8 +152,13 @@ export async function runPublicSourceIngestAction(
       processed: false,
     });
     if (insErr) {
-      errors.push(insErr.message);
-      skipped_invalid_count += 1;
+      const dup = insErr.code === "23505" || /duplicate|unique constraint/i.test(insErr.message);
+      if (dup) {
+        duplicate_count += 1;
+      } else {
+        errors.push(insErr.message);
+        skipped_invalid_count += 1;
+      }
       continue;
     }
     scraped_staged_count += 1;
@@ -161,7 +177,21 @@ export async function runPublicSourceIngestAction(
     errors.push(...proc.errors.slice(0, 5));
   }
 
-  const failedForMetrics = skipped_invalid_count + errors.length;
+  const failedForMetrics = skipped_invalid_count + proc.skipped_persist_failed;
+  console.info(
+    JSON.stringify({
+      scope: "public_import.batch_complete",
+      source,
+      fetched: items.length,
+      staged: scraped_staged_count,
+      promoted: proc.promoted,
+      duplicates: duplicate_count,
+      skipped_invalid: skipped_invalid_count,
+      skipped_irrelevant: proc.skipped_irrelevant,
+      skipped_persist_failed: proc.skipped_persist_failed,
+      processing_warnings: proc.errors.length,
+    }),
+  );
   await recordLeadImportBatchMetrics(supabase, user.id, {
     provider: source,
     fetched: items.length,

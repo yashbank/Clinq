@@ -14,6 +14,14 @@ describe("formatActionFailure", () => {
   it("handles network-ish copy", () => {
     expect(formatActionFailure("save", "TypeError: Failed to fetch")).toMatch(/connection/i);
   });
+
+  it("softens duplicate constraint errors", () => {
+    expect(formatActionFailure("Import", "duplicate key value violates unique constraint")).toMatch(/duplicate/i);
+  });
+
+  it("maps PostgREST connectivity noise", () => {
+    expect(formatActionFailure("sync", "PGRST301 connection error")).toMatch(/database/i);
+  });
 });
 
 describe("formatCredentialError", () => {

@@ -220,6 +220,7 @@ export const AIWritingPanel = memo(function AIWritingPanel() {
     }
 
     setIsGeneratingAll(true);
+    setLastEvaluation(null);
     try {
       const res = await fetch("/api/ai/proposal", {
         method: "POST",

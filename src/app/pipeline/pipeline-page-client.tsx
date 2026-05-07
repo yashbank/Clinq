@@ -17,7 +17,7 @@ import { PipelineHeader } from "@/components/pipeline/pipeline-header";
 import { formatUsdTotalForDisplay, leadBudgetAsUsd } from "@/lib/currency/format-pipeline-budget";
 import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { leadKanbanBudgetLine, leadKanbanSummary, leadKanbanTitle } from "@/lib/leads/pipeline-display";
-import type { LeadRow } from "@/types/database";
+import type { LeadRow, PipelineStage } from "@/types/database";
 import { LayoutGrid } from "lucide-react";
 
 function toKanban(
@@ -76,15 +76,18 @@ export default function PipelinePageClient({
   );
 
   const onStageChange = (leadId: string, stage: KanbanLead["stage"]) => {
-    let snapshot: LeadRow[] = [];
+    let previousStage: PipelineStage | null = null;
     setRows((prev) => {
-      snapshot = prev;
+      const cur = prev.find((r) => r.id === leadId);
+      previousStage = cur?.stage ?? null;
       return prev.map((r) => (r.id === leadId ? { ...r, stage } : r));
     });
     startTransition(async () => {
       const res = await updateLeadStageAction(leadId, stage);
       if (!res.ok) {
-        setRows(snapshot);
+        if (previousStage != null) {
+          setRows((cur) => cur.map((r) => (r.id === leadId ? { ...r, stage: previousStage! } : r)));
+        }
         toast.error(formatActionFailure("Could not move this card", res.error));
         return;
       }

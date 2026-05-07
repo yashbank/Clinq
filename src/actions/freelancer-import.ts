@@ -9,6 +9,7 @@ import { getFreelancerTokensForUser } from "@/lib/integrations/freelancer/token-
 import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
 import { enqueueIntegrationSyncJob, updateIntegrationAccountSyncFields } from "@/lib/integrations/sync-queue";
 import { normalizeFreelancerProject } from "@/lib/leads/ingest/freelancer-normalize";
+import { loadLeadImportExternalIdsExistingFallback } from "@/lib/leads/ingest/lead-import-ext-ids-fallback";
 import { loadScrapedImportExternalIdsForSource } from "@/lib/leads/ingest/scraped-import-dedupe";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
@@ -186,29 +187,24 @@ export async function runFreelancerLeadImportAction(
       p_ext_ids: extIds,
     });
 
-    if (rpcErr) {
-      await supabase
-        .from("integration_sync_jobs")
-        .update({
-          status: "failed",
-          completed_at: new Date().toISOString(),
-          error: rpcErr.message,
-        })
-        .eq("id", jobId)
-        .eq("user_id", user.id);
-      await updateIntegrationAccountSyncFields(supabase, {
-        userId: user.id,
-        provider: "freelancer",
-        syncStatus: "idle",
-        importStatsPatch: { lastError: rpcErr.message, lastJobId: jobId },
-      });
-      revalidatePath("/integrations");
-      return { ok: false, error: rpcErr.message };
-    }
-    if (Array.isArray(existingArr)) {
+    if (!rpcErr && Array.isArray(existingArr)) {
       for (const x of existingArr as string[]) {
         if (typeof x === "string" && x) existing.add(x);
       }
+    } else {
+      logFreelancerImport(
+        "lead_ext_ids_rpc_fallback",
+        {
+          userId: user.id,
+          jobId,
+          rpcFailed: Boolean(rpcErr),
+          rpcMessage: rpcErr?.message?.slice(0, 200) ?? null,
+          extIdCount: extIds.length,
+        },
+        "warn",
+      );
+      const fb = await loadLeadImportExternalIdsExistingFallback(supabase, user.id, extIds);
+      for (const id of fb) existing.add(id);
     }
   }
 
@@ -251,8 +247,13 @@ export async function runFreelancerLeadImportAction(
       processed: false,
     });
     if (scrapeErr) {
-      failed_count += 1;
-      errors.push(scrapeErr.message);
+      const dup = scrapeErr.code === "23505" || /duplicate|unique constraint/i.test(scrapeErr.message);
+      if (dup) {
+        duplicate_count += 1;
+      } else {
+        failed_count += 1;
+        errors.push(scrapeErr.message);
+      }
       continue;
     }
     scraped_staged_count += 1;

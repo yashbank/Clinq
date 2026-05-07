@@ -7,27 +7,34 @@ import type { ProposalEvaluationRecord } from "@/lib/ai/evaluators/proposal-qual
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
+function clampScore(n: number): number {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, n));
+}
+
 function band(n: number): { label: string; className: string } {
-  if (n >= 78) return { label: "Strong", className: "text-clinq-success" };
-  if (n >= 58) return { label: "Solid", className: "text-primary" };
-  if (n >= 40) return { label: "Mixed", className: "text-clinq-warning" };
+  const x = clampScore(n);
+  if (x >= 78) return { label: "Strong", className: "text-clinq-success" };
+  if (x >= 58) return { label: "Solid", className: "text-primary" };
+  if (x >= 40) return { label: "Mixed", className: "text-clinq-warning" };
   return { label: "Thin", className: "text-muted-foreground" };
 }
 
 function ScoreRow({ label, value }: { label: string; value: number }) {
-  const b = band(value);
+  const safe = clampScore(value);
+  const b = band(safe);
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="text-muted-foreground">{label}</span>
         <span className={cn("font-medium tabular-nums", b.className)}>
-          {value} · {b.label}
+          {safe} · {b.label}
         </span>
       </div>
       <div className="h-1 overflow-hidden rounded-full bg-muted/40">
         <div
           className="h-full rounded-full bg-primary/70 transition-[width] duration-500 ease-out"
-          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+          style={{ width: `${safe}%` }}
         />
       </div>
     </div>
@@ -55,7 +62,7 @@ export function ProposalQualityPanel({ evaluation }: { evaluation: ProposalEvalu
             Model-scored against your RFP and profile context—not a guarantee of client response.
           </p>
           <p className="mt-2 text-sm font-semibold tabular-nums text-foreground">
-            Overall {evaluation.overall}
+            Overall {clampScore(evaluation.overall)}
             <span className={cn("ml-2 text-xs font-medium", overallBand.className)}>{overallBand.label}</span>
           </p>
           {evaluation.qualitySummary ? (

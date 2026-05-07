@@ -7,23 +7,16 @@ import { Github, Loader2, Radio } from "lucide-react";
 
 import { clearGithubImportPatAction, saveGithubImportPatAction } from "@/actions/github-import-pat";
 import { runPublicSourceIngestAction, type PublicIngestResult } from "@/actions/public-source-ingest";
+import { publicIngestToastDescription } from "@/lib/integrations/public-ingest-result-copy";
 import type { PublicIngestSourceId } from "@/lib/leads/sources/registry";
 import { publicIngestCapForSource } from "@/lib/integrations/source-batch-caps";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function toastResult(res: PublicIngestResult) {
-  const tail = [
-    `Fetched ${res.fetched_count}`,
-    `staged ${res.scraped_staged_count}`,
-    `promoted ${res.promoted_count}`,
-    `dup ${res.duplicate_count}`,
-    `invalid ${res.skipped_invalid_count}`,
-    `skipped ${res.skipped_irrelevant_count}`,
-    `persist failed ${res.skipped_persist_failed_count}`,
-  ].join(" · ");
   toast.message(`${res.source}: import finished`, {
-    description: `${tail}${res.errors.length ? ` · ${res.errors.slice(0, 2).join("; ")}` : ""}`,
+    description: publicIngestToastDescription(res),
+    duration: res.errors.length ? 10_000 : 6500,
   });
 }
 
@@ -76,7 +69,11 @@ function RedditIngestCard({ capSummary, disabled }: { capSummary: string; disabl
       return;
     }
     if (disabled) {
-      toast.error("Reddit import is not configured on the server");
+      toast.message("Reddit import is not enabled here", {
+        description:
+          "Add REDDIT_OAUTH_ACCESS_TOKEN on the server, then refresh Integrations. Until then, runs stay disabled so results stay predictable.",
+        duration: 9000,
+      });
       return;
     }
     start(() => {
