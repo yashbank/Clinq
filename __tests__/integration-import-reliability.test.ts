@@ -1,6 +1,10 @@
 import {
   clampFreelancerImportLimit,
+  computeFreelancerImportPagePlan,
+  FREELANCER_API_PAGE_SIZE,
   FREELANCER_IMPORT_MAX,
+  FREELANCER_IMPORT_MAX_PAGES,
+  FREELANCER_IMPORT_MAX_TOTAL,
   publicIngestCapForSource,
 } from "@/lib/integrations/source-batch-caps";
 import { buildGitHubOpportunitySearchQuery } from "@/lib/leads/sources/github-public";
@@ -17,8 +21,23 @@ describe("scraped_leads relevance migration hints", () => {
 describe("Freelancer batch caps", () => {
   it("clamps import limits", () => {
     expect(clampFreelancerImportLimit(undefined)).toBeGreaterThanOrEqual(1);
-    expect(clampFreelancerImportLimit(999)).toBe(FREELANCER_IMPORT_MAX);
+    expect(clampFreelancerImportLimit(999)).toBe(FREELANCER_IMPORT_MAX_TOTAL);
+    expect(FREELANCER_IMPORT_MAX).toBe(FREELANCER_IMPORT_MAX_TOTAL);
     expect(clampFreelancerImportLimit(0)).toBe(1);
+  });
+
+  it("plans paged API requests within caps", () => {
+    expect(computeFreelancerImportPagePlan(10)).toEqual([{ offset: 0, pageSize: 10 }]);
+    expect(computeFreelancerImportPagePlan(50)).toEqual([{ offset: 0, pageSize: 50 }]);
+    const p80 = computeFreelancerImportPagePlan(80);
+    expect(p80.length).toBe(2);
+    expect(p80[0]!.pageSize).toBe(FREELANCER_API_PAGE_SIZE);
+    expect(p80[1]!.offset).toBe(FREELANCER_API_PAGE_SIZE);
+    expect(p80[1]!.pageSize).toBe(30);
+    const huge = computeFreelancerImportPagePlan(10_000);
+    expect(huge.length).toBeLessThanOrEqual(FREELANCER_IMPORT_MAX_PAGES);
+    const sum = huge.reduce((a, x) => a + x.pageSize, 0);
+    expect(sum).toBeLessThanOrEqual(FREELANCER_IMPORT_MAX_TOTAL);
   });
 });
 
@@ -48,5 +67,6 @@ describe("GitHub opportunity query shaping", () => {
     expect(q).toContain("react dashboard");
     expect(q).toContain("is:issue");
     expect(q).toContain("freelance");
+    expect(q).toContain("outsource");
   });
 });

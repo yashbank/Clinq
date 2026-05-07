@@ -52,20 +52,22 @@ function num(v: unknown): number | null {
 
 function showImportResultToasts(res: FreelancerImportSuccess) {
   const errTail = res.errors.length ? ` ${res.errors.slice(0, 2).join("; ")}` : "";
+  const pages = res.pages_fetched ?? 1;
+  const pageBit = pages > 1 ? ` · API pages ${pages}` : "";
   if (res.fetched_count === 0) {
     toast.info("No listings matched this query from Freelancer", {
-      description: "Try different keywords or increase batch size.",
+      description: "Try different keywords or raise your total target (paged import, capped per run).",
     });
     return;
   }
   if (res.promoted_count === 0) {
     toast.message("Listings were fetched but filtered out as low relevance", {
-      description: `Fetched ${res.fetched_count}, staged ${res.scraped_staged_count}, promoted 0. Skipped (irrelevant): ${res.skipped_irrelevant_count}. Duplicates: ${res.duplicate_count}. Failed: ${res.failed_count}.${errTail}`.trim(),
+      description: `Fetched ${res.fetched_count}, staged ${res.scraped_staged_count}, promoted 0. Skipped (irrelevant): ${res.skipped_irrelevant_count}. Duplicates: ${res.duplicate_count}. Failed: ${res.failed_count}.${pageBit}${errTail}`.trim(),
     });
     return;
   }
   toast.success("Import finished", {
-    description: `Fetched ${res.fetched_count} · Promoted ${res.promoted_count} · Skipped irrelevant ${res.skipped_irrelevant_count} · Duplicates ${res.duplicate_count} · Failed ${res.failed_count}${errTail}`.trim(),
+    description: `Fetched ${res.fetched_count} · Staged ${res.scraped_staged_count} · Promoted ${res.promoted_count} · Skipped irrelevant ${res.skipped_irrelevant_count} · Duplicates ${res.duplicate_count} · Failed ${res.failed_count}${pageBit}${errTail}`.trim(),
   });
 }
 
@@ -344,7 +346,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
               />
             </div>
             <div className="w-full sm:w-28">
-              <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Batch size</label>
+              <label className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Total target</label>
               <input
                 type="number"
                 min={1}
@@ -367,9 +369,9 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
             </button>
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Each run fetches up to your batch size from <span className="font-medium text-foreground">projects/active</span>,
-            skips leads you already imported, then runs Clinq scoring on new rows. This is not background magic—expect network
-            latency and occasional API errors.
+            Each run requests up to your total target from <span className="font-medium text-foreground">projects/active</span>{" "}
+            (paged automatically, max {FREELANCER_IMPORT_MAX} per run), dedupes against staged rows and existing leads, then
+            scores new staging rows. Expect network latency and occasional API errors.
           </p>
 
           {jobs.length > 0 ? (

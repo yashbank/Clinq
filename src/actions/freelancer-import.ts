@@ -2,16 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
-import { clampFreelancerImportLimit } from "@/lib/integrations/source-batch-caps";
+import { clampFreelancerImportLimit, computeFreelancerImportPagePlan } from "@/lib/integrations/source-batch-caps";
 import { fetchFreelancerActiveProjects } from "@/lib/integrations/freelancer/api";
 import { logFreelancerImport } from "@/lib/logging/app-log";
 import { getFreelancerTokensForUser } from "@/lib/integrations/freelancer/token-store";
 import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
 import { enqueueIntegrationSyncJob, updateIntegrationAccountSyncFields } from "@/lib/integrations/sync-queue";
-import {
-  collectImportExternalIds,
-  normalizeFreelancerProject,
-} from "@/lib/leads/ingest/freelancer-normalize";
+import { normalizeFreelancerProject } from "@/lib/leads/ingest/freelancer-normalize";
+import { loadScrapedImportExternalIdsForSource } from "@/lib/leads/ingest/scraped-import-dedupe";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { assessProfileCompleteness, profileCompletenessGateMessage } from "@/lib/profile/profile-completeness";
@@ -41,6 +39,8 @@ export type FreelancerImportSuccess = {
   duplicate_count: number;
   failed_count: number;
   errors: string[];
+  /** Number of Freelancer API pages successfully retrieved for this run. */
+  pages_fetched: number;
 };
 
 export async function runFreelancerLeadImportAction(
@@ -107,17 +107,36 @@ export async function runFreelancerLeadImportAction(
     .eq("id", jobId)
     .eq("user_id", user.id);
 
-  const api = await fetchFreelancerActiveProjects({
-    accessToken: tokens.access_token,
-    query: query || undefined,
-    limit,
-    offset: 0,
-  });
+  const pagePlan = computeFreelancerImportPagePlan(limit);
+  const aggregated: unknown[] = [];
+  let pagesFetched = 0;
+  let lastApiError: string | null = null;
+  for (const { offset, pageSize } of pagePlan) {
+    const api = await fetchFreelancerActiveProjects({
+      accessToken: tokens.access_token,
+      query: query || undefined,
+      limit: pageSize,
+      offset,
+    });
+    if (!api.ok) {
+      lastApiError = api.error;
+      break;
+    }
+    pagesFetched += 1;
+    const batch = api.data.projects;
+    if (!batch.length) break;
+    for (const p of batch) {
+      aggregated.push(p);
+      if (aggregated.length >= limit) break;
+    }
+    if (batch.length < pageSize || aggregated.length >= limit) break;
+  }
 
-  if (!api.ok) {
+  if (aggregated.length === 0 && lastApiError) {
+    const apiError = lastApiError;
     logFreelancerImport(
       "api_fetch_failed",
-      { userId: user.id, jobId, status: api.status ?? null, error: api.error, query: query || null },
+      { userId: user.id, jobId, error: apiError, query: query || null, pagesFetched },
       "error",
     );
     await supabase
@@ -125,8 +144,8 @@ export async function runFreelancerLeadImportAction(
       .update({
         status: "failed",
         completed_at: new Date().toISOString(),
-        error: api.error,
-        result: { stage: "api_fetch", status: api.status ?? null, query: query || null },
+        error: apiError,
+        result: { stage: "api_fetch", query: query || null, pages_fetched: pagesFetched },
       })
       .eq("id", jobId)
       .eq("user_id", user.id);
@@ -134,28 +153,34 @@ export async function runFreelancerLeadImportAction(
       userId: user.id,
       provider: "freelancer",
       syncStatus: "idle",
-      importStatsPatch: { lastError: api.error, lastJobId: jobId },
+      importStatsPatch: { lastError: apiError, lastJobId: jobId },
     });
     await recordLeadImportBatchMetrics(supabase, user.id, {
       provider: "freelancer",
       imported: 0,
       duplicates: 0,
       failed: 0,
-      api_error: api.error,
+      api_error: apiError,
     });
     revalidatePath("/integrations");
-    return { ok: false, error: api.error };
+    return { ok: false, error: apiError };
   }
 
-  const fetched_count = api.data.projects.length;
+  const projectsSlice = aggregated.slice(0, limit);
+  const fetched_count = projectsSlice.length;
   const importedAt = new Date().toISOString();
 
-  const extIds = collectImportExternalIds(
-    api.data.projects
-      .map((p) => normalizeFreelancerProject(p, importedAt))
-      .filter((x): x is NonNullable<typeof x> => Boolean(x)),
-  );
+  const normalizedPreview = projectsSlice
+    .map((p) => normalizeFreelancerProject(p, importedAt))
+    .filter((x): x is NonNullable<typeof x> => Boolean(x));
+  const extIds = normalizedPreview
+    .map((n) => n.metadataExtra.import_external_id)
+    .filter((x): x is string => typeof x === "string" && x.length > 0);
+
   const existing = new Set<string>();
+  const scrapedExisting = await loadScrapedImportExternalIdsForSource(supabase, user.id, "freelancer");
+  for (const id of scrapedExisting) existing.add(id);
+
   if (extIds.length > 0) {
     const { data: existingArr, error: rpcErr } = await supabase.rpc("lead_import_ext_ids_existing", {
       p_ext_ids: extIds,
@@ -199,7 +224,7 @@ export async function runFreelancerLeadImportAction(
     skills: Array.isArray(prof?.skills) ? (prof!.skills as string[]) : [],
   };
 
-  for (const p of api.data.projects) {
+  for (const p of projectsSlice) {
     const n = normalizeFreelancerProject(p, importedAt);
     if (!n) {
       failed_count += 1;
@@ -249,6 +274,7 @@ export async function runFreelancerLeadImportAction(
     jobId,
     query: query || null,
     fetched_count,
+    pages_fetched: pagesFetched,
     scraped_staged_count,
     promoted_count,
     skipped_irrelevant_count,
@@ -278,6 +304,7 @@ export async function runFreelancerLeadImportAction(
         duplicates: duplicate_count,
         failed: failed_count,
         projectCount: fetched_count,
+        pages_fetched: pagesFetched,
         query: query || null,
         skip_reason_counts: proc.skip_reason_counts,
       },
@@ -318,6 +345,7 @@ export async function runFreelancerLeadImportAction(
     userId: user.id,
     jobId,
     fetched_count,
+    pages_fetched: pagesFetched,
     promoted_count,
     skipped_irrelevant_count,
     duplicate_count,
@@ -336,6 +364,7 @@ export async function runFreelancerLeadImportAction(
     duplicate_count,
     failed_count,
     errors,
+    pages_fetched: pagesFetched,
   };
 }
 

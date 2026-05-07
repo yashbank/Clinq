@@ -7,6 +7,7 @@ import { getGithubImportPatForUser } from "@/lib/integrations/github/github-impo
 import { publicIngestCapForSource } from "@/lib/integrations/source-batch-caps";
 import { isRedditOAuthAccessTokenConfigured } from "@/lib/integrations/reddit-import-env";
 import { getPublicIngestAdapter, type PublicIngestSourceId } from "@/lib/leads/sources/registry";
+import { loadScrapedImportExternalIdsForSource } from "@/lib/leads/ingest/scraped-import-dedupe";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { assessProfileCompleteness, profileCompletenessGateMessage } from "@/lib/profile/profile-completeness";
@@ -84,6 +85,9 @@ export async function runPublicSourceIngestAction(
     .filter((x): x is string => typeof x === "string" && x.length > 0);
 
   const existing = new Set<string>();
+  const scrapedExisting = await loadScrapedImportExternalIdsForSource(supabase, user.id, source);
+  for (const id of scrapedExisting) existing.add(id);
+
   if (extIds.length > 0) {
     const { data: existingArr, error: rpcErr } = await supabase.rpc("lead_import_ext_ids_existing", {
       p_ext_ids: extIds,

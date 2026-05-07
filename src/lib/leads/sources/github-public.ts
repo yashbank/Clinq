@@ -24,7 +24,8 @@ export type GitHubIssueItem = Record<string, unknown>;
 export function buildGitHubOpportunitySearchQuery(userQuery: string): string {
   const core = userQuery.trim();
   if (!core) return core;
-  const hiringSignals = "(hire OR hiring OR freelance OR freelancer OR contract OR contractor OR paid OR bounty OR gig OR \"looking for\")";
+  const hiringSignals =
+    "(hire OR hiring OR freelance OR freelancer OR contract OR contractor OR paid OR bounty OR gig OR outsource OR staffing OR consultant OR \"looking for\" OR \"task for\" OR rfp OR scope OR milestone)";
   return `${core} is:issue is:open archived:false ${hiringSignals} in:title,in:body`;
 }
 

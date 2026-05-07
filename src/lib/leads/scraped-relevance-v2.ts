@@ -10,7 +10,7 @@ export type ProfileSnapV2 = {
   tech_stack: string[];
 };
 
-const PROMOTE_THRESHOLD = 48;
+const PROMOTE_THRESHOLD = 47;
 
 function importTagsFromMetadata(metadataExtra: Record<string, unknown>): string[] {
   const imp = metadataExtra.import;
@@ -152,7 +152,7 @@ export function computeScrapedRelevanceV2(args: {
 
   const skipReasons: string[] = [];
   if (skillPts < 6) skipReasons.push("Low skill overlap vs profile");
-  if (title + kw < 10) skipReasons.push("Weak title/keyword match");
+  if (title + kw < 8) skipReasons.push("Weak title/keyword match");
   if (neg >= 12) skipReasons.push("Negative content signals");
 
   const promote = score >= PROMOTE_THRESHOLD && neg < 18;
