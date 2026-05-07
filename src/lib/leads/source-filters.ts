@@ -22,6 +22,15 @@ export function isFreelancerLeadRow(row: LeadRow): boolean {
   return plat.includes("freelancer");
 }
 
+/** Curated import from Freelancer (OAuth scrape pipeline), not manual entry. */
+export function isFreelancerImportedLeadRow(row: LeadRow): boolean {
+  if (!isImportedLeadRow(row)) return false;
+  const m = metaRecord(row);
+  const ext = typeof m.import_external_id === "string" ? m.import_external_id.toLowerCase() : "";
+  if (ext.startsWith("freelancer:")) return true;
+  return isFreelancerLeadRow(row);
+}
+
 export function getLeadImportedAtIso(row: LeadRow): string | null {
   const m = metaRecord(row);
   const imp = m.import;

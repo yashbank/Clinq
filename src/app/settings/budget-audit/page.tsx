@@ -32,8 +32,14 @@ function sourceLabel(row: LeadRow): string {
 function mismatchOrReason(
   ev: ReturnType<typeof verifyBudgetAuditChain>,
 ): string {
+  if (ev.confidence === "low" && ev.lowConfidenceReason) return ev.lowConfidenceReason;
   if (ev.midpointMatchesAverage === false) return "Range midpoint ≠ stored average";
-  return ev.lowConfidenceReason ?? ev.auditNote ?? "—";
+  return ev.auditNote ?? "—";
+}
+
+function whyHidden(ev: ReturnType<typeof verifyBudgetAuditChain>): string {
+  if (ev.confidence !== "low") return "—";
+  return ev.lowConfidenceReason ?? "Low confidence — hidden from main UI and excluded from totals.";
 }
 
 export default async function BudgetAuditPage() {
@@ -68,7 +74,13 @@ export default async function BudgetAuditPage() {
   }
 
   const rows = ((leadRows ?? []) as LeadRow[]).filter(isImportedLeadRow);
-  const audited = rows.map((r) => ({ row: r, ev: verifyBudgetAuditChain(r, preferred, usdToForeignRates) }));
+  const audited = rows
+    .map((r) => ({ row: r, ev: verifyBudgetAuditChain(r, preferred, usdToForeignRates) }))
+    .sort((a, b) => {
+      if (a.ev.confidence === "low" && b.ev.confidence !== "low") return -1;
+      if (a.ev.confidence !== "low" && b.ev.confidence === "low") return 1;
+      return 0;
+    });
 
   return (
     <div className="gradient-mesh flex h-screen overflow-hidden bg-background">
@@ -85,14 +97,14 @@ export default async function BudgetAuditPage() {
               Back to settings
             </Link>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Raw source fields, canonical USD, display conversion, and confidence. Low-confidence budgets are hidden
-              from the main app; totals and pipeline sums exclude them.
+              Low-confidence rows (especially Freelancer USD without API currency_id=1 in raw_snapshot) are sorted first.
+              Main app shows &quot;Budget unavailable&quot; and excludes them from sums.
             </p>
             {audited.length === 0 ? (
               <p className="text-sm text-muted-foreground">No imported leads in this workspace.</p>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-border/70 bg-card/40">
-                <table className="w-full min-w-[960px] border-collapse text-left text-xs">
+                <table className="w-full min-w-[1080px] border-collapse text-left text-xs">
                   <thead>
                     <tr className="border-b border-border/60 bg-muted/30 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                       <th className="px-2 py-2">Title</th>
@@ -106,14 +118,19 @@ export default async function BudgetAuditPage() {
                       <th className="px-2 py-2 text-right">Display</th>
                       <th className="px-2 py-2">Conf</th>
                       <th className="px-2 py-2">Mismatch / note</th>
+                      <th className="px-2 py-2">Why hidden</th>
                     </tr>
                   </thead>
                   <tbody>
                     {audited.map(({ row, ev }) => {
                       const title = canonicalLeadProjectTitle(row).slice(0, 80);
                       const url = canonicalLeadListingUrl(row);
+                      const suspicious = ev.confidence === "low";
                       return (
-                        <tr key={row.id} className="border-b border-border/40 align-top hover:bg-muted/15">
+                        <tr
+                          key={row.id}
+                          className={`border-b border-border/40 align-top hover:bg-muted/15 ${suspicious ? "bg-orange-500/10" : ""}`}
+                        >
                           <td className="max-w-[180px] px-2 py-2 font-medium text-foreground" title={title}>
                             {title}
                           </td>
@@ -150,6 +167,7 @@ export default async function BudgetAuditPage() {
                           </td>
                           <td className="whitespace-nowrap px-2 py-2 uppercase text-muted-foreground">{ev.confidence}</td>
                           <td className="max-w-[220px] px-2 py-2 text-muted-foreground">{mismatchOrReason(ev)}</td>
+                          <td className="max-w-[240px] px-2 py-2 text-xs text-muted-foreground">{whyHidden(ev)}</td>
                         </tr>
                       );
                     })}

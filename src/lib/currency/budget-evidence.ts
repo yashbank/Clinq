@@ -4,11 +4,12 @@ import {
   formatCurrencyAmount,
   mergeUsdToForeignRates,
 } from "@/lib/currency/display-currency";
+import { freelancerImportedBudgetTrustLockReason } from "@/lib/currency/freelancer-budget-trust-lock";
 import { extractImportBudgetFields } from "@/lib/currency/import-budget-fields";
 import { formatBudgetUsdForDisplay } from "@/lib/currency/format-display-budget";
 import { isLikelyMisstoredForeignAvgAsUsd, resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import { leadBudgetDisplayFromMetadata, leadBudgetFallback } from "@/lib/leads/budget-display";
-import { isFreelancerLeadRow, isImportedLeadRow } from "@/lib/leads/source-filters";
+import { isImportedLeadRow } from "@/lib/leads/source-filters";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
 import type { LeadRow } from "@/types/database";
 
@@ -98,46 +99,34 @@ export function buildBudgetEvidence(
     displayedPreferredLabel = fd.show ? fd.label : formatCurrencyAmount(displayedPreferredAmount, pref);
   }
 
-  const imported = isImportedLeadRow(row);
-
-  if (imported && isFreelancerLeadRow(row)) {
-    if (sourceCurrency === "USD" && sourceAverageInCurrency != null && sourceAverageInCurrency >= 500_000) {
-      return {
-        sourceMin,
-        sourceMax,
-        sourceCurrency,
-        sourceAverageInCurrency,
-        canonicalBudgetUsd: null,
-        displayedPreferredAmount: null,
-        displayedPreferredLabel: null,
-        confidence: "low",
-        lowConfidenceReason:
-          "Freelancer listing shows USD with a very large source average — likely wrong ISO (e.g. INR mis-labeled as USD).",
-        auditNote: null,
-      };
-    }
-    if (
-      pref === "INR" &&
-      sourceAverageInCurrency != null &&
-      sourceAverageInCurrency >= 50_000 &&
-      displayedPreferredAmount != null &&
-      displayedPreferredAmount > sourceAverageInCurrency * 4
-    ) {
-      return {
-        sourceMin,
-        sourceMax,
-        sourceCurrency,
-        sourceAverageInCurrency,
-        canonicalBudgetUsd: null,
-        displayedPreferredAmount: null,
-        displayedPreferredLabel: null,
-        confidence: "low",
-        lowConfidenceReason:
-          "Display amount is far above the source average in an INR workspace — likely a currency / conversion mix-up.",
-        auditNote: null,
-      };
-    }
+  const trustLockReason = freelancerImportedBudgetTrustLockReason(row, meta, {
+    sourceCurrency,
+    columnCurrencyOriginal: colCur,
+    sourceAverageInCurrency,
+    sourceMin,
+    sourceMax,
+    colAvg,
+    canonicalBudgetUsd,
+    displayedPreferredAmount,
+    preferredCurrency: pref,
+    mergedFx,
+  });
+  if (trustLockReason) {
+    return {
+      sourceMin,
+      sourceMax,
+      sourceCurrency,
+      sourceAverageInCurrency,
+      canonicalBudgetUsd: null,
+      displayedPreferredAmount: null,
+      displayedPreferredLabel: null,
+      confidence: "low",
+      lowConfidenceReason: trustLockReason,
+      auditNote: null,
+    };
   }
+
+  const imported = isImportedLeadRow(row);
 
   let confidence: BudgetConfidence = "high";
   let lowConfidenceReason: string | null = null;
@@ -269,6 +258,33 @@ export function buildBudgetEvidence(
     confidence = confidence === "medium" ? "medium" : "high";
   } else if (sourceCurrency && (sourceMin != null || sourceMax != null || colAvg != null)) {
     confidence = "medium";
+  }
+
+  const trustLockFinal = freelancerImportedBudgetTrustLockReason(row, meta, {
+    sourceCurrency,
+    columnCurrencyOriginal: colCur,
+    sourceAverageInCurrency,
+    sourceMin,
+    sourceMax,
+    colAvg,
+    canonicalBudgetUsd,
+    displayedPreferredAmount,
+    preferredCurrency: pref,
+    mergedFx,
+  });
+  if (trustLockFinal) {
+    return {
+      sourceMin,
+      sourceMax,
+      sourceCurrency,
+      sourceAverageInCurrency,
+      canonicalBudgetUsd: null,
+      displayedPreferredAmount: null,
+      displayedPreferredLabel: null,
+      confidence: "low",
+      lowConfidenceReason: trustLockFinal,
+      auditNote: null,
+    };
   }
 
   return {
