@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -47,19 +47,24 @@ export default function PipelinePageClient({
   usdToForeignRates: Record<string, number> | null;
 }) {
   const router = useRouter();
+  const [rows, setRows] = useState(initialRows);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(true);
   const [showTimeline, setShowTimeline] = useState(false);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    setRows(initialRows);
+  }, [initialRows]);
 
   const currency = useMemo(
     () => ({ preferredCurrency, usdToForeignRates }),
     [preferredCurrency, usdToForeignRates],
   );
-  const kanbanLeads = useMemo(() => initialRows.map((r) => toKanban(r, currency)), [initialRows, currency]);
+  const kanbanLeads = useMemo(() => rows.map((r) => toKanban(r, currency)), [rows, currency]);
   const totalBudgetUsd = useMemo(
-    () => initialRows.reduce((sum, r) => sum + leadBudgetAsUsd(r, usdToForeignRates), 0),
-    [initialRows, usdToForeignRates],
+    () => rows.reduce((sum, r) => sum + leadBudgetAsUsd(r, usdToForeignRates), 0),
+    [rows, usdToForeignRates],
   );
   const totalBudgetLabel = useMemo(
     () => formatUsdTotalForDisplay(totalBudgetUsd, preferredCurrency, usdToForeignRates),
@@ -71,10 +76,16 @@ export default function PipelinePageClient({
   );
 
   const onStageChange = (leadId: string, stage: KanbanLead["stage"]) => {
+    let snapshot: LeadRow[] = [];
+    setRows((prev) => {
+      snapshot = prev;
+      return prev.map((r) => (r.id === leadId ? { ...r, stage } : r));
+    });
     startTransition(async () => {
       const res = await updateLeadStageAction(leadId, stage);
       if (!res.ok) {
-        toast.error(formatActionFailure("Moving lead on the board", res.error));
+        setRows(snapshot);
+        toast.error(formatActionFailure("Could not move this card", res.error));
         return;
       }
       router.refresh();
@@ -92,16 +103,13 @@ export default function PipelinePageClient({
             onToggleTimeline={() => setShowTimeline(!showTimeline)}
             showAIPanel={showAIPanel}
             showTimeline={showTimeline}
-            leadCount={initialRows.length}
+            leadCount={rows.length}
             totalBudgetLabel={totalBudgetLabel}
           />
 
           <div className="flex flex-1 overflow-hidden">
-            <div
-              className="flex-1 overflow-hidden transition-opacity duration-200"
-              style={{ opacity: pending ? 0.65 : 1 }}
-            >
-              {initialRows.length === 0 ? (
+            <div className="flex-1 overflow-hidden">
+              {rows.length === 0 ? (
                 <div className="flex h-full min-h-[50vh] items-center justify-center overflow-y-auto p-4">
                   <PremiumEmpty
                     icon={LayoutGrid}
@@ -123,7 +131,7 @@ export default function PipelinePageClient({
             </div>
 
             {showTimeline ? (
-              <aside className="w-80 shrink-0 overflow-y-auto border-l border-border bg-background/55 backdrop-blur-sm">
+              <aside className="w-80 shrink-0 overflow-y-auto border-l border-border/50 bg-background/55 shadow-[inset_1px_0_0_0] shadow-black/[0.04] backdrop-blur-sm dark:shadow-black/25">
                 <ActivityTimeline />
               </aside>
             ) : null}
@@ -131,7 +139,7 @@ export default function PipelinePageClient({
         </main>
 
         {showAIPanel ? (
-          <aside className="w-80 shrink-0 overflow-y-auto border-l border-border bg-background/60 backdrop-blur-sm">
+          <aside className="w-80 shrink-0 overflow-y-auto border-l border-border/50 bg-background/60 shadow-[inset_1px_0_0_0] shadow-black/[0.04] backdrop-blur-sm dark:shadow-black/25">
             <AIRecommendationsPanel />
           </aside>
         ) : null}

@@ -36,14 +36,14 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
         description="Capture an opportunity on Leads so this snapshot shows your latest opportunities."
         primary={{ label: "Open Leads", href: "/leads" }}
         secondary={{ label: "Integrations", href: "/integrations" }}
-        className="overflow-hidden rounded-2xl border border-border bg-card/90 py-14 shadow-sm"
+        className="overflow-hidden rounded-2xl border border-border/55 bg-card/90 py-14 shadow-sm"
       />
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card/95 shadow-sm">
-      <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="overflow-hidden rounded-2xl border border-border/55 bg-card/95 shadow-sm">
+      <div className="flex flex-col gap-4 border-b border-border/50 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">Recent leads</h2>
           <p className="text-xs text-muted-foreground sm:text-sm">Same rows as Leads — quick scan from Overview.</p>
@@ -63,7 +63,7 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
       <div className="overflow-x-auto">
         <table className="w-full min-w-[780px]">
           <thead>
-            <tr className="border-b border-border bg-muted/20">
+            <tr className="border-b border-border/50 bg-muted/20">
               <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Project
               </th>
@@ -135,7 +135,7 @@ export function DashboardLeadsSnapshot({ leads }: { leads: DashboardRecentLead[]
         </table>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border px-5 py-3">
+      <div className="flex items-center justify-between border-t border-border/50 px-5 py-3">
         <p className="text-sm text-muted-foreground">
           Showing <span className="font-medium text-foreground">{filtered.length}</span> of{" "}
           <span className="font-medium text-foreground">{leads.length}</span>

@@ -15,8 +15,8 @@ interface ClientDetailPanelProps {
 
 export function ClientDetailPanel({ clientId, onClose, summary }: ClientDetailPanelProps) {
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border bg-background/95 shadow-xl backdrop-blur-md">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-border/50 bg-background/95 shadow-2xl shadow-black/10 backdrop-blur-md dark:shadow-black/35">
+      <div className="flex items-center justify-between border-b border-border/55 px-4 py-3">
         <div>
           <p className="text-xs text-muted-foreground">Project</p>
           <h2 className="text-lg font-semibold text-foreground">{summary?.title ?? "Lead"}</h2>
@@ -27,7 +27,7 @@ export function ClientDetailPanel({ clientId, onClose, summary }: ClientDetailPa
       </div>
       <div className="flex-1 space-y-4 overflow-y-auto p-4 text-sm text-muted-foreground">
         {summary?.summary ? <p className="text-sm leading-relaxed text-foreground/90">{summary.summary}</p> : null}
-        <div className="grid gap-2 rounded-xl border border-border bg-muted/30 p-3">
+        <div className="grid gap-2 rounded-xl border border-border/60 bg-muted/30 p-3 shadow-sm">
           <div className="flex items-center gap-2 text-foreground">
             <DollarSign className="h-4 w-4 text-primary" />
             <span className="font-medium">Budget & score</span>
@@ -39,7 +39,7 @@ export function ClientDetailPanel({ clientId, onClose, summary }: ClientDetailPa
             ) : null}
           </p>
         </div>
-        <div className="grid gap-2 rounded-xl border border-border bg-muted/30 p-3">
+        <div className="grid gap-2 rounded-xl border border-border/60 bg-muted/30 p-3 shadow-sm">
           <div className="flex items-center gap-2 text-foreground">
             <Calendar className="h-4 w-4 text-primary" />
             <span className="font-medium">Stage</span>
@@ -47,7 +47,7 @@ export function ClientDetailPanel({ clientId, onClose, summary }: ClientDetailPa
           <p className="text-xs capitalize">{summary?.stage ?? "unknown"}</p>
         </div>
       </div>
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border/55 p-4">
         <Button className="w-full bg-gradient-to-r from-primary to-accent text-primary-foreground" asChild>
           <Link href={`/proposals?leadId=${encodeURIComponent(clientId)}`}>Generate proposal</Link>
         </Button>

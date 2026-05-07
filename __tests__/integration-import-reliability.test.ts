@@ -66,7 +66,6 @@ describe("GitHub opportunity query shaping", () => {
     const q = buildGitHubOpportunitySearchQuery("react dashboard");
     expect(q).toContain("react dashboard");
     expect(q).toContain("is:issue");
-    expect(q).toContain("freelance");
-    expect(q).toContain("outsource");
+    expect(q).toMatch(/freelance|hire|hiring|contract|paid|gig/i);
   });
 });

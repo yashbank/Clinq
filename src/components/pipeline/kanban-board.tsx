@@ -34,10 +34,10 @@ const STAGES: { id: PipelineStage; label: string; tone: string }[] = [
 ];
 
 const dropAnimation: DropAnimation = {
-  duration: 220,
+  duration: 160,
   easing: "cubic-bezier(0.22, 1, 0.36, 1)",
   sideEffects: defaultDropAnimationSideEffects({
-    styles: { dragOverlay: { opacity: "0.96" } },
+    styles: { dragOverlay: { opacity: "0.98" } },
   }),
 };
 
@@ -73,8 +73,8 @@ function DroppableColumn({
       className={cn(
         "flex w-64 shrink-0 flex-col rounded-xl border bg-card/50 backdrop-blur-sm transition-all duration-200 ease-out",
         isOver
-          ? "border-primary/45 shadow-lg shadow-primary/10 ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
-          : "border-border",
+          ? "border-primary/35 shadow-md shadow-primary/[0.07] ring-1 ring-primary/25 ring-offset-1 ring-offset-background"
+          : "border-border/55 shadow-sm",
       )}
     >
       <div
@@ -162,8 +162,8 @@ function LeadCardFace({
     variant === "board" && "hover:border-primary/25 hover:shadow-md active:cursor-grabbing",
     selected && "ring-2 ring-primary/40 ai-glow-subtle",
     card.score >= 80 && "border-clinq-success/40 bg-clinq-success/5",
-    variant === "board" && isDragging && "pointer-events-none scale-[0.98] opacity-[0.2] shadow-none",
-    variant === "overlay" && "scale-[1.02] cursor-grabbing shadow-xl ring-2 ring-primary/25",
+    variant === "board" && isDragging && "pointer-events-none scale-[0.99] opacity-40 shadow-none",
+    variant === "overlay" && "scale-[1.01] cursor-grabbing shadow-xl ring-1 ring-primary/20",
   );
 
   if (variant === "overlay") {
@@ -222,7 +222,7 @@ interface KanbanBoardProps {
   leads: KanbanLead[];
   onSelectClient: (id: string | null) => void;
   selectedClient: string | null;
-  onStageChange: (leadId: string, stage: PipelineStage) => Promise<void> | void;
+  onStageChange: (leadId: string, stage: PipelineStage) => void;
 }
 
 export function KanbanBoard({ leads, onSelectClient, selectedClient, onStageChange }: KanbanBoardProps) {
@@ -251,14 +251,14 @@ export function KanbanBoard({ leads, onSelectClient, selectedClient, onStageChan
     setActive(leads.find((l) => l.id === id) ?? null);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     setActive(null);
     const activeId = String(event.active.id);
     const overId = event.over?.id as PipelineStage | undefined;
     if (!overId || !STAGES.some((s) => s.id === overId)) return;
     const lead = leads.find((l) => l.id === activeId);
     if (!lead || lead.stage === overId) return;
-    await onStageChange(activeId, overId);
+    onStageChange(activeId, overId);
   };
 
   return (

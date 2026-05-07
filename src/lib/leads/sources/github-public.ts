@@ -2,6 +2,7 @@ import "server-only";
 
 import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
 import type { NormalizedScrapeRow, PublicIngestFetchContext, PublicLeadSourceAdapter } from "@/lib/leads/sources/types";
+import { buildGithubSearchQueryVariants, GITHUB_SEARCH_QUERY_MAX_LENGTH } from "@/lib/leads/sources/github-search-query";
 
 const UA = "Clinq/1.0 (https://github.com/yashbank/Clinq)";
 
@@ -18,70 +19,181 @@ function str(v: unknown, max = 8000): string | null {
 
 export type GitHubIssueItem = Record<string, unknown>;
 
-/**
- * Bias GitHub issue search toward hiring / paid work without replacing the user's keywords.
- */
+/** @deprecated use buildGithubSearchQueryVariants — kept for tests / backward imports */
 export function buildGitHubOpportunitySearchQuery(userQuery: string): string {
-  const core = userQuery.trim();
-  if (!core) return core;
-  const hiringSignals =
-    "(hire OR hiring OR freelance OR freelancer OR contract OR contractor OR paid OR bounty OR gig OR outsource OR staffing OR consultant OR \"looking for\" OR \"task for\" OR rfp OR scope OR milestone)";
-  return `${core} is:issue is:open archived:false ${hiringSignals} in:title,in:body`;
+  const v = buildGithubSearchQueryVariants(userQuery);
+  return v[0]?.q ?? "is:issue is:open";
 }
+
+function logGithubSearch(scope: string, payload: Record<string, unknown>) {
+  console.info(
+    JSON.stringify({
+      scope: `github_search.${scope}`,
+      ts: new Date().toISOString(),
+      ...payload,
+    }),
+  );
+}
+
+function githubSearchUserFacingError(args: {
+  status: number;
+  hadToken: boolean;
+  usedFallback: boolean;
+  lastAttemptLabel: string | null;
+}): string {
+  if (args.status === 403) {
+    return args.hadToken
+      ? "GitHub blocked this search (often rate limits). Wait a moment or try fewer results."
+      : "GitHub Search refused this request without auth. Add a GitHub PAT under Integrations or set GITHUB_PUBLIC_IMPORT_TOKEN on the server.";
+  }
+  if (args.status === 422) {
+    return args.usedFallback
+      ? "GitHub still could not run that search after simplifying it. Try shorter keywords or a narrower topic."
+      : "GitHub could not run that search (query too long, unsupported filters, or invalid syntax). Shorten your keywords and try again.";
+  }
+  return "GitHub Search is temporarily unavailable. Try again in a few minutes.";
+}
+
+export type GitHubSearchOk = {
+  ok: true;
+  items: GitHubIssueItem[];
+  meta: { finalQuery: string; perPage: number; attemptLabels: string[]; usedFallback: boolean };
+};
+
+export type GitHubSearchErr = {
+  ok: false;
+  error: string;
+  userHint: string;
+};
 
 export async function fetchGitHubSearchIssues(args: {
   query: string;
   limit: number;
   token?: string | null;
-}): Promise<{ ok: true; items: GitHubIssueItem[] } | { ok: false; error: string }> {
-  const q = args.query.trim();
-  if (!q) {
-    return { ok: false, error: "Search query is required" };
-  }
+}): Promise<GitHubSearchOk | GitHubSearchErr> {
   const perPage = Math.min(30, Math.max(1, args.limit));
-  const url = new URL("https://api.github.com/search/issues");
-  url.searchParams.set("q", q.includes("is:issue") ? q : `${q} is:issue is:open`);
-  url.searchParams.set("per_page", String(perPage));
+  const hadToken = Boolean(args.token?.trim());
+  const variants = buildGithubSearchQueryVariants(args.query);
+  const attemptLabels: string[] = [];
+  let lastStatus = 0;
+  let lastBodySnippet = "";
 
-  const headers: Record<string, string> = {
+  const headersBase: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "User-Agent": UA,
   };
   const tok = args.token?.trim();
   if (tok) {
-    headers.Authorization = `Bearer ${tok}`;
+    headersBase.Authorization = `Bearer ${tok}`;
   }
 
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), 20_000);
-  try {
-    const res = await fetch(url.toString(), { headers, signal: controller.signal });
-    const text = await res.text();
-    if (res.status === 403) {
-      return {
-        ok: false,
-        error:
-          "GitHub Search refused this request (often rate limits without auth). Add a GitHub PAT under Integrations or set GITHUB_PUBLIC_IMPORT_TOKEN on the server.",
-      };
-    }
-    if (!res.ok) {
-      return { ok: false, error: `GitHub Search could not complete (HTTP ${res.status}). Try fewer results or add a token for higher limits.` };
-    }
-    let json: unknown;
+  for (let i = 0; i < variants.length; i += 1) {
+    const { label, q } = variants[i]!;
+    attemptLabels.push(label);
+    const usedFallback = i > 0;
+
+    const qFinal = q.includes("is:issue") ? q : `${q} is:issue is:open`;
+    const url = new URL("https://api.github.com/search/issues");
+    url.searchParams.set("q", qFinal);
+    url.searchParams.set("per_page", String(perPage));
+
+    logGithubSearch("attempt", {
+      attemptLabel: label,
+      attemptIndex: i,
+      queryLength: qFinal.length,
+      queryMax: GITHUB_SEARCH_QUERY_MAX_LENGTH,
+      perPage,
+      hadToken,
+      usedFallbackPath: usedFallback,
+    });
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20_000);
     try {
-      json = JSON.parse(text) as unknown;
-    } catch {
-      return { ok: false, error: "GitHub returned non-JSON" };
+      const res = await fetch(url.toString(), { headers: { ...headersBase }, signal: controller.signal });
+      lastStatus = res.status;
+      const text = await res.text();
+      lastBodySnippet = text.slice(0, 400);
+
+      if (res.status === 403) {
+        logGithubSearch("response", { status: res.status, attemptLabel: label, perPage, usedFallbackPath: usedFallback });
+        return {
+          ok: false,
+          error: "GitHub Search HTTP 403",
+          userHint: githubSearchUserFacingError({ status: 403, hadToken, usedFallback, lastAttemptLabel: label }),
+        };
+      }
+
+      if (res.status === 422) {
+        logGithubSearch("response_422", {
+          attemptLabel: label,
+          queryLength: qFinal.length,
+          bodySnippet: lastBodySnippet,
+          willRetry: i < variants.length - 1,
+        });
+        if (i < variants.length - 1) continue;
+        return {
+          ok: false,
+          error: "GitHub Search HTTP 422",
+          userHint: githubSearchUserFacingError({ status: 422, hadToken, usedFallback: i > 0, lastAttemptLabel: label }),
+        };
+      }
+
+      if (!res.ok) {
+        logGithubSearch("response_error", { status: res.status, attemptLabel: label });
+        return {
+          ok: false,
+          error: `GitHub Search HTTP ${res.status}`,
+          userHint: githubSearchUserFacingError({ status: res.status, hadToken, usedFallback, lastAttemptLabel: label }),
+        };
+      }
+
+      let json: unknown;
+      try {
+        json = JSON.parse(text) as unknown;
+      } catch {
+        return { ok: false, error: "GitHub returned non-JSON", userHint: "GitHub returned an unexpected response. Try again." };
+      }
+      const root = asRecord(json);
+      const itemsRaw = root && Array.isArray(root.items) ? root.items : [];
+
+      logGithubSearch("success", {
+        finalQuery: qFinal,
+        finalQueryLength: qFinal.length,
+        perPage,
+        attemptLabels: attemptLabels.join("→"),
+        usedFallbackPath: i > 0,
+        itemCount: itemsRaw.length,
+      });
+
+      return {
+        ok: true,
+        items: itemsRaw as GitHubIssueItem[],
+        meta: {
+          finalQuery: qFinal,
+          perPage,
+          attemptLabels,
+          usedFallback: i > 0,
+        },
+      };
+    } catch (e) {
+      const msg = e instanceof Error && e.name === "AbortError" ? "GitHub request timed out" : e instanceof Error ? e.message : "GitHub fetch failed";
+      return { ok: false, error: msg, userHint: msg };
+    } finally {
+      clearTimeout(timer);
     }
-    const root = asRecord(json);
-    const itemsRaw = root && Array.isArray(root.items) ? root.items : [];
-    return { ok: true, items: itemsRaw as GitHubIssueItem[] };
-  } catch (e) {
-    const msg = e instanceof Error && e.name === "AbortError" ? "GitHub request timed out" : e instanceof Error ? e.message : "GitHub fetch failed";
-    return { ok: false, error: msg };
-  } finally {
-    clearTimeout(t);
   }
+
+  return {
+    ok: false,
+    error: `GitHub Search HTTP ${lastStatus || 0}`,
+    userHint: githubSearchUserFacingError({
+      status: lastStatus || 422,
+      hadToken,
+      usedFallback: attemptLabels.length > 1,
+      lastAttemptLabel: attemptLabels[attemptLabels.length - 1] ?? null,
+    }),
+  };
 }
 
 export function normalizeGitHubIssue(issue: GitHubIssueItem, importedAtIso: string): NormalizedScrapeRow | null {
@@ -162,9 +274,14 @@ export const githubPublicAdapter: PublicLeadSourceAdapter = {
   async fetchRaw(args, context?: PublicIngestFetchContext) {
     const envTok = process.env.GITHUB_PUBLIC_IMPORT_TOKEN?.trim() || null;
     const token = (context?.githubToken?.trim() || envTok) || null;
-    const biasedQuery = buildGitHubOpportunitySearchQuery(args.query);
-    const r = await fetchGitHubSearchIssues({ ...args, query: biasedQuery, token });
-    if (!r.ok) return r;
+    const r = await fetchGitHubSearchIssues({
+      query: args.query,
+      limit: args.limit,
+      token,
+    });
+    if (!r.ok) {
+      return { ok: false, error: r.userHint };
+    }
     return { ok: true, items: r.items as unknown[] };
   },
   normalize(raw, importedAtIso) {

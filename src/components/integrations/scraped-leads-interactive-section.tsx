@@ -3,9 +3,13 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Inbox, Loader2 } from "lucide-react";
+import { Inbox, Loader2, Sparkles } from "lucide-react";
 
-import { dismissScrapedLeadsBulkAction, promoteScrapedLeadsBulkAction } from "@/actions/scraped-leads";
+import {
+  dismissScrapedLeadsBulkAction,
+  promoteScrapedLeadsBulkAction,
+  recomputeScrapedRelevanceAction,
+} from "@/actions/scraped-leads";
 import { formatActionFailure } from "@/lib/errors/format-user-error";
 import { ScrapedDismissButton } from "@/components/integrations/scraped-dismiss-button";
 import { ScrapedPromoteButton } from "@/components/integrations/scraped-promote-button";
@@ -13,6 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { PremiumEmpty } from "@/components/ui/premium-empty";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 export type ScrapedInteractiveRow = {
@@ -29,10 +42,17 @@ export type ScrapedInteractiveRow = {
   worthReview: boolean;
 };
 
-export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteractiveRow[] }) {
+export function ScrapedLeadsInteractiveSection({
+  rows,
+  scrapedIdsInView,
+}: {
+  rows: ScrapedInteractiveRow[];
+  scrapedIdsInView: string[];
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [promoteOffer, setPromoteOffer] = useState<{ ids: string[]; reevaluated: number } | null>(null);
 
   const actionableIds = useMemo(() => rows.filter((r) => r.canPromote || r.canDismiss).map((r) => r.id), [rows]);
   const selectedIds = useMemo(() => Object.entries(selected).filter(([, v]) => v).map(([k]) => k), [selected]);
@@ -86,6 +106,39 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
           Select actionable
         </label>
         <span className="text-muted-foreground">{selectedIds.length} selected</span>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={pending || scrapedIdsInView.length === 0}
+          className="h-8"
+          onClick={() => {
+            start(() => {
+              void (async () => {
+                const res = await recomputeScrapedRelevanceAction(scrapedIdsInView);
+                if (!res.ok) {
+                  toast.error(formatActionFailure("Recompute", res.error));
+                  return;
+                }
+                const y = res.newlyQualifyingIds.length;
+                toast.message(`Re-evaluated ${res.reevaluated} row(s)`, {
+                  description:
+                    y > 0
+                      ? `${y} newly qualify for promotion.${res.skipped ? ` ${res.skipped} row(s) skipped.` : ""}`
+                      : `No new promotion candidates from this pass.${res.skipped ? ` ${res.skipped} skipped.` : ""}`,
+                });
+                if (y > 0) {
+                  setPromoteOffer({ ids: res.newlyQualifyingIds, reevaluated: res.reevaluated });
+                } else {
+                  router.refresh();
+                }
+              })();
+            });
+          }}
+        >
+          {pending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5 opacity-80" aria-hidden />}
+          Recompute intelligently
+        </Button>
         <Button
           type="button"
           size="sm"
@@ -143,11 +196,11 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card/90 shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border/55 bg-card/90 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[880px] text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/20 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <tr className="border-b border-border/50 bg-muted/20 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 <th className="w-10 px-2 py-3" />
                 <th className="px-3 py-3">Title</th>
                 <th className="px-3 py-3">Source</th>
@@ -215,6 +268,62 @@ export function ScrapedLeadsInteractiveSection({ rows }: { rows: ScrapedInteract
           </table>
         </div>
       </div>
+
+      <AlertDialog
+        open={promoteOffer != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPromoteOffer(null);
+            router.refresh();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Promote qualifying leads?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              {promoteOffer ? (
+                <>
+                  {promoteOffer.reevaluated} row(s) were re-evaluated.{" "}
+                  <span className="font-medium text-foreground">{promoteOffer.ids.length}</span> newly qualify for promotion
+                  into Leads. Promote them in one step, or keep them here for manual review.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel type="button">Not now</AlertDialogCancel>
+            <Button
+              type="button"
+              size="sm"
+              disabled={pending || !promoteOffer?.ids.length}
+              onClick={() => {
+                if (!promoteOffer?.ids.length) return;
+                const ids = promoteOffer.ids;
+                start(() => {
+                  void (async () => {
+                    const res = await promoteScrapedLeadsBulkAction(ids);
+                    setPromoteOffer(null);
+                    if (!res.ok) {
+                      toast.error(formatActionFailure("Bulk promote", res.error));
+                      router.refresh();
+                      return;
+                    }
+                    if (res.errors.length) {
+                      toast.message(`Promoted ${res.promoted}`, { description: res.errors.slice(0, 2).join(" · ") });
+                    } else {
+                      toast.success(`Promoted ${res.promoted} row(s)`);
+                    }
+                    router.refresh();
+                  })();
+                });
+              }}
+            >
+              Promote {promoteOffer?.ids.length ?? 0} now
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

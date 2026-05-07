@@ -51,7 +51,7 @@
   .auth-card::before {
     content: "";
     @apply pointer-events-none absolute inset-0 rounded-2xl;
-    box-shadow: inset 0 1px 0 color-mix(in oklch, var(--foreground) 6%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklch, var(--foreground) 4%, transparent);
   }
 }
 

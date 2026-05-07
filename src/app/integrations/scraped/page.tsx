@@ -382,7 +382,7 @@ export default async function ScrapedLeadsReviewPage({
                 No scraped rows match these filters.
               </div>
             ) : (
-              <ScrapedLeadsInteractiveSection rows={interactiveRows} />
+              <ScrapedLeadsInteractiveSection rows={interactiveRows} scrapedIdsInView={rows.map((r) => r.id)} />
             )}
           </div>
         </main>

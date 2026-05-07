@@ -108,8 +108,8 @@ export function AdvancedLeadsTable({
   const highCount = leads.filter((l) => l.aiScore >= 80).length;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card/40 shadow-sm transition-shadow duration-200">
-      <div className="flex flex-col gap-1 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+    <div className="overflow-hidden rounded-2xl border border-border/55 bg-card/40 shadow-sm transition-shadow duration-200">
+      <div className="flex flex-col gap-1 border-b border-border/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-accent/20">
             <Target className="h-4 w-4 text-primary" />
@@ -132,7 +132,7 @@ export function AdvancedLeadsTable({
       <div className="-mx-0 overflow-x-auto px-0 sm:mx-0">
         <table className="w-full min-w-[800px] table-fixed">
           <thead>
-            <tr className="border-b border-border bg-muted/30 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <tr className="border-b border-border/50 bg-muted/30 text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               <th className="px-3 py-2.5 sm:px-4">Project</th>
               <th className="hidden w-[100px] px-2 py-2.5 sm:table-cell">Platform</th>
               <th className="hidden px-3 py-2.5 md:table-cell lg:w-[32%]">Summary</th>
@@ -270,7 +270,7 @@ export function AdvancedLeadsTable({
         </table>
       </div>
 
-      <div className="flex flex-col gap-2 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-t border-border/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground sm:text-sm">
           <span className="font-medium text-foreground">{leads.length}</span> on this page
           {typeof total === "number" ? (

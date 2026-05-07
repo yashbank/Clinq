@@ -10,7 +10,7 @@ export type ProfileSnapV2 = {
   tech_stack: string[];
 };
 
-const PROMOTE_THRESHOLD = 47;
+export const SCRAPED_PROMOTE_THRESHOLD = 47;
 
 function importTagsFromMetadata(metadataExtra: Record<string, unknown>): string[] {
   const imp = metadataExtra.import;
@@ -155,13 +155,33 @@ export function computeScrapedRelevanceV2(args: {
   if (title + kw < 8) skipReasons.push("Weak title/keyword match");
   if (neg >= 12) skipReasons.push("Negative content signals");
 
-  const promote = score >= PROMOTE_THRESHOLD && neg < 18;
+  const promote = score >= SCRAPED_PROMOTE_THRESHOLD && neg < 18;
 
   return { score, promote, skipReasons, breakdown };
 }
 
+/** Whether a scraped DB row already looked promotion-eligible before a recompute (for “newly qualifying” counts). */
+export function wasScrapedRowAlreadyPromoteEligible(args: {
+  relevanceScore: number | null;
+  skipReason: string | null;
+  supportsRelevance: boolean;
+}): boolean {
+  const sr = (args.skipReason ?? "").toLowerCase();
+  if (sr.includes("eligible (relevance") || sr.includes("eligible —")) return true;
+  if (sr.includes("manually promoted") || sr.includes("promoted to leads")) return true;
+  if (
+    args.supportsRelevance &&
+    args.relevanceScore != null &&
+    Number.isFinite(args.relevanceScore) &&
+    args.relevanceScore >= SCRAPED_PROMOTE_THRESHOLD
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function formatRelevanceSkipReason(result: RelevanceV2Result): string {
-  const base = `Relevance ${result.score}/${100} (threshold ${PROMOTE_THRESHOLD})`;
+  const base = `Relevance ${result.score}/${100} (threshold ${SCRAPED_PROMOTE_THRESHOLD})`;
   if (result.skipReasons.length === 0) return `${base}.`;
   return `${base}. ${result.skipReasons.slice(0, 3).join(" · ")}`;
 }
