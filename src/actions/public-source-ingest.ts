@@ -3,11 +3,15 @@
 import { revalidatePath } from "next/cache";
 
 import { recordLeadImportBatchMetrics } from "@/lib/analytics/record-lead-import-metrics";
+import { getGithubImportPatForUser } from "@/lib/integrations/github/github-import-pat-store";
+import { publicIngestCapForSource } from "@/lib/integrations/source-batch-caps";
+import { isRedditOAuthAccessTokenConfigured } from "@/lib/integrations/reddit-import-env";
 import { getPublicIngestAdapter, type PublicIngestSourceId } from "@/lib/leads/sources/registry";
 import { processScrapedLeads } from "@/lib/leads/process-scraped-leads";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { assessProfileCompleteness, profileCompletenessGateMessage } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 
 export type PublicIngestResult = {
   ok: true;
@@ -41,13 +45,30 @@ export async function runPublicSourceIngestAction(
   }
 
   const adapter = getPublicIngestAdapter(source);
-  const limit = Math.min(25, Math.max(1, payload.limit ?? 12));
   const query = (payload.query ?? "").trim();
   if (!query) {
     return { ok: false, error: "Search query is required" };
   }
 
-  const fetched = await adapter.fetchRaw({ query, limit });
+  const envGithub = Boolean(process.env.GITHUB_PUBLIC_IMPORT_TOKEN?.trim());
+  const userGithubPat =
+    hasSupabaseServiceRoleKey() && source === "github" ? await getGithubImportPatForUser(user.id) : null;
+  const githubHasElevatedToken = Boolean(userGithubPat?.trim() || envGithub);
+
+  const cap = publicIngestCapForSource(source, {
+    redditOAuthConfigured: isRedditOAuthAccessTokenConfigured(),
+    githubHasElevatedToken,
+  });
+  if (cap.disabled) {
+    return { ok: false, error: cap.summary };
+  }
+
+  const limit = Math.min(cap.maxPerRun, Math.max(1, payload.limit ?? Math.min(12, cap.maxPerRun)));
+
+  const fetched = await adapter.fetchRaw(
+    { query, limit },
+    source === "github" ? { githubToken: userGithubPat ?? process.env.GITHUB_PUBLIC_IMPORT_TOKEN ?? null } : undefined,
+  );
   if (!fetched.ok) {
     return { ok: false, error: fetched.error };
   }

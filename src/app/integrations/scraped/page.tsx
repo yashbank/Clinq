@@ -11,6 +11,11 @@ import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { assessProfileCompleteness } from "@/lib/profile/profile-completeness";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { skipReasonChips } from "@/lib/leads/scraped-skip-chips";
+import {
+  detectScrapedLeadsRelevanceScoreSupport,
+  isMissingRelevanceScoreColumnError,
+  SCRAPED_LEADS_RELEVANCE_MIGRATION_HINT,
+} from "@/lib/scraped-leads/relevance-column";
 import { cn } from "@/lib/utils";
 
 type ScrapedRow = {
@@ -135,34 +140,64 @@ export default async function ScrapedLeadsReviewPage({
   const minScoreRaw = sp.minScore?.trim() ?? "";
   const minScoreN = /^\d+$/.test(minScoreRaw) ? Math.min(100, Math.max(0, parseInt(minScoreRaw, 10))) : null;
 
-  let query = supabase
-    .from("scraped_leads")
-    .select("id, source, short_summary, skip_reason, created_at, processed, raw_data, relevance_score, dismissed_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(250);
+  let supportsRelevanceScore = await detectScrapedLeadsRelevanceScoreSupport(supabase);
+  const baseCols = "id, source, short_summary, skip_reason, created_at, processed, raw_data, dismissed_at";
+  const selectColumns = supportsRelevanceScore ? `${baseCols}, relevance_score` : baseCols;
 
+  let qb = supabase.from("scraped_leads").select(selectColumns).eq("user_id", user.id).order("created_at", { ascending: false }).limit(250);
   if (sourceFilter && (STAGED_SOURCES as readonly string[]).includes(sourceFilter)) {
-    query = query.eq("source", sourceFilter);
+    qb = qb.eq("source", sourceFilter);
   }
   if (skipFilter) {
-    query = query.ilike("skip_reason", `%${skipFilter}%`);
+    qb = qb.ilike("skip_reason", `%${skipFilter}%`);
   }
-  if (minScoreN != null) {
-    query = query.gte("relevance_score", minScoreN);
+  if (minScoreN != null && supportsRelevanceScore) {
+    qb = qb.gte("relevance_score", minScoreN);
   }
-
   if (stateFilter === "queue") {
-    query = query.is("dismissed_at", null);
+    qb = qb.is("dismissed_at", null);
   } else if (stateFilter === "dismissed") {
-    query = query.not("dismissed_at", "is", null);
+    qb = qb.not("dismissed_at", "is", null);
   } else if (stateFilter === "pending" || stateFilter === "promoted" || stateFilter === "skipped") {
-    query = query.is("dismissed_at", null);
+    qb = qb.is("dismissed_at", null);
   }
-  // "all" — include dismissed and active
 
-  const { data: rowsRaw, error } = await query;
-  let rows = (rowsRaw ?? []) as ScrapedRow[];
+  const first = await qb;
+  let rowsRaw: Record<string, unknown>[] | null = first.data as Record<string, unknown>[] | null;
+  let error = first.error;
+
+  if (error && isMissingRelevanceScoreColumnError(error.message)) {
+    supportsRelevanceScore = false;
+    let q2 = supabase.from("scraped_leads").select(baseCols).eq("user_id", user.id).order("created_at", { ascending: false }).limit(250);
+    if (sourceFilter && (STAGED_SOURCES as readonly string[]).includes(sourceFilter)) {
+      q2 = q2.eq("source", sourceFilter);
+    }
+    if (skipFilter) {
+      q2 = q2.ilike("skip_reason", `%${skipFilter}%`);
+    }
+    if (stateFilter === "queue") {
+      q2 = q2.is("dismissed_at", null);
+    } else if (stateFilter === "dismissed") {
+      q2 = q2.not("dismissed_at", "is", null);
+    } else if (stateFilter === "pending" || stateFilter === "promoted" || stateFilter === "skipped") {
+      q2 = q2.is("dismissed_at", null);
+    }
+    const second = await q2;
+    rowsRaw = second.data as Record<string, unknown>[] | null;
+    error = second.error;
+  }
+
+  const minScoreIgnoredBecauseMigration = minScoreN != null && !supportsRelevanceScore;
+
+  let rows = (rowsRaw ?? []).map((r) => {
+    const rec = r as Record<string, unknown>;
+    const relRaw = rec.relevance_score;
+    const relNum = typeof relRaw === "number" && Number.isFinite(relRaw) ? relRaw : null;
+    return {
+      ...(rec as ScrapedRow),
+      relevance_score: supportsRelevanceScore ? relNum : null,
+    };
+  });
 
   if (stateFilter === "pending") {
     rows = rows.filter((r) => !r.processed && !isDismissedRow(r));
@@ -224,6 +259,21 @@ export default async function ScrapedLeadsReviewPage({
         <main className="flex-1 overflow-y-auto p-3 pb-10 sm:p-6">
           <div className="mx-auto max-w-6xl space-y-5">
             <ProfileCompletenessBanner assessment={profileCompleteness} />
+            {!supportsRelevanceScore ? (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-foreground">
+                <p className="font-medium text-amber-950 dark:text-amber-100">Relevance column not available yet</p>
+                <p className="mt-1 text-muted-foreground">{SCRAPED_LEADS_RELEVANCE_MIGRATION_HINT}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  You can still review rows; score chips show “—” until migrations are applied.
+                </p>
+              </div>
+            ) : null}
+            {minScoreIgnoredBecauseMigration ? (
+              <div className="rounded-xl border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+                Score filters are ignored until the relevance migration is applied (URL still shows your chosen threshold).
+              </div>
+            ) : null}
+
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
                 Rows land here first; promotion uses relevance scoring.{" "}
@@ -317,9 +367,16 @@ export default async function ScrapedLeadsReviewPage({
             </div>
 
             {error ? (
-              <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-                {error.message}
-              </p>
+              <div className="space-y-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                <p className="font-medium text-destructive">
+                  {isMissingRelevanceScoreColumnError(error.message)
+                    ? "Scraped review needs a quick database update"
+                    : "Could not load scraped leads"}
+                </p>
+                <p className="text-muted-foreground">
+                  {isMissingRelevanceScoreColumnError(error.message) ? SCRAPED_LEADS_RELEVANCE_MIGRATION_HINT : error.message}
+                </p>
+              </div>
             ) : !rows.length ? (
               <div className="rounded-2xl border border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">
                 No scraped rows match these filters.

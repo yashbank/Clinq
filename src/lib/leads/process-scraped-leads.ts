@@ -8,6 +8,7 @@ import { normalizeScrapedPayload, rawTitleHint } from "@/lib/leads/normalize-scr
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
 import { computeScrapedRelevanceV2, formatRelevanceSkipReason } from "@/lib/leads/scraped-relevance-v2";
 import { assertProfileReadyForCuratedLeadAi } from "@/lib/profile/profile-gate";
+import { detectScrapedLeadsRelevanceScoreSupport } from "@/lib/scraped-leads/relevance-column";
 import type { LeadRow } from "@/types/database";
 
 type ProfileSnap = {
@@ -99,6 +100,8 @@ export async function processScrapedLeads(
   }
   const profSnap = profile ?? { tech_stack: [], niches: [], skills: [] };
 
+  const supportsRelevanceScore = await detectScrapedLeadsRelevanceScoreSupport(supabase);
+
   const { data: rows, error } = await supabase
     .from("scraped_leads")
     .select("id, raw_data, source")
@@ -137,16 +140,13 @@ export async function processScrapedLeads(
     if (!normalized) {
       logLeadPromotion("skip_unnormalizable", { userId, scrapedId: row.id, source: row.source }, "warn");
       skipped_invalid += 1;
-      await supabase
-        .from("scraped_leads")
-        .update({
-          processed: true,
-          skip_reason: "Invalid or incomplete payload for this source",
-          short_summary: hint.slice(0, 160) || "—",
-          relevance_score: null,
-        })
-        .eq("id", row.id)
-        .eq("user_id", userId);
+      const invalidPatch: Record<string, unknown> = {
+        processed: true,
+        skip_reason: "Invalid or incomplete payload for this source",
+        short_summary: hint.slice(0, 160) || "—",
+      };
+      if (supportsRelevanceScore) invalidPatch.relevance_score = null;
+      await supabase.from("scraped_leads").update(invalidPatch).eq("id", row.id).eq("user_id", userId);
       continue;
     }
 
@@ -171,16 +171,13 @@ export async function processScrapedLeads(
         breakdown: rel.breakdown,
       });
       skipped_irrelevant += 1;
-      await supabase
-        .from("scraped_leads")
-        .update({
-          processed: true,
-          skip_reason: formatRelevanceSkipReason(rel),
-          short_summary: summary,
-          relevance_score: rel.score,
-        })
-        .eq("id", row.id)
-        .eq("user_id", userId);
+      const skipPatch: Record<string, unknown> = {
+        processed: true,
+        skip_reason: formatRelevanceSkipReason(rel),
+        short_summary: summary,
+      };
+      if (supportsRelevanceScore) skipPatch.relevance_score = rel.score;
+      await supabase.from("scraped_leads").update(skipPatch).eq("id", row.id).eq("user_id", userId);
       continue;
     }
 
@@ -193,31 +190,25 @@ export async function processScrapedLeads(
       logLeadPromotion("insert_failed", { userId, scrapedId: row.id, error: ins.error, client: normalized.input.client_name }, "error");
       errors.push(ins.error);
       skipped_persist_failed += 1;
-      await supabase
-        .from("scraped_leads")
-        .update({
-          processed: true,
-          skip_reason: `Could not save lead: ${ins.error.slice(0, 200)}`,
-          short_summary: summary,
-          relevance_score: rel.score,
-        })
-        .eq("id", row.id)
-        .eq("user_id", userId);
+      const failPatch: Record<string, unknown> = {
+        processed: true,
+        skip_reason: `Could not save lead: ${ins.error.slice(0, 200)}`,
+        short_summary: summary,
+      };
+      if (supportsRelevanceScore) failPatch.relevance_score = rel.score;
+      await supabase.from("scraped_leads").update(failPatch).eq("id", row.id).eq("user_id", userId);
       continue;
     }
 
     promoted += 1;
     logLeadPromotion("promoted", { userId, scrapedId: row.id, leadId: ins.lead.id, client: normalized.input.client_name, score: rel.score });
-    await supabase
-      .from("scraped_leads")
-      .update({
-        processed: true,
-        skip_reason: `Promoted to Leads (relevance ${rel.score})`,
-        short_summary: summary,
-        relevance_score: rel.score,
-      })
-      .eq("id", row.id)
-      .eq("user_id", userId);
+    const okPatch: Record<string, unknown> = {
+      processed: true,
+      skip_reason: `Promoted to Leads (relevance ${rel.score})`,
+      short_summary: summary,
+    };
+    if (supportsRelevanceScore) okPatch.relevance_score = rel.score;
+    await supabase.from("scraped_leads").update(okPatch).eq("id", row.id).eq("user_id", userId);
   }
 
   logLeadPromotion("batch_complete", {

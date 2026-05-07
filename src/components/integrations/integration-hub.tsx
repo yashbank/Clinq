@@ -31,6 +31,7 @@ export function IntegrationHub({
   freelancerImportJobs,
   sourceIngestStats,
   profileCompleteness,
+  publicIngestHubFlags,
 }: {
   initialAccounts: IntegrationAccountRow[];
   freelancerOAuthConfigured: boolean;
@@ -38,6 +39,11 @@ export function IntegrationHub({
   freelancerImportJobs: FreelancerImportJobSummary[];
   sourceIngestStats: SourceIngestStats;
   profileCompleteness: ProfileCompletenessAssessment;
+  publicIngestHubFlags: {
+    redditOAuthServerConfigured: boolean;
+    githubUserPatConfigured: boolean;
+    githubServerTokenConfigured: boolean;
+  };
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -115,7 +121,7 @@ export function IntegrationHub({
 
       <SourceIngestStatsPanel stats={sourceIngestStats} />
 
-      <PublicIngestForms />
+      <PublicIngestForms hubFlags={publicIngestHubFlags} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         {OTHER_PROVIDERS.map((p) => {

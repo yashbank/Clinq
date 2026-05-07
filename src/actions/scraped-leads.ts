@@ -6,6 +6,7 @@ import { normalizeScrapedPayload } from "@/lib/leads/normalize-scraped-payload";
 import { insertLeadWithIntelligence } from "@/lib/leads/persist-new-lead";
 import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { assessProfileCompleteness, profileCompletenessGateMessage } from "@/lib/profile/profile-completeness";
+import { detectScrapedLeadsRelevanceScoreSupport } from "@/lib/scraped-leads/relevance-column";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const REVAL_SCRAPED = ["/leads", "/pipeline", "/dashboard", "/integrations", "/integrations/scraped", "/analytics"] as const;
@@ -166,16 +167,14 @@ export async function promoteScrapedLeadManuallyAction(
     return { ok: false, error: ins.error };
   }
 
-  await supabase
-    .from("scraped_leads")
-    .update({
-      processed: true,
-      dismissed_at: null,
-      skip_reason: "Manually promoted to Leads",
-      relevance_score: 100,
-    })
-    .eq("id", scrapedId)
-    .eq("user_id", user.id);
+  const supportsRelevance = await detectScrapedLeadsRelevanceScoreSupport(supabase);
+  const promotePatch: Record<string, unknown> = {
+    processed: true,
+    dismissed_at: null,
+    skip_reason: "Manually promoted to Leads",
+  };
+  if (supportsRelevance) promotePatch.relevance_score = 100;
+  await supabase.from("scraped_leads").update(promotePatch).eq("id", scrapedId).eq("user_id", user.id);
 
   revalidateScrapedSurface();
 

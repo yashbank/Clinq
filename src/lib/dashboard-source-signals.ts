@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getSourceQualityMetrics, type SourceQualityMetrics, type SourceQualityRow } from "@/lib/integrations/source-quality-metrics";
 import { bestPromotionSourceLabel } from "@/lib/opportunity/opportunity-state";
+import { detectScrapedLeadsRelevanceScoreSupport } from "@/lib/scraped-leads/relevance-column";
 
 function skipIndicatesPromoted(skipReason: string | null | undefined): boolean {
   const s = (skipReason ?? "").toLowerCase();
@@ -18,12 +19,16 @@ function isDismissedScraped(skipReason: string | null | undefined, dismissedAt: 
 /** Processed scraped rows in the last 7d, relevance ≥62, not promoted and not dismissed. */
 export async function countHighRelevanceSkippedScraped(supabase: SupabaseClient, userId: string): Promise<number> {
   const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
-  const { data: scrapedScan } = await supabase
+  if (!(await detectScrapedLeadsRelevanceScoreSupport(supabase))) return 0;
+
+  const { data: scrapedScan, error } = await supabase
     .from("scraped_leads")
     .select("skip_reason, relevance_score, processed, dismissed_at")
     .eq("user_id", userId)
     .gte("created_at", since)
     .limit(1200);
+
+  if (error) return 0;
 
   let n = 0;
   for (const r of scrapedScan ?? []) {

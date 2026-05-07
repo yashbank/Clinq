@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
-import type { NormalizedScrapeRow, PublicLeadSourceAdapter } from "@/lib/leads/sources/types";
+import type { NormalizedScrapeRow, PublicIngestFetchContext, PublicLeadSourceAdapter } from "@/lib/leads/sources/types";
 
 const UA = "Clinq/1.0 (https://github.com/yashbank/Clinq)";
 
@@ -18,6 +18,16 @@ function str(v: unknown, max = 8000): string | null {
 
 export type GitHubIssueItem = Record<string, unknown>;
 
+/**
+ * Bias GitHub issue search toward hiring / paid work without replacing the user's keywords.
+ */
+export function buildGitHubOpportunitySearchQuery(userQuery: string): string {
+  const core = userQuery.trim();
+  if (!core) return core;
+  const hiringSignals = "(hire OR hiring OR freelance OR freelancer OR contract OR contractor OR paid OR bounty OR gig OR \"looking for\")";
+  return `${core} is:issue is:open archived:false ${hiringSignals} in:title,in:body`;
+}
+
 export async function fetchGitHubSearchIssues(args: {
   query: string;
   limit: number;
@@ -29,7 +39,7 @@ export async function fetchGitHubSearchIssues(args: {
   }
   const perPage = Math.min(30, Math.max(1, args.limit));
   const url = new URL("https://api.github.com/search/issues");
-  url.searchParams.set("q", `${q} is:issue is:open`);
+  url.searchParams.set("q", q.includes("is:issue") ? q : `${q} is:issue is:open`);
   url.searchParams.set("per_page", String(perPage));
 
   const headers: Record<string, string> = {
@@ -47,10 +57,14 @@ export async function fetchGitHubSearchIssues(args: {
     const res = await fetch(url.toString(), { headers, signal: controller.signal });
     const text = await res.text();
     if (res.status === 403) {
-      return { ok: false, error: "GitHub API rate-limited or blocked. Set GITHUB_PUBLIC_IMPORT_TOKEN for higher limits." };
+      return {
+        ok: false,
+        error:
+          "GitHub Search refused this request (often rate limits without auth). Add a GitHub PAT under Integrations or set GITHUB_PUBLIC_IMPORT_TOKEN on the server.",
+      };
     }
     if (!res.ok) {
-      return { ok: false, error: `GitHub API HTTP ${res.status}` };
+      return { ok: false, error: `GitHub Search could not complete (HTTP ${res.status}). Try fewer results or add a token for higher limits.` };
     }
     let json: unknown;
     try {
@@ -144,9 +158,11 @@ export function githubDedupeKeyFromIssue(issue: GitHubIssueItem): string | null 
 export const githubPublicAdapter: PublicLeadSourceAdapter = {
   id: "github",
   label: "GitHub (public issue search)",
-  async fetchRaw(args) {
-    const token = process.env.GITHUB_PUBLIC_IMPORT_TOKEN?.trim() || null;
-    const r = await fetchGitHubSearchIssues({ ...args, token });
+  async fetchRaw(args, context?: PublicIngestFetchContext) {
+    const envTok = process.env.GITHUB_PUBLIC_IMPORT_TOKEN?.trim() || null;
+    const token = (context?.githubToken?.trim() || envTok) || null;
+    const biasedQuery = buildGitHubOpportunitySearchQuery(args.query);
+    const r = await fetchGitHubSearchIssues({ ...args, query: biasedQuery, token });
     if (!r.ok) return r;
     return { ok: true, items: r.items as unknown[] };
   },

@@ -1,9 +1,19 @@
 import "server-only";
 
+import { isRedditOAuthAccessTokenConfigured } from "@/lib/integrations/reddit-import-env";
 import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
-import type { NormalizedScrapeRow, PublicLeadSourceAdapter } from "@/lib/leads/sources/types";
+import type { NormalizedScrapeRow, PublicIngestFetchContext, PublicLeadSourceAdapter } from "@/lib/leads/sources/types";
 
-const UA = "Clinq/1.0 (https://github.com/yashbank/Clinq; lead discovery; respects robots)";
+const UA = "Clinq/1.0 (https://github.com/yashbank/Clinq; lead discovery; official Reddit API)";
+
+function redditOAuthAccessToken(): string | null {
+  const t = process.env.REDDIT_OAUTH_ACCESS_TOKEN?.trim();
+  return t && t.length > 0 ? t : null;
+}
+
+export function isRedditOAuthConfigured(): boolean {
+  return isRedditOAuthAccessTokenConfigured();
+}
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -18,32 +28,56 @@ function str(v: unknown, max = 8000): string | null {
 
 export type RedditListingData = Record<string, unknown>;
 
-export async function fetchRedditSearchJson(args: {
+/**
+ * Official Reddit OAuth search (`oauth.reddit.com`). Requires `REDDIT_OAUTH_ACCESS_TOKEN` on the server.
+ */
+export async function fetchRedditOAuthSearch(args: {
   query: string;
   limit: number;
 }): Promise<{ ok: true; items: RedditListingData[] } | { ok: false; error: string }> {
+  const token = redditOAuthAccessToken();
+  if (!token) {
+    return {
+      ok: false,
+      error:
+        "Reddit import needs a server-side Reddit OAuth access token (REDDIT_OAUTH_ACCESS_TOKEN). Create a Reddit app, authorize the script/user token with search scope, and add the token to your deployment environment.",
+    };
+  }
+
   const q = args.query.trim();
   if (!q) {
     return { ok: false, error: "Search query is required" };
   }
   const limit = Math.min(25, Math.max(1, args.limit));
-  const url = new URL("https://www.reddit.com/search.json");
+  const url = new URL("https://oauth.reddit.com/search");
   url.searchParams.set("q", q);
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("sort", "relevance");
   url.searchParams.set("type", "link");
   url.searchParams.set("restrict_sr", "false");
+  url.searchParams.set("raw_json", "1");
 
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), 20_000);
   try {
     const res = await fetch(url.toString(), {
-      headers: { "User-Agent": UA, Accept: "application/json" },
+      headers: {
+        "User-Agent": UA,
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       signal: controller.signal,
     });
     const text = await res.text();
+    if (res.status === 401 || res.status === 403) {
+      return {
+        ok: false,
+        error:
+          "Reddit rejected this search request. Confirm REDDIT_OAUTH_ACCESS_TOKEN is valid, not expired, and allowed to call the search endpoint for your Reddit app.",
+      };
+    }
     if (!res.ok) {
-      return { ok: false, error: `Reddit returned HTTP ${res.status}` };
+      return { ok: false, error: "Reddit search could not be completed. Try again later or verify server Reddit API configuration." };
     }
     let json: unknown;
     try {
@@ -124,9 +158,10 @@ export function redditDedupeKeyFromListing(data: RedditListingData): string | nu
 
 export const redditPublicAdapter: PublicLeadSourceAdapter = {
   id: "reddit",
-  label: "Reddit (public search)",
-  async fetchRaw(args) {
-    const r = await fetchRedditSearchJson(args);
+  label: "Reddit (OAuth search)",
+  async fetchRaw(args, context?: PublicIngestFetchContext) {
+    void context;
+    const r = await fetchRedditOAuthSearch(args);
     if (!r.ok) return r;
     return { ok: true, items: r.items as unknown[] };
   },

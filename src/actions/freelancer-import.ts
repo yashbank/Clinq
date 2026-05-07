@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { clampFreelancerImportLimit } from "@/lib/integrations/source-batch-caps";
 import { fetchFreelancerActiveProjects } from "@/lib/integrations/freelancer/api";
 import { logFreelancerImport } from "@/lib/logging/app-log";
 import { getFreelancerTokensForUser } from "@/lib/integrations/freelancer/token-store";
@@ -68,7 +69,7 @@ export async function runFreelancerLeadImportAction(
     return { ok: false, error: profileCompletenessGateMessage(gate) };
   }
 
-  const limit = Math.min(30, Math.max(1, payload.limit ?? 15));
+  const limit = clampFreelancerImportLimit(payload.limit);
   const query = (payload.query ?? "").trim();
 
   logFreelancerImport("job_start", { userId: user.id, limit, query: query || null });

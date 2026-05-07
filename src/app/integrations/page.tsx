@@ -12,6 +12,8 @@ import { loadFreelancerProfileForAi } from "@/lib/profile/load-for-ai";
 import { assessProfileCompleteness } from "@/lib/profile/profile-completeness";
 import { formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { userHasGithubImportPatRow } from "@/lib/integrations/github/github-import-pat-store";
+import { isRedditOAuthAccessTokenConfigured } from "@/lib/integrations/reddit-import-env";
 import { hasSupabaseServiceRoleKey } from "@/utils/env-server";
 import type { IntegrationAccountRow } from "@/types/integrations";
 
@@ -32,7 +34,14 @@ export default async function IntegrationsPage() {
   /** PAT + OAuth token storage and imports require the service role; OAuth app env is optional when using a personal token. */
   const freelancerImportReady = hasSupabaseServiceRoleKey();
 
-  const [{ data: rows, error }, { data: flJobs }, { data: profRow }, sourceIngestStats, profileForGate] = await Promise.all([
+  const [
+    { data: rows, error },
+    { data: flJobs },
+    { data: profRow },
+    sourceIngestStats,
+    profileForGate,
+    githubUserPatConfigured,
+  ] = await Promise.all([
     supabase
       .from("integration_accounts")
       .select("id, user_id, provider, status, meta, sync_status, last_sync_at, import_stats, created_at, updated_at")
@@ -48,8 +57,14 @@ export default async function IntegrationsPage() {
     supabase.from("profiles").select("preferred_currency").eq("id", user.id).maybeSingle(),
     getSourceIngestStats(supabase, user.id),
     loadFreelancerProfileForAi(supabase, user.id),
+    userHasGithubImportPatRow(user.id),
   ]);
   const profileCompleteness = assessProfileCompleteness(profileForGate);
+  const publicIngestHubFlags = {
+    redditOAuthServerConfigured: isRedditOAuthAccessTokenConfigured(),
+    githubUserPatConfigured,
+    githubServerTokenConfigured: Boolean(process.env.GITHUB_PUBLIC_IMPORT_TOKEN?.trim()),
+  };
   const displayCurrency =
     typeof profRow?.preferred_currency === "string" && profRow.preferred_currency.trim()
       ? profRow.preferred_currency.trim()
@@ -79,6 +94,7 @@ export default async function IntegrationsPage() {
               freelancerImportJobs={flJobs ?? []}
               sourceIngestStats={sourceIngestStats}
               profileCompleteness={profileCompleteness}
+              publicIngestHubFlags={publicIngestHubFlags}
             />
           </Suspense>
         </main>

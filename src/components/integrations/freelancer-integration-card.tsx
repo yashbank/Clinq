@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { FREELANCER_IMPORT_DEFAULT, FREELANCER_IMPORT_MAX } from "@/lib/integrations/source-batch-caps";
 import { INTEGRATION_PROVIDERS } from "@/lib/integrations/registry";
 import { cn } from "@/lib/utils";
 import type { IntegrationAccountRow, IntegrationProviderId } from "@/types/integrations";
@@ -83,7 +84,7 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
-  const [limit, setLimit] = useState(15);
+  const [limit, setLimit] = useState(FREELANCER_IMPORT_DEFAULT);
 
   const [patOpen, setPatOpen] = useState(false);
   const [patToken, setPatToken] = useState("");
@@ -238,8 +239,8 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
               Official Freelancer.com REST API only (OAuth2 or personal access token, documented endpoints). Imports are real
-              marketplace listings—not simulated data. Batches are capped to stay within rate limits; scoring runs automatically
-              after each insert.
+              marketplace listings—not simulated data. Each run fetches up to {FREELANCER_IMPORT_MAX} active listings (default{" "}
+              {FREELANCER_IMPORT_DEFAULT}) with conservative batching; scoring runs automatically after each insert.
             </p>
             {!oauthConfigured ? (
               <p className="mt-2 text-xs text-muted-foreground">
@@ -347,9 +348,11 @@ export function FreelancerIntegrationCard({ account, jobs, oauthConfigured, impo
               <input
                 type="number"
                 min={1}
-                max={30}
+                max={FREELANCER_IMPORT_MAX}
                 value={limit}
-                onChange={(e) => setLimit(Math.min(30, Math.max(1, Number(e.target.value) || 15)))}
+                onChange={(e) =>
+                  setLimit(Math.min(FREELANCER_IMPORT_MAX, Math.max(1, Number(e.target.value) || FREELANCER_IMPORT_DEFAULT)))
+                }
                 className="mt-1 w-full rounded-lg border border-border bg-background/80 px-3 py-2 text-sm tabular-nums text-foreground outline-none ring-primary/30 focus:ring-2"
               />
             </div>
