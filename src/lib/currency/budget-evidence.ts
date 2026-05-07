@@ -8,7 +8,7 @@ import { extractImportBudgetFields } from "@/lib/currency/import-budget-fields";
 import { formatBudgetUsdForDisplay } from "@/lib/currency/format-display-budget";
 import { isLikelyMisstoredForeignAvgAsUsd, resolveEffectiveBudgetUsd } from "@/lib/leads/effective-budget-usd";
 import { leadBudgetDisplayFromMetadata, leadBudgetFallback } from "@/lib/leads/budget-display";
-import { isImportedLeadRow } from "@/lib/leads/source-filters";
+import { isFreelancerLeadRow, isImportedLeadRow } from "@/lib/leads/source-filters";
 import { isSupportedDisplayCurrency, type SupportedDisplayCurrency } from "@/types/currency";
 import type { LeadRow } from "@/types/database";
 
@@ -99,6 +99,45 @@ export function buildBudgetEvidence(
   }
 
   const imported = isImportedLeadRow(row);
+
+  if (imported && isFreelancerLeadRow(row)) {
+    if (sourceCurrency === "USD" && sourceAverageInCurrency != null && sourceAverageInCurrency >= 500_000) {
+      return {
+        sourceMin,
+        sourceMax,
+        sourceCurrency,
+        sourceAverageInCurrency,
+        canonicalBudgetUsd: null,
+        displayedPreferredAmount: null,
+        displayedPreferredLabel: null,
+        confidence: "low",
+        lowConfidenceReason:
+          "Freelancer listing shows USD with a very large source average — likely wrong ISO (e.g. INR mis-labeled as USD).",
+        auditNote: null,
+      };
+    }
+    if (
+      pref === "INR" &&
+      sourceAverageInCurrency != null &&
+      sourceAverageInCurrency >= 50_000 &&
+      displayedPreferredAmount != null &&
+      displayedPreferredAmount > sourceAverageInCurrency * 4
+    ) {
+      return {
+        sourceMin,
+        sourceMax,
+        sourceCurrency,
+        sourceAverageInCurrency,
+        canonicalBudgetUsd: null,
+        displayedPreferredAmount: null,
+        displayedPreferredLabel: null,
+        confidence: "low",
+        lowConfidenceReason:
+          "Display amount is far above the source average in an INR workspace — likely a currency / conversion mix-up.",
+        auditNote: null,
+      };
+    }
+  }
 
   let confidence: BudgetConfidence = "high";
   let lowConfidenceReason: string | null = null;

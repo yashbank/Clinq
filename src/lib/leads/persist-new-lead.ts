@@ -75,14 +75,21 @@ export async function insertLeadWithIntelligence(
     mergedBudgetCols.budget_avg == null &&
     mergedBudgetCols.currency_original == null;
 
+  const isCuratedImport =
+    options?.metadataExtra &&
+    typeof (options.metadataExtra as Record<string, unknown>).import_external_id === "string" &&
+    String((options.metadataExtra as Record<string, unknown>).import_external_id).trim().length > 0;
+
   // Manual / legacy USD-only path: never treat `input.budget` as USD when import metadata already
   // defined a non-USD average (Freelancer passes the marketplace average in original currency).
+  // Never fabricate USD for curated imports (Freelancer / scrape pipeline) — currency must come from metadata/columns.
   if (
     mergedBudgetCols.budget_usd == null &&
     noImportStructuredBudget &&
     typeof input.budget === "number" &&
     Number.isFinite(input.budget) &&
-    input.budget > 0
+    input.budget > 0 &&
+    !isCuratedImport
   ) {
     const n = Math.round(input.budget * 100) / 100;
     mergedBudgetCols = {

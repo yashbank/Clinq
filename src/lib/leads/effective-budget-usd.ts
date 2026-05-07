@@ -38,8 +38,8 @@ export function isLikelyMisstoredForeignAvgAsUsd(
 /**
  * Single canonical USD amount for totals and display-currency conversion.
  *
- * Priority: `budget_usd` (unless corrupt duplicate of foreign avg) → convert `budget_avg` + `currency_original`
- * → import metadata avg → legacy `budget` as USD only when no foreign-currency hints exist.
+ * Priority: `budget_usd` (unless corrupt duplicate of foreign avg) → import metadata range/currency
+ * (fixes wrong `currency_original` on column) → `budget_avg` + `currency_original` → legacy `budget`.
  */
 export function resolveEffectiveBudgetUsd(
   row: Pick<LeadRow, "budget" | "budget_usd" | "budget_avg" | "budget_min" | "budget_max" | "currency_original" | "metadata">,
@@ -53,21 +53,56 @@ export function resolveEffectiveBudgetUsd(
       ? (row.metadata as Record<string, unknown>)
       : {};
 
+  const { min: impMin, max: impMax, currency: impCurrency } = readImportBudget(meta);
+  const avgImpRange = averageBudgetAmount(impMin, impMax);
+
   const avgCol = typeof row.budget_avg === "number" && row.budget_avg > 0 && Number.isFinite(row.budget_avg) ? row.budget_avg : null;
   const curCol =
     typeof row.currency_original === "string" && row.currency_original.trim()
       ? row.currency_original.trim().toUpperCase()
       : null;
 
+  const curForMisstore =
+    impCurrency && impCurrency.trim().toUpperCase() !== "USD" ? impCurrency.trim().toUpperCase() : curCol;
+
+  /** Column labeled USD + huge average + import metadata says non-USD → do not trust raw `budget_usd`. */
+  const suspiciousUsdForeignAvg =
+    curCol === "USD" &&
+    avgCol != null &&
+    avgCol >= 500_000 &&
+    impCurrency != null &&
+    impCurrency !== "USD" &&
+    typeof row.budget_usd === "number" &&
+    Number.isFinite(row.budget_usd) &&
+    row.budget_usd > 0 &&
+    Math.abs(row.budget_usd - avgCol) < 0.05;
+
   if (typeof row.budget_usd === "number" && Number.isFinite(row.budget_usd) && row.budget_usd > 0) {
-    if (!isLikelyMisstoredForeignAvgAsUsd(row.budget_usd, avgCol, curCol)) {
+    if (!isLikelyMisstoredForeignAvgAsUsd(row.budget_usd, avgCol, curForMisstore) && !suspiciousUsdForeignAvg) {
       return row.budget_usd;
     }
-    if (hasRates && avgCol != null && curCol && curCol !== "USD") {
-      const healed = foreignAmountToUsd(avgCol, curCol, mergedRates);
+    if (hasRates && avgCol != null && curForMisstore && curForMisstore !== "USD") {
+      const healed = foreignAmountToUsd(avgCol, curForMisstore, mergedRates);
       if (healed != null && healed > 0) return healed;
     }
     // Fall through — do not trust mis-stored budget_usd
+  }
+
+  if (avgImpRange != null && impCurrency) {
+    if (impCurrency === "USD") {
+      const u = Math.round(avgImpRange * 100) / 100;
+      if (u > 0) return u;
+    }
+    if (hasRates) {
+      const u = foreignAmountToUsd(avgImpRange, impCurrency, mergedRates);
+      if (u != null && u > 0) return u;
+    }
+  }
+
+  /** Column says USD but import metadata has a non-USD ISO (historical mis-label). */
+  if (impCurrency && impCurrency !== "USD" && curCol === "USD" && avgCol != null && hasRates) {
+    const u = foreignAmountToUsd(avgCol, impCurrency, mergedRates);
+    if (u != null && u > 0) return u;
   }
 
   if (avgCol != null && curCol) {
@@ -78,20 +113,9 @@ export function resolveEffectiveBudgetUsd(
     }
   }
 
-  const { min, max, currency } = readImportBudget(meta);
-  const avgImp = averageBudgetAmount(min, max);
-  if (avgImp != null && currency) {
-    if (currency === "USD") return avgImp;
-    if (hasRates) {
-      const u = foreignAmountToUsd(avgImp, currency, mergedRates);
-      if (u != null && u > 0) return u;
-    }
-  }
-
-  const { currency: impCur } = readImportBudget(meta);
   const leg = Number(row.budget);
   if (leg > 0 && Number.isFinite(leg)) {
-    const foreignHint = (curCol && curCol !== "USD") || (impCur && impCur !== "USD");
+    const foreignHint = (curCol && curCol !== "USD") || (impCurrency && impCurrency !== "USD");
     if (foreignHint) {
       return null;
     }

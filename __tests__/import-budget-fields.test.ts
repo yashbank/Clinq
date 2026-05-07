@@ -35,4 +35,16 @@ describe("extractImportBudgetFields", () => {
       }).currency,
     ).toBeNull();
   });
+
+  it("maps raw_snapshot.currency_id 11 to INR without currency_code strings", () => {
+    expect(
+      extractImportBudgetFields({
+        import: {
+          budget_min: 500_000,
+          budget_max: 1_000_000,
+          raw_snapshot: { currency_id: 11, budget_min: 500_000, budget_max: 1_000_000 },
+        },
+      }).currency,
+    ).toBe("INR");
+  });
 });

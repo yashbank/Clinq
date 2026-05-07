@@ -97,4 +97,25 @@ describe("resolveEffectiveBudgetUsd", () => {
   it("treats legacy budget as USD for manual rows with no foreign hints", () => {
     expect(resolveEffectiveBudgetUsd(baseRow({ budget_usd: null, budget: 5000, metadata: {} }), rates)).toBe(5000);
   });
+
+  it("ignores mis-stored budget_usd when column is USD but import metadata is INR (₹5L–₹10L case)", () => {
+    const usd = resolveEffectiveBudgetUsd(
+      baseRow({
+        budget_usd: 750_000,
+        budget_avg: 750_000,
+        currency_original: "USD",
+        budget_min: 500_000,
+        budget_max: 1_000_000,
+        metadata: {
+          import: {
+            budget_min: 500_000,
+            budget_max: 1_000_000,
+            raw_snapshot: { currency_id: 11, budget_min: 500_000, budget_max: 1_000_000 },
+          },
+        },
+      }),
+      rates,
+    );
+    expect(usd).toBeCloseTo(750_000 / 84, 0);
+  });
 });

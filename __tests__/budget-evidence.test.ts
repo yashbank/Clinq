@@ -130,4 +130,28 @@ describe("buildBudgetEvidence / trust", () => {
     expect(v.rangeSpan).toBe(11000);
     expect(v.usdFromCanonical).toBe(v.canonicalBudgetUsd);
   });
+
+  it("₹5L–₹10L listing: currency_id 11 yields INR evidence and ~₹7.5L display when preferred is INR", () => {
+    const row = baseRow({
+      budget_min: 500_000,
+      budget_max: 1_000_000,
+      budget_avg: 750_000,
+      currency_original: "USD",
+      budget_usd: null,
+      metadata: {
+        import_external_id: "freelancer:999001",
+        source: "freelancer",
+        import: {
+          provider: "freelancer",
+          budget_min: 500_000,
+          budget_max: 1_000_000,
+          raw_snapshot: { currency_id: 11, budget_min: 500_000, budget_max: 1_000_000 },
+        },
+      },
+    });
+    const ev = buildBudgetEvidence(row, "INR", rates);
+    expect(ev.sourceCurrency).toBe("INR");
+    expect(ev.confidence).not.toBe("low");
+    expect(ev.displayedPreferredAmount).toBeCloseTo(750_000, -2);
+  });
 });

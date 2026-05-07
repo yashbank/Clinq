@@ -1,4 +1,5 @@
 import type { CreateLeadInput } from "@/lib/leads/create-lead-input";
+import { freelancerCurrencyIdToIso } from "@/lib/integrations/freelancer/freelancer-currency-ids";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -45,7 +46,8 @@ export type NormalizedFreelancerLead = {
  * Maps a Freelancer `projects` API object into Clinq lead input + import metadata.
  * Defensive: unknown shapes from the wire must not throw.
  *
- * Budget: only `budget.minimum`, `budget.maximum`, `currency.code`, and project `type` — no invented amounts.
+ * Budget: `budget.minimum` / `budget.maximum`, `budget.currency_id` (mapped to ISO), nested `budget.currency`,
+ * project `currency`, and project `type` — no invented amounts.
  */
 export function normalizeFreelancerProject(project: unknown, importedAtIso: string): NormalizedFreelancerLead | null {
   const p = asRecord(project);
@@ -64,10 +66,36 @@ export function normalizeFreelancerProject(project: unknown, importedAtIso: stri
 
   const budgetObj = asRecord(p.budget);
   const currencyObj = asRecord(p.currency);
+  const budgetCurrencyObj = budgetObj ? asRecord(budgetObj.currency) : null;
 
   const budgetMin = budgetObj ? num(budgetObj.minimum) : null;
   const budgetMax = budgetObj ? num(budgetObj.maximum) : null;
-  const currencyCode = currencyObj ? str(currencyObj.code, 8)?.toUpperCase() ?? null : null;
+
+  const fromProjectCurrencyCode = currencyObj ? str(currencyObj.code, 8)?.toUpperCase() ?? null : null;
+  const fromProjectCurrencyId = currencyObj ? num(currencyObj.id) : null;
+  const fromBudgetCurrencyCode = budgetCurrencyObj ? str(budgetCurrencyObj.code, 8)?.toUpperCase() ?? null : null;
+  const fromBudgetCurrencyId = budgetCurrencyObj ? num(budgetCurrencyObj.id) : null;
+  const fromBudgetCurrencyCodeField =
+    budgetObj && typeof budgetObj.currency_code === "string" && budgetObj.currency_code.trim()
+      ? budgetObj.currency_code.trim().toUpperCase()
+      : null;
+  const budgetCurrencyId = budgetObj ? num(budgetObj.currency_id) : null;
+  const topCurrencyId = num(p.currency_id);
+
+  /** Budget block is authoritative for min/max amounts — prefer its currency over top-level `currency`. */
+  const fromIdResolved =
+    freelancerCurrencyIdToIso(budgetCurrencyId) ??
+    freelancerCurrencyIdToIso(fromBudgetCurrencyId) ??
+    freelancerCurrencyIdToIso(fromProjectCurrencyId) ??
+    freelancerCurrencyIdToIso(topCurrencyId);
+
+  const fromCodeResolved =
+    fromBudgetCurrencyCode ??
+    (fromBudgetCurrencyCodeField && fromBudgetCurrencyCodeField.length === 3 ? fromBudgetCurrencyCodeField : null) ??
+    fromProjectCurrencyCode ??
+    null;
+
+  const currencyCode = (fromCodeResolved && fromCodeResolved.length === 3 ? fromCodeResolved : null) ?? fromIdResolved ?? null;
 
   const hasReliableBudget =
     (budgetMin !== null && Number.isFinite(budgetMin) && budgetMin >= 0) ||
