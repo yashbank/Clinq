@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState, useTransition } from "react";
 
-import { Button } from "@/components/ui/button";
+import { AuthFormAlert, AuthSubmitButton } from "@/components/auth/auth-form-feedback";
+import { ClinqLogo } from "@/components/brand/clinq-logo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeNextPath } from "@/lib/auth/safe-next-path";
-import { formatCredentialError } from "@/lib/errors/format-user-error";
-import { ClinqLogo } from "@/components/brand/clinq-logo";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { formatCredentialError, formatSupabaseConfigError } from "@/lib/errors/format-user-error";
+import { cn } from "@/lib/utils";
 
 function authErrorMessage(code: string | null): string | null {
   if (!code) return null;
@@ -30,6 +31,7 @@ function LoginForm() {
   const [pending, startTransition] = useTransition();
 
   const urlError = useMemo(() => authErrorMessage(searchParams.get("error")), [searchParams]);
+  const displayError = urlError ?? error;
 
   return (
     <div className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-center bg-background gradient-mesh px-4 py-10 sm:py-12">
@@ -40,11 +42,6 @@ function LoginForm() {
           <p className="mt-2 text-sm text-muted-foreground">Sign in to continue to your workspace.</p>
         </div>
 
-        {urlError ? (
-          <p className="mb-4 rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2.5 text-sm leading-relaxed text-amber-100">
-            {urlError}
-          </p>
-        ) : null}
         {searchParams.get("confirmed") ? (
           <p className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
             Confirm your email from the inbox link, then sign in here.
@@ -63,7 +60,14 @@ function LoginForm() {
             const next = safeNextPath(String(fd.get("next") ?? "/dashboard"));
             setError(null);
             startTransition(async () => {
-              const supabase = createSupabaseBrowserClient();
+              let supabase;
+              try {
+                supabase = createSupabaseBrowserClient();
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : null;
+                setError(formatSupabaseConfigError(msg));
+                return;
+              }
               const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
               if (signErr) {
                 setError(formatCredentialError("Sign in", signErr.message));
@@ -79,7 +83,15 @@ function LoginForm() {
             <Label htmlFor="email" className="text-foreground/90">
               Email
             </Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@company.com" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              disabled={pending}
+              placeholder="you@company.com"
+            />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
@@ -88,24 +100,36 @@ function LoginForm() {
               </Label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-primary/90 transition-colors hover:text-primary hover:underline"
+                className={cn(
+                  "text-xs font-medium text-primary/90 transition-colors hover:text-primary hover:underline",
+                  pending && "pointer-events-none opacity-50",
+                )}
               >
                 Forgot password?
               </Link>
             </div>
-            <Input id="password" name="password" type="password" autoComplete="current-password" required />
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              disabled={pending}
+            />
           </div>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button
-            type="submit"
-            disabled={pending}
-            className="w-full bg-gradient-to-r from-primary to-cyan-500 font-medium text-primary-foreground shadow-md shadow-cyan-500/10 transition-[transform,opacity] duration-200 hover:opacity-[0.97] active:scale-[0.99]"
-          >
-            {pending ? "Signing in…" : "Continue"}
-          </Button>
+
+          <AuthFormAlert message={displayError} />
+
+          {pending ? (
+            <p className="text-center text-xs text-muted-foreground" aria-live="polite">
+              Verifying your credentials…
+            </p>
+          ) : null}
+
+          <AuthSubmitButton pending={pending} pendingLabel="Signing in…" idleLabel="Continue" />
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className={cn("mt-6 text-center text-sm text-muted-foreground", pending && "opacity-70")}>
           No account?{" "}
           <Link href="/signup" className="font-medium text-primary hover:underline">
             Create one
@@ -127,7 +151,7 @@ export default function LoginPage() {
       fallback={
         <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 bg-background gradient-mesh px-4">
           <div className="h-10 w-10 animate-pulse rounded-2xl bg-muted/50" />
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">Loading sign in…</p>
         </div>
       }
     >

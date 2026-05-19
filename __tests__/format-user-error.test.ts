@@ -1,4 +1,9 @@
-import { formatActionFailure, formatCredentialError, formatWorkspaceLoadError } from "@/lib/errors/format-user-error";
+import {
+  formatActionFailure,
+  formatCredentialError,
+  formatSupabaseConfigError,
+  formatWorkspaceLoadError,
+} from "@/lib/errors/format-user-error";
 
 describe("formatWorkspaceLoadError", () => {
   it("returns calm default when message empty", () => {
@@ -25,7 +30,24 @@ describe("formatActionFailure", () => {
 });
 
 describe("formatCredentialError", () => {
-  it("softens invalid login copy", () => {
-    expect(formatCredentialError("Sign in", "Invalid login credentials")).toMatch(/check the email/i);
+  it("maps invalid login to calm copy", () => {
+    expect(formatCredentialError("Sign in", "Invalid login credentials")).toBe("Email or password is incorrect.");
+  });
+
+  it("maps email not confirmed", () => {
+    expect(formatCredentialError("Sign in", "Email not confirmed")).toBe("Please confirm your email before signing in.");
+  });
+
+  it("maps DNS / fetch failures to auth service message", () => {
+    expect(formatCredentialError("Sign in", "getaddrinfo ENOTFOUND xyz.supabase.co")).toMatch(
+      /Could not reach the authentication service/i,
+    );
+    expect(formatCredentialError("Sign in", "Failed to fetch")).toMatch(/Could not reach the authentication service/i);
+  });
+});
+
+describe("formatSupabaseConfigError", () => {
+  it("mentions env.local setup", () => {
+    expect(formatSupabaseConfigError("NEXT_PUBLIC_SUPABASE_URL invalid")).toMatch(/\.env\.local/i);
   });
 });

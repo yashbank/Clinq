@@ -4,6 +4,7 @@
  */
 import { config } from "dotenv";
 import { existsSync } from "node:fs";
+import { lookup } from "node:dns/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -40,15 +41,38 @@ if (missing.length) {
   process.exit(1);
 }
 
+let supabaseUrl;
 try {
-  new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  supabaseUrl = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL.trim().replace(/\/+$/, ""));
 } catch {
   console.error("NEXT_PUBLIC_SUPABASE_URL is not a valid URL.");
   process.exit(1);
 }
 
+if (supabaseUrl.protocol !== "https:") {
+  console.error("NEXT_PUBLIC_SUPABASE_URL must use https.");
+  process.exit(1);
+}
+
+if (!supabaseUrl.hostname.endsWith(".supabase.co")) {
+  console.error("NEXT_PUBLIC_SUPABASE_URL host should be <project-ref>.supabase.co");
+  process.exit(1);
+}
+
 if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length < 20) {
   console.error("NEXT_PUBLIC_SUPABASE_ANON_KEY looks too short.");
+  process.exit(1);
+}
+
+try {
+  await lookup(supabaseUrl.hostname);
+  console.log("Supabase host DNS:", supabaseUrl.hostname, "→ OK");
+} catch (e) {
+  console.error("Supabase host DNS failed:", supabaseUrl.hostname, "→", e.code ?? e.message);
+  console.error(
+    "ENOTFOUND usually means the project ref is wrong or the project was deleted/paused.",
+  );
+  console.error("Open Supabase Dashboard → Project Settings → API and copy the Project URL again.");
   process.exit(1);
 }
 

@@ -44,18 +44,39 @@ export function formatActionFailure(context: string, rawMessage?: string | null)
   return `${context} did not complete. ${short}${m.length > 160 ? "…" : ""}`;
 }
 
+function isAuthServiceUnreachableMessage(m: string): boolean {
+  return /ENOTFOUND|getaddrinfo|EAI_AGAIN|ENETUNREACH|ECONNREFUSED|ERR_NAME_NOT_RESOLVED|name not resolved|Could not resolve host/i.test(
+    m,
+  );
+}
+
+/** Missing/invalid NEXT_PUBLIC_SUPABASE_* before a client is created. */
+export function formatSupabaseConfigError(rawMessage?: string | null): string {
+  const m = (rawMessage ?? "").trim();
+  if (/NEXT_PUBLIC_SUPABASE|supabase\.co|invalid url|anon key/i.test(m)) {
+    return "Authentication is not configured. Copy .env.example to .env.local and set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY from your Supabase project API settings.";
+  }
+  return "Authentication is not configured. Check .env.local against .env.example, then restart the dev server.";
+}
+
 /** Calm copy for sign-in / sign-up style errors; avoids dumping raw provider strings when possible. */
 export function formatCredentialError(context: string, rawMessage?: string | null): string {
   const m = (rawMessage ?? "").trim();
   if (!m) return `${context} did not succeed. Try again.`;
+  if (isAuthServiceUnreachableMessage(m)) {
+    return "Could not reach the authentication service. Check your Supabase URL or network connection.";
+  }
   if (/invalid login credentials|invalid email or password|wrong password/i.test(m)) {
-    return `${context}: check the email and password, or confirm your inbox if the account is new.`;
+    return "Email or password is incorrect.";
   }
-  if (/email not confirmed|confirm your email/i.test(m)) {
-    return `${context}: confirm your email from the inbox link, then try again.`;
+  if (/email not confirmed|confirm your email|Email not confirmed/i.test(m)) {
+    return "Please confirm your email before signing in.";
   }
-  if (/network|fetch failed|Failed to fetch/i.test(m)) {
-    return `Connection issue during ${context}. Check your network and retry.`;
+  if (/network|fetch failed|Failed to fetch|AuthRetryableFetchError/i.test(m)) {
+    return "Could not reach the authentication service. Check your Supabase URL or network connection.";
+  }
+  if (/Missing or invalid Supabase public environment/i.test(m)) {
+    return formatSupabaseConfigError(m);
   }
   return formatActionFailure(context, m);
 }
