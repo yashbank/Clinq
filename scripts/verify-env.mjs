@@ -35,6 +35,10 @@ if (!existsSync(envLocal) && !existsSync(envFile)) {
   process.exit(1);
 }
 
+if (!existsSync(envLocal) && existsSync(envFile)) {
+  console.warn("Tip: copy .env → .env.local so Next.js and verify:env use the standard local file.");
+}
+
 if (missing.length) {
   console.error("Missing or empty required variables:", missing.join(", "));
   console.error(`Optional: ${optionalNote}`);

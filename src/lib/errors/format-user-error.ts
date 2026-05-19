@@ -50,6 +50,9 @@ function isAuthServiceUnreachableMessage(m: string): boolean {
   );
 }
 
+const AUTH_SERVICE_UNREACHABLE =
+  "Could not reach the authentication service. Confirm NEXT_PUBLIC_SUPABASE_URL in .env.local matches your active Supabase project (Dashboard → API), run npm run verify:env, then restart the dev server.";
+
 /** Missing/invalid NEXT_PUBLIC_SUPABASE_* before a client is created. */
 export function formatSupabaseConfigError(rawMessage?: string | null): string {
   const m = (rawMessage ?? "").trim();
@@ -64,7 +67,7 @@ export function formatCredentialError(context: string, rawMessage?: string | nul
   const m = (rawMessage ?? "").trim();
   if (!m) return `${context} did not succeed. Try again.`;
   if (isAuthServiceUnreachableMessage(m)) {
-    return "Could not reach the authentication service. Check your Supabase URL or network connection.";
+    return AUTH_SERVICE_UNREACHABLE;
   }
   if (/invalid login credentials|invalid email or password|wrong password/i.test(m)) {
     return "Email or password is incorrect.";
@@ -73,7 +76,7 @@ export function formatCredentialError(context: string, rawMessage?: string | nul
     return "Please confirm your email before signing in.";
   }
   if (/network|fetch failed|Failed to fetch|AuthRetryableFetchError/i.test(m)) {
-    return "Could not reach the authentication service. Check your Supabase URL or network connection.";
+    return AUTH_SERVICE_UNREACHABLE;
   }
   if (/Missing or invalid Supabase public environment/i.test(m)) {
     return formatSupabaseConfigError(m);

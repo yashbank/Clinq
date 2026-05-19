@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
+import { AuthFormAlert, AuthSubmitButton } from "@/components/auth/auth-form-feedback";
 import { ClinqLogo } from "@/components/brand/clinq-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { formatCredentialError } from "@/lib/errors/format-user-error";
+import { formatCredentialError, formatSupabaseConfigError } from "@/lib/errors/format-user-error";
 import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export default function ForgotPasswordPage() {
@@ -48,7 +49,14 @@ export default function ForgotPasswordPage() {
               }
               setError(null);
               startTransition(async () => {
-                const supabase = createSupabaseBrowserClient();
+                let supabase;
+                try {
+                  supabase = createSupabaseBrowserClient();
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : null;
+                  setError(formatSupabaseConfigError(msg));
+                  return;
+                }
                 const site = getPublicSiteOrigin(typeof window !== "undefined" ? window.location.origin : "");
                 const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
                   redirectTo: `${site}/auth/callback?next=/dashboard`,
@@ -65,16 +73,25 @@ export default function ForgotPasswordPage() {
               <Label htmlFor="email" className="text-foreground/90">
                 Email
               </Label>
-              <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@company.com" />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                disabled={pending}
+                placeholder="you@company.com"
+              />
             </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            <Button
-              type="submit"
-              disabled={pending}
-              className="w-full bg-gradient-to-r from-primary to-cyan-500 font-medium text-primary-foreground shadow-md shadow-cyan-500/10 transition-[transform,opacity] duration-200 hover:opacity-[0.97] active:scale-[0.99]"
-            >
-              {pending ? "Sending…" : "Send reset link"}
-            </Button>
+            <AuthFormAlert message={error} />
+
+            {pending ? (
+              <p className="text-center text-xs text-muted-foreground" aria-live="polite">
+                Sending your reset link…
+              </p>
+            ) : null}
+
+            <AuthSubmitButton pending={pending} pendingLabel="Sending…" idleLabel="Send reset link" />
           </form>
         )}
 

@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { AuthFormAlert, AuthSubmitButton } from "@/components/auth/auth-form-feedback";
 import { ClinqLogo } from "@/components/brand/clinq-logo";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { formatCredentialError } from "@/lib/errors/format-user-error";
+import { formatCredentialError, formatSupabaseConfigError } from "@/lib/errors/format-user-error";
+import { cn } from "@/lib/utils";
 import { getPublicSiteOrigin } from "@/utils/site-url";
 
 export default function SignupPage() {
@@ -42,7 +43,14 @@ export default function SignupPage() {
                 setError("Use a valid email and a password of at least 8 characters.");
                 return;
               }
-              const supabase = createSupabaseBrowserClient();
+              let supabase;
+              try {
+                supabase = createSupabaseBrowserClient();
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : null;
+                setError(formatSupabaseConfigError(msg));
+                return;
+              }
               const site = getPublicSiteOrigin(typeof window !== "undefined" ? window.location.origin : "");
               const { data, error: signErr } = await supabase.auth.signUp({
                 email,
@@ -70,32 +78,56 @@ export default function SignupPage() {
             <Label htmlFor="display_name" className="text-foreground/90">
               Display name
             </Label>
-            <Input id="display_name" name="display_name" type="text" autoComplete="name" placeholder="Alex Morgan" />
+            <Input
+              id="display_name"
+              name="display_name"
+              type="text"
+              autoComplete="name"
+              disabled={pending}
+              placeholder="Alex Morgan"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email" className="text-foreground/90">
               Email
             </Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required placeholder="you@company.com" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              disabled={pending}
+              placeholder="you@company.com"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password" className="text-foreground/90">
               Password
             </Label>
-            <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} />
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              disabled={pending}
+            />
             <p className="text-xs text-muted-foreground">At least 8 characters.</p>
           </div>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button
-            type="submit"
-            disabled={pending}
-            className="w-full bg-gradient-to-r from-primary to-cyan-500 font-medium text-primary-foreground shadow-md shadow-cyan-500/10 transition-[transform,opacity] duration-200 hover:opacity-[0.97] active:scale-[0.99]"
-          >
-            {pending ? "Creating…" : "Sign up"}
-          </Button>
+          <AuthFormAlert message={error} />
+
+          {pending ? (
+            <p className="text-center text-xs text-muted-foreground" aria-live="polite">
+              Creating your account…
+            </p>
+          ) : null}
+
+          <AuthSubmitButton pending={pending} pendingLabel="Creating…" idleLabel="Sign up" />
         </form>
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
+        <p className={cn("mt-6 text-center text-sm text-muted-foreground", pending && "opacity-70")}>
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-primary hover:underline">
             Sign in

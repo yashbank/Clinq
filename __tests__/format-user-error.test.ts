@@ -42,6 +42,7 @@ describe("formatCredentialError", () => {
     expect(formatCredentialError("Sign in", "getaddrinfo ENOTFOUND xyz.supabase.co")).toMatch(
       /Could not reach the authentication service/i,
     );
+    expect(formatCredentialError("Sign in", "getaddrinfo ENOTFOUND xyz.supabase.co")).toMatch(/verify:env/i);
     expect(formatCredentialError("Sign in", "Failed to fetch")).toMatch(/Could not reach the authentication service/i);
   });
 });
