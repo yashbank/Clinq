@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="Clinq">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#070b16"/><stop offset=".55" stop-color="#121033"/><stop offset="1" stop-color="#070b16"/></linearGradient>
+    <linearGradient id="t" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"><animate attributeName="stop-color" values="#22d3ee;#a78bfa;#f472b6;#22d3ee" dur="8s" repeatCount="indefinite"/></stop>
+      <stop offset="1" stop-color="#f472b6"><animate attributeName="stop-color" values="#f472b6;#22d3ee;#a78bfa;#f472b6" dur="8s" repeatCount="indefinite"/></stop>
+    </linearGradient>
+    <radialGradient id="a"><stop offset="0" stop-color="#22d3ee" stop-opacity=".55"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+    <radialGradient id="b"><stop offset="0" stop-color="#a78bfa" stop-opacity=".5"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></radialGradient>
+    <radialGradient id="c"><stop offset="0" stop-color="#f472b6" stop-opacity=".5"/><stop offset="1" stop-color="#f472b6" stop-opacity="0"/></radialGradient>
+    <pattern id="g" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="#fff" stroke-opacity=".05"/></pattern>
+    <clipPath id="k"><rect width="1200" height="300" rx="22"/></clipPath>
+  </defs>
+  <g clip-path="url(#k)">
+    <rect width="1200" height="300" fill="url(#bg)"/><rect width="1200" height="300" fill="url(#g)"/>
+    <circle r="180" fill="url(#a)"><animateMotion dur="15s" repeatCount="indefinite" path="M150,70 C400,250 740,0 960,190 C740,30 400,290 150,70Z"/></circle>
+    <circle r="200" fill="url(#b)"><animateMotion dur="19s" repeatCount="indefinite" path="M900,50 C700,290 380,30 220,230 C420,0 700,270 900,50Z"/></circle>
+    <circle r="150" fill="url(#c)"><animateMotion dur="23s" repeatCount="indefinite" path="M600,270 C800,30 1000,290 1100,110 C900,250 760,0 600,270Z"/></circle>
+    <g fill="none" stroke="#fff" stroke-opacity=".13" transform="translate(1000 150)">
+      <rect x="-70" y="-70" width="140" height="140" rx="22"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="28s" repeatCount="indefinite"/></rect>
+      <rect x="-70" y="-70" width="140" height="140" rx="22"><animateTransform attributeName="transform" type="rotate" from="45" to="-315" dur="36s" repeatCount="indefinite"/></rect>
+      <circle r="105"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="40s" repeatCount="indefinite"/></circle>
+      <circle cx="105" r="6" fill="#22d3ee" stroke="none"><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="10s" repeatCount="indefinite"/></circle>
+      <circle cx="-105" r="5" fill="#f472b6" stroke="none"><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="14s" repeatCount="indefinite"/></circle>
+      <text y="22" text-anchor="middle" font-size="64" stroke="none" fill="#fff" fill-opacity=".9" font-family="Segoe UI Emoji,Apple Color Emoji,sans-serif">🧠</text>
+    </g>
+    <text x="64" y="140" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif" font-size="76" font-weight="800" fill="url(#t)">Clinq</text>
+    <text x="68" y="192" font-family="Inter,Segoe UI,Helvetica,Arial,sans-serif" font-size="26" fill="#e2e8f0" fill-opacity=".93">AI operating system for freelancers</text>
+    <text x="68" y="238" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="17" fill="#94a3b8">leads · proposals · pipeline · follow-ups · analytics<tspan fill="#22d3ee"><animate attributeName="opacity" values="1;0;1" dur="1.1s" repeatCount="indefinite"/> ▍</tspan></text>
+  </g>
+</svg>
